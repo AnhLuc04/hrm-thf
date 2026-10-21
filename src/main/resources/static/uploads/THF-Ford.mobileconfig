@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadType</key><string>Configuration</string>
+  <key>PayloadVersion</key><integer>1</integer>
+  <key>PayloadIdentifier</key><string>vn.thfgroup.profile</string>
+  <key>PayloadUUID</key><string>0AF1B2FC-4FB8-4A4F-A696-54766082DE2F</string>
+  <key>PayloadDisplayName</key><string>Thanh Hoa Ford</string>
+  <key>PayloadOrganization</key><string>Thanh Hoa Ford</string>
+  <key>PayloadDescription</key><string>Chung chi va ung dung noi bo Thanh Hoa Ford</string>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>PayloadType</key><string>com.apple.security.root</string>
+      <key>PayloadVersion</key><integer>1</integer>
+      <key>PayloadIdentifier</key><string>vn.thfgroup.ca</string>
+      <key>PayloadUUID</key><string>FB9A8919-57D5-4286-9897-AEBF582CFB76</string>
+      <key>PayloadDisplayName</key><string>THF Ford CA</string>
+      <key>PayloadContent</key><data>MIIDKzCCAhOgAwIBAgIJAO6QdMibH5i/MA0GCSqGSIb3DQEBCwUAMDsxCzAJBgNVBAYTAlZOMRcwFQYDVQQKEw5UaGFuaCBIb2EgRm9yZDETMBEGA1UEAxMKU3VuQ2x1YiBDQTAeFw0yNjEwMTMwNzE3MzlaFw0zNjEwMTAwNzE3MzlaMDsxCzAJBgNVBAYTAlZOMRcwFQYDVQQKEw5UaGFuaCBIb2EgRm9yZDETMBEGA1UEAxMKU3VuQ2x1YiBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKowQ9hZBzBEPsnvINRXPUXiZvvmWjRQh41/3ZMutqntMtwCjZ8HegDFMgBnHDnOG+qKWeG1tabEsSvgubiqshiEIM5iPpkrtnx7J7rtURfGD72AM7EWBD/BFQOfnjU+0OQEbP+f8c5M8Q/FWbyULle4KV3bf06Pra/Yq4STHYUm18TTmk0Z2EysRVRpvhZ1QrlQoYrtzO4uKexNzPxDTiqcJJ86VmeSA/HfU9SExZJI4kY/KPymjN9YkJ3rZNvX0U6dd5TLptpsNR92y6mjF2aOivd/0zANovWsD365d3NsExA2AN3IochtUYHltSWz2xGfB2l1e+F5HxvbWLgdK6UCAwEAAaMyMDAwHQYDVR0OBBYEFImvYy2qIQ7s2B2vetqF/m+xusSUMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAFAw2R2/CWBHlF0tziMOknAGsoYfJp0EoHUsnLbdeYelIyDHiH3PmjlUCNADh/dAJ0KMrds5Ji0eHw4ty0dUzPMUvB+atEMuQm94m/xxZ1uTHnZQoVqbEx09AlBy712NyS5w+EzDe6NDUdRg5Zvc9bEP6dAWCv8osvF8M7PczpHAOwJpVfUxUJ/sqcvsCZ/LzNAkbBQPNTraej4T5yw3QIub23/YNlgd0+ubh1viHBhiFcSXV0MIMZ7aGuaNKB+d47PCEuQlF+fkLUSE7FJA13Jj6Xu7Mv4B2cF5GzhpnGm+aR9aqXABbUm77Q3jczhnIL1voyAJxfu0QT5fE1u41wM=</data>
+    </dict>
+    <dict>
+      <key>PayloadType</key><string>com.apple.webClip.managed</string>
+      <key>PayloadVersion</key><integer>1</integer>
+      <key>PayloadIdentifier</key><string>vn.thfgroup.webclip1</string>
+      <key>PayloadUUID</key><string>C5852FD1-EFDA-4313-9BCC-B4F417210D84</string>
+      <key>PayloadDisplayName</key><string>THF Thong bao</string>
+      <key>Label</key><string>THF Thong bao</string>
+      <key>URL</key><string>https://thfgroup.ddns.net:8080/</string>
+      <key>FullScreen</key><true/>
+      <key>IsRemovable</key><true/>
+      
+    </dict>    <dict>
+      <key>PayloadType</key><string>com.apple.webClip.managed</string>
+      <key>PayloadVersion</key><integer>1</integer>
+      <key>PayloadIdentifier</key><string>vn.thfgroup.webclip2</string>
+      <key>PayloadUUID</key><string>D9A850A7-7474-4B13-8A2E-47717C962750</string>
+      <key>PayloadDisplayName</key><string>THF HRM</string>
+      <key>Label</key><string>THF HRM</string>
+      <key>URL</key><string>https://thfgroup.ddns.net:8081/</string>
+      <key>FullScreen</key><true/>
+      <key>IsRemovable</key><true/>
+      
+    </dict>
+  </array>
+</dict>
+</plist>

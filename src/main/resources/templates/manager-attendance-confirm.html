@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Phê Duyệt Giải Trình | Quản Lý Chấm Công</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --sa-t: env(safe-area-inset-top, 0px); --sa-b: env(safe-area-inset-bottom, 0px);
+      --sa-l: env(safe-area-inset-left, 0px); --sa-r: env(safe-area-inset-right, 0px);
+    }
+    .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card-appear { animation: fadeInUp 0.3s ease both; }
+
+    .item-checkbox {
+      appearance: none; -webkit-appearance: none;
+      width: 1.125rem; height: 1.125rem;
+      border: 2px solid #cbd5e1; border-radius: 4px;
+      background: #fff; cursor: pointer;
+      transition: all .15s; flex-shrink: 0; position: relative;
+    }
+    .item-checkbox:checked { background: #4f46e5; border-color: #4f46e5; }
+    .item-checkbox:checked::after {
+      content: ''; position: absolute;
+      left: 3px; top: 0px; width: 5px; height: 9px;
+      border: 2px solid #fff; border-top: none; border-left: none;
+      transform: rotate(45deg);
+    }
+    .item-checkbox:indeterminate { background: #4f46e5; border-color: #4f46e5; }
+    .item-checkbox:indeterminate::after {
+      content: ''; position: absolute;
+      left: 2px; top: 5px; width: 9px; height: 2px;
+      background: #fff; border-radius: 1px;
+    }
+    .card-selected {
+      border-color: #a5b4fc !important;
+      background: #fafafe !important;
+      box-shadow: 0 0 0 3px rgba(99,102,241,.08);
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    #bulk-bar { animation: slideDown .2s ease; }
+
+    /* ── Thanh trên cùng đồng bộ hệ thống ── */
+    .app-top {
+      position: sticky; top: 0; z-index: 30;
+      background: rgba(255,255,255,.85);
+      -webkit-backdrop-filter: saturate(180%) blur(12px);
+      backdrop-filter: saturate(180%) blur(12px);
+      border-bottom: 1px solid #e5e8ef;
+      padding-top: var(--sa-t);
+    }
+    .app-top .inner { max-width: 64rem; margin: 0 auto; padding: 0 1rem; height: 56px; display: flex; align-items: center; gap: 10px; }
+    .app-mark { width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 11.5px;
+                background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 6px 14px -6px rgba(79,70,229,.6); }
+    .app-top .crumb { font-size: 12.5px; color: #94a3b8; font-weight: 600; }
+    .app-top .crumb b { color: #0f172a; font-weight: 700; }
+
+    /* ── Hero tông màu đồng bộ ── */
+    .hero {
+      position: relative; overflow: hidden; border-radius: 20px; color: #fff;
+      background: radial-gradient(1200px 400px at 110% -20%, rgba(167,139,250,.5), transparent 60%),
+                  linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #4f46e5 100%);
+      box-shadow: 0 20px 40px -20px rgba(49,46,129,.6);
+    }
+    .hero::before { content: ""; position: absolute; right: -50px; bottom: -70px; width: 240px; height: 240px; border-radius: 50%; border: 32px solid rgba(255,255,255,.06); pointer-events: none; }
+
+    /* ═════════ LỌC THEO NHÂN VIÊN ═════════ */
+    .fbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 10px; margin-bottom: 12px;
+            box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+    .f-search { position: relative; flex: 1 1 220px; min-width: 0; }
+    .f-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 12px; pointer-events: none; }
+    .f-inp { height: 40px; width: 100%; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; padding: 0 12px; font-size: 14px; outline: none;
+             transition: border-color .15s, box-shadow .15s, background .15s; }
+    .f-inp:focus { background: #fff; border-color: #a5b4fc; box-shadow: 0 0 0 3px #e0e7ff; }
+    .f-search .f-inp { padding-left: 34px; }
+    select.f-inp { flex: 1 1 240px; width: auto; min-width: 0; font-weight: 600; color: #334155; cursor: pointer; }
+    .f-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: #f1f5f9; flex: none; }
+    .f-seg button { height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; font-size: 12.5px; font-weight: 700; color: #64748b; cursor: pointer;
+                    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .f-seg button.on { background: #fff; color: #0f172a; box-shadow: 0 1px 2px rgba(15,23,42,.1); }
+    .f-chip { display: none; align-items: center; gap: 8px; margin: -2px 0 12px; font-size: 13px; color: #475569; }
+    .f-chip.on { display: flex; }
+    .f-chip b { color: #0f172a; }
+    .f-chip button { border: 0; background: #eef2ff; color: #4f46e5; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 999px; cursor: pointer; }
+
+    /* Nhóm theo nhân viên */
+    .grp { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,.04); overflow: hidden; }
+    #card-list.grouped { display: flex; flex-direction: column; gap: 12px; }
+    .grp-h { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #fbfcfe; border-bottom: 1px solid #eef1f5; }
+    .grp.collapsed .grp-h { border-bottom-color: transparent; }
+    .grp-av { width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 800; font-size: 15px; color: #4338ca;
+              background: linear-gradient(135deg, #eef2ff, #e0e7ff); border: 1px solid #c7d2fe; }
+    .grp-t { min-width: 0; flex: 1; cursor: pointer; }
+    .grp-t b { display: block; font-size: 15px; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .grp-t span { display: block; font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .grp-t code { font: 700 11px ui-monospace, Menlo, Consolas, monospace; background: #f1f5f9; color: #475569; padding: 1px 6px; border-radius: 5px; margin-right: 4px; }
+    .grp-n { flex: none; min-width: 26px; height: 22px; padding: 0 8px; border-radius: 999px; background: #fef3c7; color: #b45309; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
+    .grp-act { display: flex; align-items: center; gap: 6px; flex: none; }
+    .g-btn { height: 34px; padding: 0 12px; border-radius: 9px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; border: 1px solid transparent; transition: background .15s, border-color .15s, color .15s; }
+    .g-ok  { background: #059669; color: #fff; }
+    .g-ok:hover { background: #047857; }
+    .g-no  { background: #fff; color: #64748b; border-color: #e2e8f0; }
+    .g-no:hover { background: #fff1f2; color: #e11d48; border-color: #fecdd3; }
+    .g-tg  { width: 34px; padding: 0; justify-content: center; background: transparent; color: #94a3b8; }
+    .g-tg:hover { background: #f1f5f9; color: #475569; }
+    .g-tg i { transition: transform .15s; }
+    .grp.collapsed .g-tg i { transform: rotate(-90deg); }
+    .grp-b { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .grp.collapsed .grp-b { display: none; }
+
+    /* Trong nhóm: thẻ đơn gọn lại, bỏ tên/avatar lặp lại */
+    .grp .req-card { box-shadow: none; }
+    .grp .req-card .c-av, .grp .req-card .c-nm, .grp .req-card .c-code, .grp .req-card .c-sep { display: none; }
+    .grp .req-card > .p-5 { padding: 14px 16px; }
+
+    .f-empty { display: none; text-align: center; padding: 40px 16px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 16px; color: #64748b; font-size: 14px; }
+    .f-empty.on { display: block; }
+
+    @media (max-width: 640px) {
+      .fbar { padding: 8px; }
+      .f-search, select.f-inp { flex-basis: 100%; }
+      .f-seg { width: 100%; } .f-seg button { flex: 1; justify-content: center; }
+      .grp-h { flex-wrap: wrap; padding: 12px; gap: 10px; }
+      .grp-act { width: 100%; }
+      .grp-act .g-ok, .grp-act .g-no { flex: 1; justify-content: center; height: 38px; }
+      .grp .req-card > .p-5 { padding: 12px; }
+    }
+  </style>
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+<th:block th:replace="~{fragments/shell :: nav('approve', 'Phê duyệt giải trình')}"></th:block>
+<div class="sh-main">
+
+
+
+  <div class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- ── HERO / HEADER ── -->
+    <div class="hero px-6 py-6 md:px-7 md:py-7 mb-6">
+      <div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <p class="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-1.5">Quản lý chấm công</p>
+          <h1 class="text-2xl font-extrabold tracking-tight">Phê Duyệt Đơn Giải Trình</h1>
+          <p class="text-indigo-100/80 text-sm mt-1">Xét duyệt các yêu cầu chấm công của nhân viên phòng ban.</p>
+        </div>
+        <div class="flex items-center gap-3">
+
+          <!-- ── DROPDOWN CHỌN THÁNG ── -->
+          <form method="get" th:action="@{/attendance/manager/attendance-confirms}">
+            <div class="relative">
+              <select name="month" onchange="this.form.submit()"
+                      class="appearance-none pl-9 pr-8 py-2 text-sm font-semibold border border-white/20
+                           rounded-lg bg-white shadow-sm text-slate-700 cursor-pointer
+                           focus:outline-none focus:ring-2 focus:ring-white/60 transition">
+
+                <!-- Tháng hiện tại – luôn hiển thị -->
+                <option th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM')}"
+                        th:selected="${month == #temporals.format(#temporals.createNow(), 'yyyy-MM')}"
+                        th:text="'Tháng ' + ${#temporals.createNow().monthValue} + '/' + ${#temporals.createNow().year}">
+                </option>
+
+                <!--
+                  Tháng trước – chỉ hiện khi còn trong 5 ngày đầu tháng mới
+                  (controller đã chặn nếu cố tình gửi param sau ngày 5)
+                -->
+                <option th:if="${#temporals.createNow().dayOfMonth <= 5}"
+                        th:value="${#temporals.format(#temporals.createNow().minusMonths(1), 'yyyy-MM')}"
+                        th:selected="${month == #temporals.format(#temporals.createNow().minusMonths(1), 'yyyy-MM')}"
+                        th:text="'Tháng ' + ${#temporals.createNow().minusMonths(1).monthValue}
+                               + '/' + ${#temporals.createNow().minusMonths(1).year} + ' (chốt sổ)'">
+                </option>
+              </select>
+              <i class="fa-regular fa-calendar absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+              <i class="fa-solid fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none"></i>
+            </div>
+          </form>
+
+          <!-- Banner cảnh báo hết hạn chốt sổ (hiện khi > ngày 5 của tháng) -->
+          <span th:if="${#temporals.createNow().dayOfMonth > 5}"
+                class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold
+                     bg-white/15 text-white border border-white/25 px-3 py-2 rounded-lg backdrop-blur-sm">
+          <i class="fa-solid fa-lock text-amber-200"></i>
+          Đã khóa tháng trước
+        </span>
+
+          <a href="javascript:history.back()"
+             class="bg-white/15 border border-white/25 px-4 py-2 rounded-lg text-sm font-medium text-white
+                  hover:bg-white/25 transition flex items-center gap-2 shrink-0 backdrop-blur-sm">
+            <i class="fa-solid fa-arrow-left text-white/70"></i> Quay lại
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LỌC THEO NHÂN VIÊN ── -->
+    <div class="fbar" th:if="${not #lists.isEmpty(list)}">
+      <label class="f-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input class="f-inp" id="f-q" type="search" placeholder="Tìm tên hoặc mã nhân viên…" autocomplete="off">
+      </label>
+      <select class="f-inp" id="f-emp" aria-label="Chọn nhân viên">
+        <option value="">Tất cả nhân viên</option>
+      </select>
+      <div class="f-seg" id="f-mode" aria-label="Kiểu hiển thị">
+        <button type="button" data-v="group" class="on"><i class="fa-solid fa-users"></i>Theo người</button>
+        <button type="button" data-v="flat"><i class="fa-solid fa-list"></i>Tất cả đơn</button>
+      </div>
+    </div>
+    <div class="f-chip" id="f-chip">
+      <i class="fa-solid fa-filter text-indigo-400"></i>
+      <span>Đang xem đơn của <b id="f-chip-name"></b></span>
+      <button type="button" id="f-clear"><i class="fa-solid fa-xmark mr-1"></i>Bỏ lọc</button>
+    </div>
+
+    <!-- ── TOOLBAR ── -->
+    <div th:if="${not #lists.isEmpty(list)}"
+         class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5
+              bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-sm">
+
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-slate-600">
+          <input type="checkbox" id="select-all" class="item-checkbox">
+          <span id="counter-label">
+          <span th:text="${#lists.size(list)}">0</span> đơn đang chờ
+        </span>
+        </label>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+
+        <div id="bulk-bar" class="hidden items-center gap-2">
+        <span class="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-full"
+              id="selected-count-label">0 đã chọn</span>
+          <button type="button" onclick="bulkAction('reject-selected')"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200
+                       hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300
+                       text-slate-600 rounded-lg text-sm font-bold transition">
+            <i class="fa-solid fa-xmark"></i> Từ chối đã chọn
+          </button>
+          <button type="button" onclick="bulkAction('approve-selected')"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700
+                       text-white rounded-lg text-sm font-bold shadow-sm shadow-indigo-100 transition">
+            <i class="fa-solid fa-check"></i> Duyệt đã chọn
+          </button>
+          <div class="w-px h-5 bg-slate-200 mx-1"></div>
+        </div>
+
+        <!-- Khi đang lọc 1 người: 2 nút này chỉ áp dụng cho các đơn đang hiển thị (JS xử lý) -->
+        <a id="btn-reject-all" th:href="@{'/attendance/manager/reject-all?month=' + ${month}}"
+           onclick="return onAllAction(event, 'REJECT')"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200
+                hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300
+                text-slate-600 rounded-lg text-sm font-bold transition">
+          <i class="fa-solid fa-xmark"></i> <span class="lbl">Từ chối tất cả</span>
+        </a>
+        <a id="btn-approve-all" th:href="@{'/attendance/manager/approve-all?month=' + ${month}}"
+           onclick="return onAllAction(event, 'APPROVE')"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700
+                text-white rounded-lg text-sm font-bold shadow-md shadow-emerald-100 transition">
+          <i class="fa-solid fa-check-double"></i> <span class="lbl">Duyệt tất cả</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Hidden form bulk action -->
+    <form id="bulk-form" th:action="@{/attendance/manager/bulk-action}" method="post" class="hidden">
+      <input type="hidden" name="action" id="bulk-action-type">
+      <input type="hidden" name="month" th:value="${month}">
+    </form>
+
+    <!-- ── EMPTY STATE ── -->
+    <div th:if="${#lists.isEmpty(list)}"
+         class="text-center py-24 bg-white rounded-2xl border border-dashed border-slate-300">
+      <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-clipboard-check text-2xl text-slate-400"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-700">Không có yêu cầu mới</h3>
+      <p class="text-slate-400 text-sm mt-1">Hệ thống hiện chưa có đơn giải trình nào chờ duyệt.</p>
+    </div>
+
+    <div class="f-empty" id="f-empty"><i class="fa-solid fa-user-slash mr-1"></i> Không có đơn nào khớp với bộ lọc.</div>
+
+    <!-- ── DANH SÁCH ĐƠN ── -->
+    <div th:if="${not #lists.isEmpty(list)}" class="space-y-3" id="card-list">
+
+      <div th:each="item : ${list}"
+           th:data-id="${item.confirmation.id}"
+           th:data-emp="${item.confirmation.employeeNo}"
+           th:data-name="${item.employeeName}"
+           th:data-date="${item.confirmation.attendanceDate}"
+           th:data-issue="${item.confirmation.issueType}"
+           class="req-card card-appear bg-white rounded-xl border border-slate-200 shadow-sm
+                hover:shadow-md hover:border-indigo-200 transition-all duration-200 overflow-hidden">
+
+        <!-- Top accent stripe -->
+        <div class="h-0.5 w-full"
+             th:classappend="${item.confirmation.issueType == 'ABSENT'}    ? 'bg-rose-400'   :
+                           (${item.confirmation.issueType == 'LATE'}     ? 'bg-amber-400'  :
+                           (${item.confirmation.issueType == 'EARLY_LEAVE'} ? 'bg-orange-400' :
+                           (${item.confirmation.issueType == 'NO_CHECKOUT'}  ? 'bg-sky-400'    : 'bg-indigo-300')))">
+        </div>
+
+        <div class="p-5">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+            <!-- LEFT: Checkbox + info -->
+            <div class="flex items-start gap-3 flex-1 min-w-0">
+
+              <div class="pt-1 shrink-0">
+                <input type="checkbox" class="item-checkbox card-cb"
+                       th:value="${item.confirmation.id}"
+                       onchange="onCardCheck(this)">
+              </div>
+
+              <div class="c-av w-11 h-11 bg-indigo-50 text-indigo-500 rounded-full flex items-center
+                        justify-center shrink-0 border border-indigo-100">
+                <i class="fa-solid fa-user text-base"></i>
+              </div>
+
+              <div class="space-y-2 w-full min-w-0">
+
+                <!-- Row 1 -->
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span class="c-nm font-bold text-slate-900 text-base" th:text="${item.employeeName}">Nguyễn Văn A</span>
+                  <span class="c-code text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono"
+                        th:text="${item.confirmation.employeeNo}">NV000</span>
+                  <span class="c-sep text-slate-200 text-xs select-none">|</span>
+                  <span class="inline-flex items-center gap-1 text-slate-400 text-xs">
+                  <i class="fa-regular fa-calendar"></i>
+                  <span class="text-slate-500 font-medium"
+                        th:text="${item.confirmation.attendanceDate != null
+                                   ? #temporals.format(item.confirmation.attendanceDate, 'dd/MM/yyyy') : '—'}">
+                    01/06/2026
+                  </span>
+                </span>
+                  <span th:text="${item.confirmation.sessionType}"
+                        class="px-2 py-0.5 text-[10px] uppercase font-bold rounded font-mono"
+                        th:classappend="${item.confirmation.sessionType == 'MORNING'}   ? 'bg-sky-50 text-sky-600' :
+                                      (${item.confirmation.sessionType == 'AFTERNOON'} ? 'bg-violet-50 text-violet-600'
+                                                                                        : 'bg-slate-100 text-slate-600')">
+                  MORNING
+                </span>
+                </div>
+
+                <!-- Row 2: issue badge -->
+                <div class="flex flex-wrap gap-2 items-center">
+                  <span class="text-xs text-slate-400 font-medium">Lỗi gốc:</span>
+                  <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                        th:classappend="${item.confirmation.issueType == 'ABSENT'}      ? 'bg-rose-50 text-rose-600'    :
+                                      (${item.confirmation.issueType == 'LATE'}       ? 'bg-amber-50 text-amber-700'  :
+                                      (${item.confirmation.issueType == 'EARLY_LEAVE'}? 'bg-orange-50 text-orange-600':
+                                      (${item.confirmation.issueType == 'NO_CHECKOUT'}? 'bg-sky-50 text-sky-600'
+                                                                                       : 'bg-slate-100 text-slate-600')))">
+                  <span th:switch="${item.confirmation.issueType}">
+                    <span th:case="'ABSENT'"><i class="fa-solid fa-circle-xmark me-0.5"></i>Không chấm công</span>
+                    <span th:case="'NO_CHECKOUT'"><i class="fa-solid fa-door-open me-0.5"></i>Quên checkout</span>
+                    <span th:case="'LATE'"><i class="fa-solid fa-clock me-0.5"></i>Đi muộn</span>
+                    <span th:case="'EARLY_LEAVE'"><i class="fa-solid fa-person-running me-0.5"></i>Về sớm</span>
+                    <span th:case="'LATE_EARLY'"><i class="fa-solid fa-arrows-left-right me-0.5"></i>Vào muộn &amp; Về sớm</span>
+                    <span th:case="*" th:text="${item.confirmation.issueType}">Lỗi</span>
+                  </span>
+                </span>
+                </div>
+
+                <!-- Row 3: note -->
+                <p class="text-sm text-slate-600 italic border-l-2 border-indigo-200 pl-3 py-0.5 leading-relaxed line-clamp-2"
+                   th:text="${item.confirmation.note != null and not #strings.isEmpty(item.confirmation.note)
+                            ? item.confirmation.note : 'Không có ghi chú.'}">
+                  Lý do giải trình...
+                </p>
+              </div>
+            </div>
+
+            <!-- RIGHT: proposed status + buttons -->
+            <div class="flex items-center justify-between md:justify-end gap-4
+                      border-t border-slate-100 pt-4
+                      md:pt-0 md:border-t-0 md:border-l md:border-slate-100 md:pl-6 shrink-0">
+
+              <div class="text-left md:text-right md:min-w-[110px]">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Đề xuất duyệt</div>
+                <div class="text-sm font-bold" th:switch="${item.confirmation.confirmStatus}">
+                  <span th:case="'HALF_DAY'"    class="text-amber-600"><i class="fa-solid fa-circle-half-stroke me-1"></i>Tính 0.5 công</span>
+                  <span th:case="'ANNUAL_LEAVE'" class="text-emerald-600"><i class="fa-solid fa-umbrella-beach me-1"></i>Trừ phép năm</span>
+                  <span th:case="'UNPAID_LEAVE'" class="text-rose-500"><i class="fa-solid fa-ban me-1"></i>Nghỉ không lương</span>
+                  <span th:case="'PRESENT'"      class="text-indigo-600"><i class="fa-solid fa-circle-check me-1"></i>Tính đủ công</span>
+                  <span th:case="*" th:text="${item.confirmation.confirmStatus}" class="text-slate-600"></span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <a th:href="@{'/attendance/manager/approve/' + ${item.confirmation.id} + '?month=' + ${month}}"
+                   onclick="return confirm('Bạn có chắc chắn muốn DUYỆT đơn này không?')"
+                   class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg
+                        text-sm font-bold shadow-sm shadow-emerald-100 transition whitespace-nowrap">
+                  <i class="fa-solid fa-check me-1"></i>Duyệt
+                </a>
+                <a th:href="@{'/attendance/manager/reject/' + ${item.confirmation.id} + '?month=' + ${month}}"
+                   onclick="return confirm('Bạn có chắc chắn muốn TỪ CHỐI đơn này không?')"
+                   class="px-4 py-2 bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600
+                        hover:border-rose-200 text-slate-600 rounded-lg text-sm font-bold transition whitespace-nowrap">
+                  <i class="fa-solid fa-xmark me-1"></i>Từ chối
+                </a>
+                <button type="button"
+                        th:onclick="'openReturnModal(' + ${item.confirmation.id} + ')'"
+                        class="px-4 py-2 bg-white border border-amber-300 hover:bg-amber-50 hover:text-amber-700
+                             text-amber-600 rounded-lg text-sm font-bold transition whitespace-nowrap">
+                  <i class="fa-solid fa-rotate-left me-1"></i>Trả lại
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <!-- /th:each -->
+    </div>
+
+  </div><!-- /container -->
+
+  <script>
+  const selectAll    = document.getElementById('select-all');
+  const bulkBar      = document.getElementById('bulk-bar');
+  const countLabel   = document.getElementById('selected-count-label');
+  const bulkForm     = document.getElementById('bulk-form');
+  const bulkActionEl = document.getElementById('bulk-action-type');
+  const cardList     = document.getElementById('card-list');
+
+  const ISSUE_VN = { ABSENT: 'Không chấm công', NO_CHECKOUT: 'Quên checkout', LATE: 'Đi muộn', EARLY_LEAVE: 'Về sớm', LATE_EARLY: 'Muộn & sớm' };
+  const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').trim();
+  const esc  = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // Chỉ tính các đơn ĐANG HIỂN THỊ → không bao giờ duyệt nhầm đơn bị ẩn bởi bộ lọc
+  const isShown = c => !c.hidden && !(c.closest('.grp') && c.closest('.grp').hidden);
+  function getCards()      { return Array.from(document.querySelectorAll('.req-card')); }
+  function visibleCards()  { return getCards().filter(isShown); }
+  function getCheckboxes() { return visibleCards().map(c => c.querySelector('.card-cb')); }
+  function getChecked()    { return getCheckboxes().filter(cb => cb.checked); }
+
+  function updateUI() {
+    if (!selectAll) return;
+    const all = getCheckboxes(), n = getChecked().length;
+    if (n === 0)               { selectAll.checked = false; selectAll.indeterminate = false; }
+    else if (n === all.length) { selectAll.checked = true;  selectAll.indeterminate = false; }
+    else                       { selectAll.checked = false; selectAll.indeterminate = true;  }
+
+    if (n > 0) { bulkBar.classList.remove('hidden'); bulkBar.classList.add('flex'); countLabel.textContent = n + ' đã chọn'; }
+    else       { bulkBar.classList.add('hidden'); bulkBar.classList.remove('flex'); }
+
+    // Ô chọn của từng nhóm người
+    document.querySelectorAll('.grp').forEach(g => {
+      const cbs = Array.from(g.querySelectorAll('.card-cb')), k = cbs.filter(x => x.checked).length;
+      const gcb = g.querySelector('.grp-cb');
+      gcb.checked = k > 0 && k === cbs.length;
+      gcb.indeterminate = k > 0 && k < cbs.length;
+    });
+  }
+
+  function onCardCheck(cb) {
+    cb.closest('[data-id]').classList.toggle('card-selected', cb.checked);
+    updateUI();
+  }
+
+  if (selectAll) selectAll.addEventListener('change', () => {
+    getCheckboxes().forEach(cb => {
+      cb.checked = selectAll.checked;
+      cb.closest('[data-id]').classList.toggle('card-selected', selectAll.checked);
+    });
+    updateUI();
+  });
+
+  function submitBulk(ids, action, what) {
+    if (!ids.length) return;
+    const label = action === 'APPROVE' ? 'DUYỆT' : 'TỪ CHỐI';
+    if (!confirm(`Bạn có chắc chắn muốn ${label} ${ids.length} đơn${what ? ' ' + what : ''} không?`)) return;
+    bulkForm.querySelectorAll('input[name="ids"]').forEach(el => el.remove());
+    ids.forEach(id => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'ids'; inp.value = id;
+      bulkForm.appendChild(inp);
+    });
+    bulkActionEl.value = action;
+    bulkForm.submit();
+  }
+
+  function bulkAction(action) {
+    submitBulk(getChecked().map(cb => cb.value), action === 'approve-selected' ? 'APPROVE' : 'REJECT', 'đã chọn');
+  }
+
+  // ═════════ LỌC & NHÓM THEO NHÂN VIÊN ═════════
+  const state = { emp: '', q: '', mode: 'group' };
+  const STORE = 'pheduyet.filter';
+  let people = [];
+
+  function onAllAction(e, action) {
+    // Không lọc → giữ nguyên hành vi cũ (duyệt/từ chối toàn bộ tháng trên server)
+    if (!state.emp && !state.q) {
+      return confirm(action === 'APPROVE'
+        ? 'Bạn có chắc chắn muốn DUYỆT TẤT CẢ đơn giải trình đang chờ không?'
+        : 'Bạn có chắc chắn muốn TỪ CHỐI TẤT CẢ đơn giải trình đang chờ không?');
+    }
+    // Đang lọc → chỉ áp dụng cho các đơn đang hiển thị
+    e.preventDefault();
+    const p = people.find(x => x.emp === state.emp);
+    submitBulk(visibleCards().map(c => c.dataset.id), action, p ? 'của ' + p.name : 'đang hiển thị');
+    return false;
+  }
+
+  if (cardList) {
+    const cards = getCards();
+    const original = cards.slice();
+
+    // Gom đơn theo mã nhân viên
+    const map = new Map();
+    cards.forEach(c => {
+      const emp = c.dataset.emp || '?';
+      c._key = norm((c.dataset.name || '') + ' ' + emp);
+      if (!map.has(emp)) map.set(emp, { emp, name: c.dataset.name || ('Mã NV: ' + emp), cards: [] });
+      map.get(emp).cards.push(c);
+    });
+    people = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+
+    // Dropdown nhân viên (kèm số đơn)
+    const sel = document.getElementById('f-emp');
+    people.forEach(p => sel.add(new Option(`${p.name} · ${p.emp} (${p.cards.length} đơn)`, p.emp)));
+    sel.options[0].text = `Tất cả nhân viên (${people.length} người · ${cards.length} đơn)`;
+
+    // Tạo khối nhóm cho từng người
+    people.forEach(p => {
+      p.cards.sort((a, b) => (a.dataset.date || '').localeCompare(b.dataset.date || ''));
+      const counts = {};
+      p.cards.forEach(c => { const t = ISSUE_VN[c.dataset.issue] || c.dataset.issue || 'Khác'; counts[t] = (counts[t] || 0) + 1; });
+      const summary = Object.keys(counts).map(k => counts[k] + ' ' + k.toLowerCase()).join(' · ');
+      const initial = (p.name.trim().split(/\s+/).pop() || '?').charAt(0).toUpperCase();
+
+      const g = document.createElement('section');
+      g.className = 'grp';
+      g.dataset.emp = p.emp;
+      g.innerHTML =
+        `<div class="grp-h">
+           <input type="checkbox" class="item-checkbox grp-cb" aria-label="Chọn tất cả đơn của ${esc(p.name)}">
+           <div class="grp-av">${esc(initial)}</div>
+           <div class="grp-t" title="Thu gọn / mở rộng"><b>${esc(p.name)}</b><span><code>${esc(p.emp)}</code>${esc(summary)}</span></div>
+           <span class="grp-n">${p.cards.length}</span>
+           <div class="grp-act">
+             <button type="button" class="g-btn g-no"><i class="fa-solid fa-xmark"></i>Từ chối hết</button>
+             <button type="button" class="g-btn g-ok"><i class="fa-solid fa-check-double"></i>Duyệt ${p.cards.length} đơn</button>
+             <button type="button" class="g-btn g-tg" aria-label="Thu gọn"><i class="fa-solid fa-chevron-down"></i></button>
+           </div>
+         </div>
+         <div class="grp-b"></div>`;
+      p.el = g; p.body = g.querySelector('.grp-b');
+
+      const ids = () => p.cards.filter(c => !c.hidden).map(c => c.dataset.id);
+      g.querySelector('.g-ok').addEventListener('click', () => submitBulk(ids(), 'APPROVE', 'của ' + p.name));
+      g.querySelector('.g-no').addEventListener('click', () => submitBulk(ids(), 'REJECT', 'của ' + p.name));
+      const toggle = () => g.classList.toggle('collapsed');
+      g.querySelector('.g-tg').addEventListener('click', toggle);
+      g.querySelector('.grp-t').addEventListener('click', toggle);
+      g.querySelector('.grp-cb').addEventListener('change', e => {
+        p.cards.filter(c => !c.hidden).forEach(c => {
+          const cb = c.querySelector('.card-cb');
+          cb.checked = e.target.checked;
+          c.classList.toggle('card-selected', cb.checked);
+        });
+        updateUI();
+      });
+    });
+
+    function render() {
+      const q = norm(state.q);
+      let shown = 0;
+
+      cards.forEach(c => {
+        const ok = (!state.emp || c.dataset.emp === state.emp) && (!q || c._key.includes(q));
+        c.hidden = !ok;
+        if (!ok) { const cb = c.querySelector('.card-cb'); cb.checked = false; c.classList.remove('card-selected'); }
+        if (ok) shown++;
+      });
+
+      const frag = document.createDocumentFragment();
+      if (state.mode === 'group') {
+        cardList.classList.remove('space-y-3'); cardList.classList.add('grouped');
+        people.forEach(p => {
+          p.cards.forEach(c => p.body.appendChild(c));
+          p.el.hidden = !p.cards.some(c => !c.hidden);
+          if (state.emp) p.el.classList.remove('collapsed');   // chọn 1 người → luôn mở
+          frag.appendChild(p.el);
+        });
+      } else {
+        cardList.classList.add('space-y-3'); cardList.classList.remove('grouped');
+        original.forEach(c => frag.appendChild(c));
+      }
+      cardList.innerHTML = '';
+      cardList.appendChild(frag);
+
+      // Nhãn & trạng thái lọc
+      const total = cards.length;
+      document.getElementById('counter-label').innerHTML = (shown === total)
+        ? `<span>${total}</span> đơn đang chờ`
+        : `<span>${shown}</span> / ${total} đơn đang chờ`;
+      document.getElementById('f-empty').classList.toggle('on', shown === 0);
+
+      const p = people.find(x => x.emp === state.emp);
+      document.getElementById('f-chip').classList.toggle('on', !!p);
+      if (p) document.getElementById('f-chip-name').textContent = p.name;
+
+      const filtered = !!(state.emp || state.q);
+      const who = p ? ' của ' + (p.name.split(/\s+/).pop()) : (filtered ? ' đang hiện' : '');
+      document.querySelector('#btn-approve-all .lbl').textContent = filtered ? `Duyệt ${shown} đơn${who}` : 'Duyệt tất cả';
+      document.querySelector('#btn-reject-all .lbl').textContent  = filtered ? `Từ chối ${shown} đơn${who}` : 'Từ chối tất cả';
+
+      document.querySelectorAll('#f-mode button').forEach(b => b.classList.toggle('on', b.dataset.v === state.mode));
+      sel.value = state.emp;
+      updateUI();
+      try { sessionStorage.setItem(STORE, JSON.stringify({ emp: state.emp, mode: state.mode })); } catch (e) {}
+    }
+
+    // Khôi phục lựa chọn sau khi duyệt xong (trang tải lại)
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(STORE) || '{}');
+      if (saved.mode === 'flat' || saved.mode === 'group') state.mode = saved.mode;
+      if (saved.emp && map.has(saved.emp)) state.emp = saved.emp;
+    } catch (e) {}
+
+    sel.addEventListener('change', () => { state.emp = sel.value; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    let t;
+    document.getElementById('f-q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value; render(); }, 120); });
+    document.getElementById('f-mode').addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      state.mode = b.dataset.v; render();
+    });
+    document.getElementById('f-clear').addEventListener('click', () => { state.emp = ''; render(); });
+
+    render();
+    // Hiệu ứng xuất hiện chỉ chạy lần đầu, lọc lại không bị nháy
+    setTimeout(() => cards.forEach(c => c.classList.remove('card-appear')), 450);
+  }
+</script>
+
+
+  <!-- ── MODAL TRẢ LẠI ── -->
+  <div id="return-modal"
+       class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center">
+            <i class="fa-solid fa-rotate-left text-amber-500 text-sm"></i>
+          </div>
+          <h3 class="font-bold text-slate-800">Trả lại đơn giải trình</h3>
+        </div>
+        <button onclick="closeReturnModal()"
+                class="text-slate-400 hover:text-slate-600 transition text-lg leading-none">&times;</button>
+      </div>
+
+      <form id="return-form"
+            th:action="@{/attendance/manager/return/__id__}"
+            method="post"
+            class="px-6 py-5 space-y-4">
+
+        <input type="hidden" name="id" id="return-id">
+        <input type="hidden" name="month" th:value="${month}">
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+            Lý do trả lại <span class="text-rose-500">*</span>
+          </label>
+          <textarea name="managerComment" id="return-comment" rows="4" required
+                    placeholder="Nhập lý do yêu cầu nhân viên bổ sung / chỉnh sửa thông tin..."
+                    class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm
+                         text-slate-700 placeholder-slate-400 resize-none
+                         focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-300
+                         transition"></textarea>
+          <p class="text-xs text-slate-400 mt-1">Nhân viên sẽ thấy lý do này và có thể chỉnh sửa rồi gửi lại.</p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" onclick="closeReturnModal()"
+                  class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50
+                       text-slate-600 rounded-lg text-sm font-bold transition">
+            Huỷ
+          </button>
+          <button type="submit"
+                  class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white
+                       rounded-lg text-sm font-bold shadow-sm shadow-amber-100 transition">
+            <i class="fa-solid fa-paper-plane me-1"></i>Gửi trả lại
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  // ── Modal Trả lại ──────────────────────────────────────────────────────────
+  const returnModal   = document.getElementById('return-modal');
+  const returnForm    = document.getElementById('return-form');
+  const returnIdInput = document.getElementById('return-id');
+  const returnComment = document.getElementById('return-comment');
+
+  function openReturnModal(id) {
+    returnIdInput.value = id;
+    returnComment.value = '';
+    returnForm.action = '/attendance/manager/return/' + id;
+    returnModal.classList.remove('hidden');
+    returnModal.classList.add('flex');
+    returnComment.focus();
+  }
+
+  function closeReturnModal() {
+    returnModal.classList.add('hidden');
+    returnModal.classList.remove('flex');
+  }
+
+  returnModal.addEventListener('click', e => {
+    if (e.target === returnModal) closeReturnModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeReturnModal();
+  });
+</script>
+</div><!-- /sh-main -->
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

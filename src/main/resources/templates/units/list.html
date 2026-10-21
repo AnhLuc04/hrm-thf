@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Đơn vị & giờ làm')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('units', 'Đơn vị & giờ làm')}"></th:block>
+<div class="sh-main">
+  <div class="wrap">
+    <div class="ph">
+      <div>
+        <h1>Đơn vị &amp; giờ làm</h1>
+        <p>Mỗi đơn vị có nhân viên, giờ làm, người duyệt và máy chấm công riêng. Người của đơn vị nào chỉ thấy và duyệt dữ liệu đơn vị đó.</p>
+      </div>
+      <span class="sp"></span>
+      <a class="btn btn-brand" th:href="@{/units/edit}"><i class="fa-solid fa-plus"></i>Thêm đơn vị</a>
+    </div>
+
+    <div th:if="${message}" class="flash ok" th:text="${message}"></div>
+    <div th:if="${warning}" class="flash warn" th:text="${warning}"></div>
+    <div th:if="${error}" class="flash err" th:text="${error}"></div>
+
+    <div class="stats">
+      <div class="stat"><b th:text="${#lists.size(units)}">4</b><span>đơn vị</span></div>
+      <div class="stat"><b th:text="${total}">0</b><span>nhân viên</span></div>
+      <div class="stat"><b th:text="${#lists.size(units.?[lastStatus == 'ERROR'])}">0</b><span>máy cần xem</span></div>
+    </div>
+
+    <div class="units">
+      <article class="unit" th:each="u : ${units}" th:classappend="${!u.enabled} ? 'off'">
+        <div class="u-top">
+          <span class="code" th:text="${u.code}">TH</span>
+          <div class="n">
+            <b th:text="${u.name}">Thanh Hóa Ford</b>
+            <small th:text="(${u.legacyUnit} ? 'Đơn vị gốc · ' : '') + ${counts[u.id]} + ' nhân viên'">128 nhân viên</small>
+          </div>
+          <span th:if="${running.contains(u.id)}" class="pill info">Đang đồng bộ</span>
+          <span th:unless="${running.contains(u.id)}" class="pill"
+                th:classappend="${u.lastStatus == 'OK'} ? 'ok' : (${u.lastStatus == 'ERROR'} ? 'err' : 'gray')"
+                th:text="${u.lastStatus == 'OK'} ? 'Kết nối tốt' : (${u.lastStatus == 'ERROR'} ? 'Có lỗi' : 'Chưa đồng bộ')">OK</span>
+        </div>
+
+        <div class="kv" aria-label="Giờ làm">
+          <div><span>Báo đi muộn sau</span><b th:text="${#temporals.format(u.lateAfterOrDefault(), 'HH:mm')}">07:35</b></div>
+          <div><span>Vi phạm sau</span><b th:text="${#temporals.format(u.violationAfterOrDefault(), 'HH:mm')}">08:05</b></div>
+          <div><span>Chia ca</span><b th:text="${#temporals.format(u.noonOrDefault(), 'HH:mm')}">12:00</b></div>
+          <div><span>Về sớm trước</span><b th:text="${#temporals.format(u.earlyBeforeOrDefault(), 'HH:mm')}">17:00</b></div>
+        </div>
+
+        <div class="rows">
+          <div th:each="a : ${approvers[u.id]}"><span th:text="${a.key}">Giám đốc</span><span th:text="${a.value}">99999</span></div>
+          <div><span>Ngày làm</span><span th:text="${u.workDaysLabel}">T2–T7 cả ngày · CN nghỉ</span></div>
+          <div><span>Chi lương</span><span th:text="${u.payDay != null} ? 'Ngày ' + ${u.payDay} + ' hằng tháng' : 'Theo mặc định chung'">Ngày 10</span></div>
+          <div><span>Hạn xác nhận công</span><span th:text="${u.confirmDaysOrDefault() == 0} ? 'Không giới hạn' : ${u.confirmDaysOrDefault()} + ' ngày, quá hạn tự khóa'">7 ngày</span></div>
+          <div><span>Lịch kéo công</span><span th:text="${u.syncScheduleLabel}">Mọi ngày · 09:00, 20:00</span></div>
+          <div><span>Máy chấm công</span><span th:text="${u.hasDevice} ? ${u.deviceUrl} : 'Chưa khai'">http://172.16.3.251</span></div>
+          <div th:if="${u.lastSyncAt != null}"><span>Lần đồng bộ</span><span th:text="${#temporals.format(u.lastSyncAt, 'HH:mm dd/MM/yyyy')}"></span></div>
+        </div>
+        <p class="msg" th:if="${u.lastMessage != null}" th:classappend="${u.lastStatus == 'ERROR'} ? 'err'" th:text="${u.lastMessage}"></p>
+
+        <div class="acts">
+          <a class="btn btn-sm" th:href="@{/units/edit(id=${u.id})}"><i class="fa-regular fa-pen-to-square"></i>Sửa</a>
+          <th:block th:if="${u.hasDevice}">
+            <form th:action="@{/units/{id}/test(id=${u.id})}" method="post"><button class="btn btn-sm" type="submit"><i class="fa-solid fa-plug"></i>Kiểm tra máy</button></form>
+            <form th:action="@{/units/{id}/sync-users(id=${u.id})}" method="post"><button class="btn btn-sm" type="submit"><i class="fa-solid fa-users"></i>Kéo nhân viên</button></form>
+            <form th:action="@{/units/{id}/sync-attendance(id=${u.id})}" method="post"><button class="btn btn-sm" type="submit"><i class="fa-solid fa-fingerprint"></i>Kéo chấm công</button></form>
+            <details class="pw" style="flex-basis:100%">
+              <summary><i class="fa-solid fa-clock-rotate-left"></i> Kéo lại công theo ngày</summary>
+              <form th:action="@{/units/{id}/sync-range(id=${u.id})}" method="post" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"
+                    th:with="today=${#temporals.createToday()}">
+                <input class="in sm" type="date" name="from" required th:value="${today.minusDays(3)}" aria-label="Từ ngày">
+                <span>→</span>
+                <input class="in sm" type="date" name="to" required th:value="${today}" th:attr="max=${today}" aria-label="Đến ngày">
+                <button class="btn btn-sm" type="submit">Kéo</button>
+              </form>
+            </details>
+          </th:block>
+          <a class="btn btn-sm" th:href="@{/system/accounts(unit=${u.id})}"><i class="fa-solid fa-users-viewfinder"></i>Tài khoản</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

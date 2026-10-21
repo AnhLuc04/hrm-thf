@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{salary/fragments :: head('Tính lương tháng')}"></head>
+<body>
+<nav th:replace="~{salary/fragments :: nav('calc')}"></nav>
+
+<div class="container-fluid pb-5">
+    <div th:replace="~{salary/fragments :: flash}"></div>
+
+    <!-- ---------- TIÊU ĐỀ + CHỌN KỲ ---------- -->
+    <div class="sal-head">
+        <div>
+            <h4>Tính lương tháng</h4>
+            <p>Tính tự động theo bảng công, mẫu công thức và khoản theo tháng. Xem trước, đối chiếu, lưu phiếu rồi chốt kỳ.</p>
+        </div>
+        <span class="sp"></span>
+        <form th:action="@{/payroll/auto-calculate}" method="get" class="d-flex flex-wrap align-items-end gap-2">
+            <div>
+                <label class="form-label mb-1" for="fMonth">Tháng</label>
+                <input id="fMonth" type="number" name="month" min="1" max="12" class="form-control form-control-sm" style="width:84px" th:value="${month}" required>
+            </div>
+            <div>
+                <label class="form-label mb-1" for="fYear">Năm</label>
+                <input id="fYear" type="number" name="year" class="form-control form-control-sm" style="width:96px" th:value="${year}" required>
+            </div>
+            <div>
+                <label class="form-label mb-1" for="fDept">Phòng ban</label>
+                <select id="fDept" name="department" class="form-select form-select-sm" style="min-width:180px">
+                    <option value="">Tất cả phòng</option>
+                    <option th:each="d : ${departments}" th:value="${d}" th:text="${d}"
+                            th:selected="${department != null and #strings.equalsIgnoreCase(d, department)}"></option>
+                </select>
+            </div>
+            <button class="btn btn-sm btn-primary" style="height:34px"><i class="fa-solid fa-calculator"></i>Tính / xem trước</button>
+        </form>
+    </div>
+
+    <!-- ---------- PHIẾU DỰ KIẾN / TỰ LƯU TẠM TÍNH ---------- -->
+    <div class="sal-panel d-flex flex-wrap align-items-center gap-2 small">
+        <i class="fa-regular fa-lightbulb text-warning"></i>
+        <span><b>Phiếu dự kiến</b> tính trực tiếp theo bảng công đến hôm nay<span th:if="${today != null}"
+              th:text="' ' + ${#temporals.format(today, 'dd/MM/yyyy')}"></span>, không lưu, không đụng phiếu cũ.
+            Nhân viên xem ở <a th:href="@{/salary-forecast}">Phiếu lương dự kiến</a>; Kế toán bấm <b>Xem phiếu</b> ở từng dòng.</span>
+        <span class="sp flex-grow-1"></span>
+        <span th:if="${autoEnabled}" class="badge text-bg-success"><i class="fa-solid fa-circle-check me-1"></i>Tự lưu tạm tính hằng ngày (12:15, 23:45)</span>
+        <span th:unless="${autoEnabled}" class="badge text-bg-secondary" title="Bật bằng payroll.auto.enabled=true">Tự lưu tạm tính: tắt</span>
+        <form th:if="${autoEnabled}" th:action="@{/payroll/auto-calculate/refresh-current}" method="post"
+              onsubmit="return confirm('Lưu / cập nhật phiếu tạm tính tháng này vào bảng lương? Phiếu Kế toán đã import không bị thay đổi.')">
+            <button class="btn btn-sm btn-outline-success text-nowrap"><i class="fa-solid fa-rotate"></i>Cập nhật tạm tính ngay</button>
+        </form>
+    </div>
+
+    <div th:if="${result == null}" class="sal-panel text-center py-5 text-muted">
+        <i class="fa-solid fa-calculator fa-2x mb-2" style="color:#c7d2fe"></i>
+        <div>Chọn tháng, năm, phòng ban rồi bấm <b>Tính / xem trước</b>.</div>
+    </div>
+
+    <th:block th:if="${result != null}">
+
+        <!-- ---------- TỔNG QUAN KỲ ---------- -->
+        <div class="sal-kpis">
+            <div class="sal-kpi">
+                <small>Kỳ lương</small>
+                <b th:text="${result.month} + '/' + ${result.year}">9/2026</b>
+                <em th:text="${result.department != null and result.department != ''} ? ${result.department} : 'Tất cả phòng'">Tất cả phòng</em>
+            </div>
+            <div class="sal-kpi">
+                <small>Tính được</small>
+                <b th:text="${#lists.size(result.rows)} + ' người'">0</b>
+                <em th:text="${result.existingCount} + ' người đã có phiếu'">0</em>
+            </div>
+            <div class="sal-kpi" th:classappend="${#lists.size(result.errors) + #lists.size(result.noFormula) + #lists.size(result.noBaseSalary) > 0} ? 'bad' : 'ok'">
+                <small>Cần xử lý</small>
+                <b th:text="${#lists.size(result.errors) + #lists.size(result.noFormula) + #lists.size(result.noBaseSalary)}">0</b>
+                <em>lỗi công thức · chưa có mẫu · thiếu lương CB</em>
+            </div>
+            <div class="sal-kpi">
+                <small>Tổng thu nhập</small>
+                <b th:text="${@salaryFmt.money(result.totalTongThuNhap)}">0</b>
+                <em>nghìn đồng</em>
+            </div>
+            <div class="sal-kpi net">
+                <small>Tổng thực nhận</small>
+                <b th:text="${@salaryFmt.money(result.totalThucNhan)}">0</b>
+                <em>nghìn đồng</em>
+            </div>
+        </div>
+        <div class="small text-muted mb-2" th:text="${result.summary()}"></div>
+
+        <!-- ---------- KỲ LƯƠNG ---------- -->
+        <div class="sal-panel d-flex flex-wrap align-items-center gap-2">
+            <th:block th:if="${result.locked}">
+                <span class="badge text-bg-danger"><i class="fa-solid fa-lock me-1"></i>Kỳ đã chốt</span>
+                <span class="small" th:if="${period != null}"
+                      th:text="'Chốt bởi ' + ${period.lockedBy} + ' lúc ' + ${#temporals.format(period.lockedAt, 'dd/MM/yyyy HH:mm')} + (${period.note} != null and ${period.note} != '' ? ' - ' + ${period.note} : '')"></span>
+                <span class="small text-muted">Không lưu / tính lại phiếu, không sửa Khoản theo tháng của kỳ này.</span>
+                <form th:action="@{/payroll/auto-calculate/unlock}" method="post" class="d-flex gap-1 ms-auto"
+                      onsubmit="return confirm('Mở lại kỳ đã chốt? Việc này được ghi vào Nhật ký.')">
+                    <input type="hidden" name="month" th:value="${result.month}">
+                    <input type="hidden" name="year" th:value="${result.year}">
+                    <input type="hidden" name="department" th:value="${result.department}">
+                    <input name="reason" class="form-control form-control-sm" style="width:220px" placeholder="Lý do mở lại (bắt buộc)" required>
+                    <button class="btn btn-sm btn-outline-danger text-nowrap"><i class="fa-solid fa-unlock"></i>Mở lại kỳ</button>
+                </form>
+            </th:block>
+            <th:block th:unless="${result.locked}">
+                <span class="badge text-bg-success"><i class="fa-solid fa-lock-open me-1"></i>Kỳ đang mở</span>
+                <span class="small text-muted">Sau khi lưu phiếu và đối chiếu xong thì chốt kỳ để khoá số liệu.</span>
+                <form th:action="@{/payroll/auto-calculate/lock}" method="post" class="d-flex gap-1 ms-auto"
+                      onsubmit="return confirm('Chốt kỳ lương ' + this.month.value + '/' + this.year.value + ' cho TOÀN CÔNG TY? Sau khi chốt không sửa được số liệu của tháng.')">
+                    <input type="hidden" name="month" th:value="${result.month}">
+                    <input type="hidden" name="year" th:value="${result.year}">
+                    <input type="hidden" name="department" th:value="${result.department}">
+                    <input name="note" class="form-control form-control-sm" style="width:200px" placeholder="Ghi chú (tuỳ chọn)">
+                    <button class="btn btn-sm btn-outline-dark text-nowrap"><i class="fa-solid fa-lock"></i>Chốt kỳ lương</button>
+                </form>
+            </th:block>
+            <a class="btn btn-sm btn-outline-success"
+               th:href="@{/payroll/auto-calculate/export(month=${result.month}, year=${result.year}, department=${result.department})}"><i class="fa-regular fa-file-excel"></i>Tải Excel</a>
+            <a class="btn btn-sm btn-outline-secondary"
+               th:href="@{/salary-monthly(month=${result.month}, year=${result.year}, department=${result.department})}"><i class="fa-solid fa-list-ul"></i>Khoản theo tháng</a>
+        </div>
+
+        <div th:if="${result.erpError != null}" class="alert alert-warning py-2 small">
+            <b>Không lấy được thưởng từ ERP:</b> <span class="mono" th:text="${result.erpError}"></span>
+            - các khoản thưởng ERP đang dùng dữ liệu lần lấy trước (nếu có). Xem <a th:href="@{/salary-erp}">Kết nối ERP</a>.
+        </div>
+        <div th:if="${!#sets.isEmpty(result.erpTypes) and result.erpError == null}" class="small text-muted mb-2">
+            Thưởng lấy từ ERP: <span th:each="t, st : ${result.erpTypes}" th:text="${t.label} + (${st.last} ? '' : ', ')"></span>
+        </div>
+
+        <!-- ---------- LỖI / CẢNH BÁO ---------- -->
+        <div th:if="${!#lists.isEmpty(result.errors)}" class="alert alert-danger">
+            <b>Lỗi công thức (các nhân viên này KHÔNG được lưu):</b>
+            <ul class="mb-0 mono small">
+                <li th:each="e : ${result.errors}">
+                    <a th:href="@{/payroll/auto-calculate/trace(userId=${e.user.id}, month=${result.month}, year=${result.year})}"
+                       th:text="${e.user.employeeNo} + ' - ' + ${e.user.fullName}"></a>:
+                    <span th:text="${e.error}"></span>
+                </li>
+            </ul>
+        </div>
+
+        <details th:if="${!#lists.isEmpty(result.noFormula)}" class="mb-2">
+            <summary class="text-danger fw-semibold"
+                     th:text="'Chưa chọn mẫu công thức, KHÔNG tính (' + ${#lists.size(result.noFormula)} + ' người) - bấm để xem danh sách'"></summary>
+            <div class="name-list">
+                <div th:each="n : ${result.noFormula}"
+                     th:text="${#strings.replace(n, ' (chưa chọn mẫu công thức lương, phòng ban cũng chưa có mẫu mặc định)', '')}"></div>
+            </div>
+            <a class="small" th:href="@{/salary-config(department=${result.department})}">
+                Mở Cấu hình lương NV</a> · hoặc gắn mẫu cho cả phòng ở <a class="small" th:href="@{/salary-formula}">Mẫu công thức</a> (chọn "Mặc định cho phòng")
+        </details>
+        <details th:if="${!#lists.isEmpty(result.noBaseSalary)}" class="mb-2">
+            <summary class="text-danger" th:text="'Thiếu lương cơ bản (' + ${#lists.size(result.noBaseSalary)} + ') - vào Cấu hình lương NV để nhập'"></summary>
+            <div class="name-list"><div th:each="n : ${result.noBaseSalary}" th:text="${n}"></div></div>
+        </details>
+        <details th:if="${!#lists.isEmpty(result.noAttendance)}" class="mb-2">
+            <summary class="text-muted" th:text="'Không có dữ liệu chấm công trong tháng (' + ${#lists.size(result.noAttendance)} + ')'"></summary>
+            <div class="name-list"><div th:each="n : ${result.noAttendance}" th:text="${n}"></div></div>
+        </details>
+        <style>
+            .name-list { columns: 4 220px; column-gap: 1.5rem; max-height: 260px; overflow-y: auto;
+                         font-size: .8rem; background: #fff; border: 1px solid #dee2e6; border-radius: .375rem;
+                         padding: .5rem .75rem; margin: .35rem 0; }
+            .name-list div { break-inside: avoid; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            /* bảng rộng: cuộn trong khung, tiêu đề + 2 cột đầu đứng yên */
+            .sal-scroll { max-height: calc(100vh - 220px); overflow: auto; }
+            .sal-table thead th { position: sticky; top: 0; z-index: 2; }
+            .sal-table tfoot th { position: sticky; bottom: 0; z-index: 2; }
+            .sal-table td:nth-child(1), .sal-table th:nth-child(1) { position: sticky; left: 0; z-index: 1; background: inherit; }
+            .sal-table td:nth-child(2) { position: sticky; left: 72px; z-index: 1; background: #fff; box-shadow: 1px 0 0 #eaecf0; min-width: 190px; }
+            .sal-table thead th:nth-child(2) { position: sticky; left: 72px; z-index: 3; }
+            .sal-table thead th:nth-child(1) { z-index: 3; }
+            .sal-table td:nth-child(1) { background: #fff; min-width: 72px; font-weight: 600; color: #0b1220; }
+            .sal-table tbody tr:hover td:nth-child(1), .sal-table tbody tr:hover td:nth-child(2) { background: #f5f7ff; }
+            .sal-table td:nth-child(3) { white-space: nowrap; }
+            .sal-table td:nth-last-child(2) { color: #3730a3; background: #f8f9ff; }
+            @media (max-width: 720px) { .sal-table td:nth-child(2), .sal-table thead th:nth-child(2) { position: static; } }
+            @media print { .sal-scroll { max-height: none; overflow: visible; } .sal-table th, .sal-table td { position: static !important; } }
+        </style>
+
+        <!-- ---------- BẢNG XEM TRƯỚC ---------- -->
+        <div class="card">
+            <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                <span>Bảng lương xem trước</span>
+                <span class="badge text-bg-secondary" th:text="${#lists.size(result.rows)} + ' người'">0</span>
+                <span class="ms-auto small text-muted fw-normal">Đơn vị: nghìn đồng (như thẻ lương)</span>
+                <input type="search" id="rowFilter" class="form-control form-control-sm" style="width:220px" placeholder="Lọc tên, mã NV, phòng" aria-label="Lọc bảng">
+            </div>
+            <div class="card-body p-0 table-responsive sal-scroll">
+                <table class="table table-sm table-hover table-striped mb-0 sal-table">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Mã NV</th>
+                        <th>Họ tên</th>
+                        <th>Phòng</th>
+                        <th class="num">Lương CB</th>
+                        <th class="num">Công HL</th>
+                        <th class="num">Lương ngày công</th>
+                        <th class="num">Thêm giờ</th>
+                        <th class="num">Phụ cấp</th>
+                        <th class="num">Thưởng</th>
+                        <th class="num">Khấu trừ<br><span class="fw-normal small">(phạt, tạm ứng, rủi ro)</span></th>
+                        <th class="num">Tổng thu nhập</th>
+                        <th class="num">BHXH</th>
+                        <th class="num">Công đoàn</th>
+                        <th class="num">Thuế TNCN</th>
+                        <th class="num">Thực nhận</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${result.rows}" class="sal-row">
+                        <td th:text="${r.user.employeeNo}"></td>
+                        <td>
+                            <span th:text="${r.user.fullName}"></span>
+                            <span th:if="${r.existing}" class="badge text-bg-light border" title="Tháng này đã có phiếu lương">đã có phiếu</span>
+                        </td>
+                        <td th:text="${r.user.department}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.payroll.congChuan)}"></td>
+                        <td class="num" th:text="${@salaryFmt.num(r.payroll.congHL)}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.payroll.luongNgayCong)}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.payroll.luongThemGio)}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.tongPhuCap)}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.tongThuong)}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.tongKhauTru)}"></td>
+                        <td class="num fw-semibold" th:text="${@salaryFmt.money(r.payroll.netSalary)}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.payroll.bhxh)}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.payroll.congDoan)}"></td>
+                        <td class="num" th:text="${@salaryFmt.money(r.payroll.thueTNCN)}"></td>
+                        <td class="num fw-bold" th:text="${@salaryFmt.money(r.payroll.thucNhan)}"></td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                            <a class="btn btn-outline-secondary btn-sm" target="_blank" title="Xem thẻ lương"
+                               th:href="@{/salary-forecast/slip(userId=${r.user.id}, month=${result.month}, year=${result.year})}"><i class="fa-regular fa-file-lines"></i>Phiếu</a>
+                            <a class="btn btn-outline-secondary btn-sm" target="_blank" title="Giải trình từng bước tính"
+                               th:href="@{/payroll/auto-calculate/trace(userId=${r.user.id}, month=${result.month}, year=${result.year})}"><i class="fa-solid fa-magnifying-glass-chart"></i>Giải trình</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(result.rows)}">
+                        <td colspan="16" class="text-muted">Không có nhân viên nào tính được.</td>
+                    </tr>
+                    </tbody>
+                    <tfoot th:if="${!#lists.isEmpty(result.rows)}" class="table-light">
+                    <tr>
+                        <th colspan="9" th:text="'Tổng ' + ${#lists.size(result.rows)} + ' người'"></th>
+                        <th></th>
+                        <th class="num" th:text="${@salaryFmt.money(result.totalTongThuNhap)}"></th>
+                        <th colspan="3"></th>
+                        <th class="num" th:text="${@salaryFmt.money(result.totalThucNhan)}"></th>
+                        <th></th>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- ---------- LƯU ---------- -->
+        <form th:if="${!#lists.isEmpty(result.rows) and !result.locked}" th:action="@{/payroll/auto-calculate}" method="post"
+              class="sal-bar">
+            <span class="small text-muted"><i class="fa-solid fa-circle-info me-1"></i>Lưu xong nhân viên thấy phiếu trong <b>Phiếu lương</b>. Đối chiếu xong thì <b>Chốt kỳ</b>.</span>
+            <span class="sp"></span>
+            <input type="hidden" name="month" th:value="${result.month}">
+            <input type="hidden" name="year" th:value="${result.year}">
+            <input type="hidden" name="department" th:value="${result.department}">
+            <button name="overwrite" value="false" class="btn btn-primary"
+                    onclick="return confirm('Lưu các phiếu này vào bảng lương (nhân viên sẽ thấy trong Phiếu lương)?')"
+                    th:text="'Lưu phiếu lương mới (' + (${#lists.size(result.rows)} - ${result.existingCount}) + ' người, bỏ qua phiếu đã có)'">Lưu</button>
+            <button th:if="${result.existingCount > 0}" name="overwrite" value="true" class="btn btn-outline-danger"
+                    onclick="return confirm('Tính lại cả các phiếu lương đã có? Thưởng / phạt / tạm ứng / rủi ro lấy theo Khoản theo tháng (và ERP); khoản nào chưa nhập ở đó thì giữ số Kế toán đã nhập trên phiếu import.')"
+                    th:text="'Lưu và tính lại cả ' + ${result.existingCount} + ' phiếu đã có'">Tính lại</button>
+        </form>
+    </th:block>
+</div>
+
+<script>
+(function () {
+  // lọc nhanh bảng xem trước (chỉ ẩn dòng trên màn hình, không đổi số liệu)
+  var q = document.getElementById('rowFilter');
+  if (!q) return;
+  q.addEventListener('input', function () {
+    var s = q.value.trim().toLowerCase();
+    document.querySelectorAll('tr.sal-row').forEach(function (r) {
+      r.hidden = s !== '' && r.textContent.toLowerCase().indexOf(s) < 0;
+    });
+  });
+})();
+</script>
+<th:block th:replace="~{salary/fragments :: scripts}"></th:block>
+</body>
+</html>

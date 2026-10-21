@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Báo cáo quảng cáo Meta</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <!-- Đọc file .xlsx xuất từ Ads Manager -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+/* Trên: đơn vị và thêm báo cáo. Giữa: báo cáo đã lưu. Dưới: báo cáo đang xem, lọc theo đơn vị. */
+:root{
+  --bg:#F1F4F3; --surface:#FFFFFF; --sunk:#E7ECEA; --line:#D5DDDA;
+  --ink:#14211E; --muted:#5A6965; --accent:#0B7566; --accent-ink:#FFFFFF; --accent-soft:#D9EFEA;
+  --warn:#9A5B00; --warn-soft:#FBEBCB; --bad:#B3261E; --good:#1E7B3A;
+  --c1:#2F6FDE; --c2:#0B9FB8; --c3:#D6336C; --c4:#6B4FD8; --c5:#D9480F; --c6:#74817D;
+  --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root{
+  --bg:#0E1614; --surface:#16211E; --sunk:#1D2A27; --line:#2B3A36;
+  --ink:#E6EEEB; --muted:#93A39E; --accent:#3CC2AC; --accent-ink:#06211C; --accent-soft:#173B35;
+  --warn:#F0B95A; --warn-soft:#3A2D12; --bad:#FF8A80; --good:#7BD88F;
+  --c1:#6D9CF2; --c2:#45C3D9; --c3:#F0719B; --c4:#9C88F0; --c5:#F58A4E; --c6:#8E9B97;
+  color-scheme:dark } }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:20px}
+h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0}
+h2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+.sub{color:var(--muted);margin:2px 0 0;max-width:70ch}
+.hint{font-size:12px;color:var(--muted);margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.sources{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px}
+@media (max-width:860px){.sources{grid-template-columns:minmax(0,1fr)}}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+label{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:13px}
+label.check{flex-direction:row;align-items:center;gap:6px;font-weight:400}
+input,select,button{font:inherit;color:inherit}
+input:not([type=checkbox]),select{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:7px;padding:9px 14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:wait}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.link-btn{background:none;border:0;padding:0;color:var(--muted);cursor:pointer;text-decoration:underline;font-size:12px;white-space:nowrap}
+.link-btn:hover{color:var(--ink)} .link-btn.danger:hover,.link-btn.armed{color:var(--bad)}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:22px 14px;text-align:center;cursor:pointer;color:var(--muted)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.msg{font-size:13px;border-radius:7px;padding:8px 10px}
+.msg.ok{background:var(--accent-soft)} .msg.warn{background:var(--warn-soft);color:var(--warn)} .msg.err{color:var(--bad);border:1px solid var(--bad)}
+details summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:500}
+details ol{margin:8px 0 0;padding-left:20px;font-size:13px;color:var(--muted)}
+code{font-family:var(--mono);font-size:12px;background:var(--sunk);padding:1px 4px;border-radius:4px}
+.headrow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.headrow h2{margin:0}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:480px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);padding:14px 16px;min-width:0}
+.kpi b{display:block;font-family:var(--mono);font-size:22px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi span{color:var(--muted);font-size:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+@media (max-width:700px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
+.bar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{background:var(--sunk);border-radius:4px;height:14px;overflow:hidden}
+.bar .fill{height:100%;border-radius:4px}
+.bar .v{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;min-width:60px}
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 6px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+th.n,td.n{text-align:right}
+td{padding:8px 12px 8px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td select{padding:4px 6px;font-size:12px;width:auto;max-width:170px}
+td input:not([type=checkbox]){padding:5px 8px;font-size:13px}
+tfoot td{font-weight:600;border-bottom:0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.chip{display:inline-block;font-size:11px;border-radius:999px;padding:1px 8px;white-space:nowrap;background:var(--sunk);color:var(--muted)}
+.chip.on{background:var(--accent-soft);color:var(--good)}
+.chip.hot{background:var(--warn-soft);color:var(--warn)}
+.notes{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.src{font-size:12px;color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:24px 0;margin:0}
+/* Bộ lọc đơn vị */
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.tab .ct{font-family:var(--mono);font-size:11px;opacity:.75;margin-left:4px}
+/* Danh sách báo cáo đã lưu */
+tr.sel td{background:var(--accent-soft)}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--sunk)}
+tr.sel:hover td{background:var(--accent-soft)}
+.unit-add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr) auto;gap:8px;align-items:end}
+@media (max-width:760px){.unit-add{grid-template-columns:minmax(0,1fr)}}
+.mark{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:1px 5px;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="headrow">
+    <div>
+      <h1>Báo cáo quảng cáo Meta</h1>
+      <p class="sub">Lấy số liệu qua Meta Marketing API hoặc file xuất từ Ads Manager, lưu lại từng kỳ và chia theo đơn vị.</p>
+    </div>
+    <div class="btns">
+      <button class="btn ghost sm" id="backup" type="button">Sao lưu dữ liệu</button>
+      <label class="btn ghost sm" for="restore-file" style="flex-direction:row;cursor:pointer">Khôi phục từ file
+        <input id="restore-file" type="file" accept=".json" hidden>
+      </label>
+    </div>
+  </header>
+  <div id="store-msg" class="msg" hidden role="status"></div>
+
+  <!-- ===== Đơn vị ===== -->
+  <details class="panel" id="units-panel" open>
+    <summary>Đơn vị (<span id="unit-count">0</span>)</summary>
+    <div class="stack" style="margin-top:12px">
+      <p class="hint">Mỗi đơn vị có thể có tài khoản quảng cáo riêng, hoặc dùng chung tài khoản và được tách theo <b>từ khóa trong tên chiến dịch</b>
+        (ví dụ đơn vị "TerriTory" có từ khóa <code>territory</code> thì chiến dịch "Qc TerriTory 09/2026" thuộc đơn vị này). Không phân biệt hoa thường và dấu.
+        Có thể đổi đơn vị của từng chiến dịch ngay trong bảng chi tiết.</p>
+      <div class="tablebox">
+        <table>
+          <thead><tr><th>Tên đơn vị</th><th>Tài khoản quảng cáo</th><th>Từ khóa trong tên chiến dịch</th><th></th></tr></thead>
+          <tbody id="unit-rows"></tbody>
+        </table>
+      </div>
+      <form class="unit-add" id="unit-form" autocomplete="off">
+        <label for="u-name">Tên đơn vị <input id="u-name" required maxlength="60" placeholder="Chi nhánh Quận 7"></label>
+        <label for="u-acc">Tài khoản (nếu có) <input id="u-acc" maxlength="40" placeholder="act_1234567890"></label>
+        <label for="u-kw">Từ khóa, cách nhau bằng dấu phẩy <input id="u-kw" maxlength="200" placeholder="q7, quan 7"></label>
+        <button class="btn" type="submit">Thêm đơn vị</button>
+      </form>
+    </div>
+  </details>
+
+  <!-- ===== Thêm báo cáo ===== -->
+  <div class="sources">
+    <form class="panel stack" id="api-form" autocomplete="off">
+      <h2>Thêm báo cáo · Lấy qua Marketing API</h2>
+      <label for="token">Access token
+        <input id="token" type="password" placeholder="EAAB..." required>
+      </label>
+      <label class="check" for="remember-token"><input id="remember-token" type="checkbox"> Nhớ token trên máy này (chỉ dùng trên máy riêng)</label>
+      <div class="row">
+        <label for="api-unit">Đơn vị
+          <select id="api-unit"></select>
+        </label>
+        <label for="account">Tài khoản quảng cáo
+          <input id="account" list="accounts" placeholder="act_1234567890" required>
+          <datalist id="accounts"></datalist>
+        </label>
+      </div>
+      <div class="row">
+        <label for="since">Từ ngày <input id="since" type="date" required></label>
+        <label for="until">Đến ngày <input id="until" type="date" required></label>
+        <label for="level">Cấp báo cáo
+          <select id="level">
+            <option value="campaign">Chiến dịch</option>
+            <option value="adset">Nhóm quảng cáo</option>
+            <option value="ad">Quảng cáo</option>
+          </select>
+        </label>
+        <label for="ver">Phiên bản API <input id="ver" value="v23.0" pattern="v\d+\.\d+"></label>
+      </div>
+      <div class="btns">
+        <button class="btn" id="fetch" type="submit">Lấy và lưu</button>
+        <button class="btn ghost" id="list-acc" type="button">Tìm tài khoản quảng cáo của tôi</button>
+      </div>
+      <div id="api-msg" class="msg" hidden role="status"></div>
+      <details>
+        <summary>Cách lấy access token</summary>
+        <ol>
+          <li>Vào <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">Graph API Explorer</a>, đăng nhập bằng tài khoản Facebook có quyền trên tài khoản quảng cáo.</li>
+          <li>Chọn (hoặc tạo) một ứng dụng Meta, ở mục quyền thêm <code>ads_read</code>, bấm <b>Generate Access Token</b>.</li>
+          <li>Dán token vào ô trên. Token này hết hạn sau khoảng 1–2 giờ; dùng lâu dài thì tạo token của <b>System User</b> trong Business Settings.</li>
+          <li>Mã tài khoản quảng cáo là số trên thanh địa chỉ Ads Manager (<code>act=...</code>), thêm tiền tố <code>act_</code>.</li>
+        </ol>
+      </details>
+    </form>
+
+    <section class="panel stack">
+      <h2>Thêm báo cáo · Từ file xuất của Ads Manager</h2>
+      <label for="file-unit">Đơn vị mặc định cho các chiến dịch không khớp từ khóa
+        <select id="file-unit"></select>
+      </label>
+      <label for="file-period">Kỳ báo cáo (ghi chú)
+        <input id="file-period" maxlength="60" placeholder="Ví dụ: Tháng 9/2026">
+      </label>
+      <label class="drop" id="drop" for="file">
+        <span>Kéo thả file .csv / .xlsx vào đây hoặc bấm để chọn</span>
+        <input id="file" type="file" accept=".csv,.xlsx,.xls" hidden>
+      </label>
+      <div id="file-msg" class="msg" hidden role="status"></div>
+    </section>
+  </div>
+
+  <!-- ===== Báo cáo đã lưu ===== -->
+  <section class="panel">
+    <div class="headrow" style="margin-bottom:10px">
+      <h2>Báo cáo đã lưu</h2>
+      <span class="hint" id="saved-count"></span>
+    </div>
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>Kỳ</th><th>Nguồn</th><th>Lưu lúc</th><th class="n">Dòng</th><th class="n">Đã chi</th><th class="n">Kết quả</th><th></th></tr></thead>
+        <tbody id="saved-rows"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="saved-empty" hidden>Chưa lưu báo cáo nào. Lấy số liệu qua API hoặc kéo file vào ô phía trên.</p>
+  </section>
+
+  <!-- ===== Báo cáo đang xem ===== -->
+  <section id="report" class="stack" style="gap:20px" hidden>
+    <div class="headrow">
+      <div>
+        <h1 id="r-title" style="font-size:20px">Kết quả</h1>
+        <p class="src" id="r-src"></p>
+      </div>
+      <div class="btns">
+        <button class="btn ghost" id="csv" type="button">Tải CSV</button>
+      </div>
+    </div>
+
+    <div class="tabs" id="unit-tabs" role="group" aria-label="Lọc theo đơn vị"></div>
+
+    <section class="kpis" aria-label="Tổng quan">
+      <div class="kpi"><b id="k-spend">—</b><span>số tiền đã chi</span></div>
+      <div class="kpi"><b id="k-reach">—</b><span id="k-reach-l">người tiếp cận</span></div>
+      <div class="kpi"><b id="k-impr">—</b><span>lượt hiển thị</span></div>
+      <div class="kpi"><b id="k-freq">—</b><span>tần suất</span></div>
+      <div class="kpi"><b id="k-res">—</b><span id="k-res-l">kết quả</span></div>
+      <div class="kpi"><b id="k-cpr">—</b><span>chi phí / kết quả</span></div>
+    </section>
+
+    <section class="panel" id="compare-panel">
+      <h2>So sánh theo đơn vị</h2>
+      <div class="tablebox">
+        <table>
+          <thead><tr><th>Đơn vị</th><th class="n">Chiến dịch</th><th class="n">Đã chi</th><th class="n">Tỷ trọng chi</th><th class="n">Tiếp cận*</th>
+            <th class="n">Hiển thị</th><th class="n">Kết quả</th><th class="n">CP/kết quả</th></tr></thead>
+          <tbody id="cmp-rows"></tbody>
+        </table>
+      </div>
+      <p class="hint" style="margin-top:8px">* Tiếp cận của từng đơn vị là cộng dồn các chiến dịch, có thể tính trùng người.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Nhận xét tự động</h2>
+      <ul class="notes" id="notes"></ul>
+    </section>
+
+    <div class="grid2">
+      <section class="panel"><h2 id="b-first-t">Lượt hiển thị theo chiến dịch</h2><div class="bars" id="b-impr"></div></section>
+      <section class="panel"><h2 id="b-second-t">Số tiền đã chi theo chiến dịch</h2><div class="bars" id="b-second"></div></section>
+    </div>
+
+    <section class="panel">
+      <h2 id="t-title">Chi tiết theo chiến dịch</h2>
+      <div class="tablebox">
+        <table>
+          <thead><tr>
+            <th>Tên</th><th>Đơn vị</th><th>Trạng thái</th><th class="n">Đã chi</th><th class="n">Tiếp cận</th><th class="n">Hiển thị</th>
+            <th class="n">Tần suất</th><th class="n">CPM</th><th class="n">Click</th><th class="n">CTR</th><th class="n">Kết quả</th><th class="n">CP/kết quả</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+          <tfoot id="foot"></tfoot>
+        </table>
+      </div>
+    </section>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const COLORS = ["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)","var(--c6)"];
+const fmtInt = n => n == null || isNaN(n) ? "—" : Math.round(n).toLocaleString("vi-VN");
+const fmtDec = (n, d=2) => n == null || isNaN(n) || !isFinite(n) ? "—" : n.toLocaleString("vi-VN",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtMoney = n => n == null || isNaN(n) || !isFinite(n) ? "—" : Math.round(n).toLocaleString("vi-VN") + " ₫";
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function say(id, text, kind){ const m = $(id); m.textContent = text; m.className = "msg " + kind; m.hidden = !text; }
+function fmtDate(iso){ const [y,m,d] = iso.split("-"); return d + "/" + m + "/" + y; }
+const fold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase();
+
+/* Nút xóa hai bước: bấm lần 1 đổi chữ, bấm lần 2 trong 4 giây mới xóa */
+function armButton(btn, label, onConfirm){
+  btn.addEventListener("click", () => {
+    if (btn.dataset.armed){ onConfirm(); return; }
+    btn.dataset.armed = "1"; btn.classList.add("armed"); btn.textContent = "Bấm lần nữa để xóa";
+    setTimeout(() => { delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = label; }, 4000);
+  });
+}
+
+/* ====== Lưu trữ (trong trình duyệt của máy này) ======
+   db = { units:[{id,name,account,keywords:[]}],
+          reports:[{id,savedAt,period,source,level,defaultUnitId,rows:[...],total}],
+          assign:{ "tên chiến dịch": unitId }   // gán tay, ưu tiên cao nhất
+        } */
+const KEY = "meta-report-db-v1";
+let db = {units:[], reports:[], assign:{}};
+let storageOk = true;
+function load(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw){ const d = JSON.parse(raw); db = {units:d.units||[], reports:d.reports||[], assign:d.assign||{}}; return true; }
+  } catch (e) { storageOk = false; }
+  return false;
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(db)); storageOk = true; }
+  catch (e) {
+    storageOk = false;
+    say("store-msg","Không lưu được vào trình duyệt (bộ nhớ đầy hoặc đang ở chế độ ẩn danh). Bấm Sao lưu dữ liệu để giữ lại, rồi xóa bớt báo cáo cũ.","err");
+  }
+}
+
+/* Đơn vị của một chiến dịch: gán tay > từ khóa > đơn vị mặc định của báo cáo */
+function unitOf(name, report){
+  const a = db.assign[name];
+  if (a && db.units.some(u => u.id === a)) return a;
+  const f = fold(name);
+  for (const u of db.units){
+    if ((u.keywords||[]).some(k => k && f.includes(fold(k)))) return u.id;
+  }
+  if (report && report.defaultUnitId && db.units.some(u => u.id === report.defaultUnitId)) return report.defaultUnitId;
+  return "";
+}
+const unitName = id => (db.units.find(u => u.id === id) || {}).name || "Chưa phân đơn vị";
+
+/* ====== Đơn vị: thêm, sửa, xóa ====== */
+function renderUnits(){
+  $("unit-count").textContent = db.units.length;
+  const tb = $("unit-rows"); tb.textContent = "";
+  if (!db.units.length){
+    const tr = el("tr"), td = el("td","hint","Chưa có đơn vị. Thêm đơn vị ở form bên dưới."); td.colSpan = 4; tr.append(td); tb.append(tr);
+  }
+  db.units.forEach(u => {
+    const tr = el("tr");
+    const mk = (val, ph, key, fn) => {
+      const td = el("td"), inp = el("input"); inp.value = val; inp.placeholder = ph; inp.setAttribute("aria-label", ph);
+      inp.addEventListener("change", () => { fn(inp.value); save(); refreshAll(); });
+      td.append(inp); return td;
+    };
+    tr.append(
+      mk(u.name, "Tên đơn vị", "name", v => { if (v.trim()) u.name = v.trim(); }),
+      mk(u.account || "", "act_...", "account", v => { u.account = normAcc(v) || ""; }),
+      mk((u.keywords||[]).join(", "), "từ khóa", "kw", v => { u.keywords = splitKw(v); })
+    );
+    const td = el("td"), b = el("button","link-btn danger","Xóa"); b.type = "button";
+    armButton(b, "Xóa", () => {
+      db.units = db.units.filter(x => x.id !== u.id);
+      for (const k in db.assign) if (db.assign[k] === u.id) delete db.assign[k];
+      if (view.unit === u.id) view.unit = "all";
+      save(); refreshAll();
+    });
+    td.append(b); tr.append(td); tb.append(tr);
+  });
+  // Ô chọn đơn vị ở hai form thêm báo cáo
+  for (const id of ["api-unit","file-unit"]){
+    const s = $(id), cur = s.value; s.textContent = "";
+    s.append(new Option("Không gán (chỉ theo từ khóa)", ""));
+    db.units.forEach(u => s.append(new Option(u.name, u.id)));
+    if ([...s.options].some(o => o.value === cur)) s.value = cur;
+  }
+}
+const splitKw = v => String(v).split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+function normAcc(v){ v = String(v||"").trim().replace(/\s/g,""); if (/^\d+$/.test(v)) v = "act_" + v; return /^act_\d+$/.test(v) ? v : ""; }
+
+$("unit-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("u-name").value.trim();
+  if (!name) return;
+  if (db.units.some(u => fold(u.name) === fold(name))){ say("store-msg","Đã có đơn vị tên \"" + name + "\".","warn"); return; }
+  const accRaw = $("u-acc").value.trim();
+  if (accRaw && !normAcc(accRaw)){ say("store-msg","Tài khoản quảng cáo có dạng act_ và một dãy số.","err"); return; }
+  db.units.push({id: uid(), name, account: normAcc(accRaw), keywords: splitKw($("u-kw").value)});
+  save(); $("unit-form").reset(); say("store-msg","Đã thêm đơn vị " + name + ".","ok"); refreshAll();
+});
+
+$("api-unit").addEventListener("change", () => {
+  const u = db.units.find(x => x.id === $("api-unit").value);
+  if (u && u.account) $("account").value = u.account;
+});
+
+/* ====== Lấy qua Marketing API ====== */
+const RESULT_TYPES = [
+  ["onsite_conversion.messaging_conversation_started_7d","Lượt bắt đầu cuộc trò chuyện"],
+  ["lead","Khách hàng tiềm năng"],
+  ["onsite_conversion.lead_grouped","Khách hàng tiềm năng"],
+  ["purchase","Lượt mua"],
+  ["offsite_conversion.fb_pixel_purchase","Lượt mua"],
+  ["link_click","Lượt click vào liên kết"],
+  ["post_engagement","Lượt tương tác"],
+  ["video_view","Lượt xem video"]
+];
+function pickResult(actions){
+  if (!Array.isArray(actions)) return {value:null,label:""};
+  for (const [type,label] of RESULT_TYPES){
+    const a = actions.find(x => x.action_type === type);
+    if (a) return {value:+a.value, label};
+  }
+  return {value:null,label:""};
+}
+async function graph(path, params, token){
+  const ver = /^v\d+\.\d+$/.test($("ver").value.trim()) ? $("ver").value.trim() : "v23.0";
+  let url = "https://graph.facebook.com/" + ver + "/" + path + "?" + new URLSearchParams(Object.assign({}, params, {access_token: token}));
+  const out = [];
+  for (let page = 0; url && page < 50; page++){
+    let body;
+    try { const res = await fetch(url); body = await res.json(); }
+    catch (e) { throw new Error("Không kết nối được graph.facebook.com. Kiểm tra mạng, hoặc mở file này bằng Chrome/Edge thay vì xem trước trong ứng dụng khác."); }
+    if (body.error){
+      const c = body.error.code;
+      if (c === 190) throw new Error("Access token không hợp lệ hoặc đã hết hạn. Tạo token mới rồi thử lại.");
+      if (c === 10 || c === 200 || (c === 100 && /permission/i.test(body.error.message))) throw new Error("Token chưa có quyền ads_read trên tài khoản này. Thêm quyền ads_read khi tạo token.");
+      if (c === 17 || c === 4 || c === 80004) throw new Error("Meta đang giới hạn số lần gọi. Đợi vài phút rồi thử lại.");
+      throw new Error("Meta báo lỗi: " + body.error.message);
+    }
+    if (Array.isArray(body.data)) out.push(...body.data); else return body;
+    url = body.paging && body.paging.next;
+  }
+  return out;
+}
+function statusLabel(s){
+  return ({ACTIVE:"Đang chạy",PAUSED:"Tạm dừng",CAMPAIGN_PAUSED:"Chiến dịch tạm dừng",ADSET_PAUSED:"Nhóm tạm dừng",
+    DELETED:"Đã xóa",ARCHIVED:"Đã lưu trữ",IN_PROCESS:"Đang xử lý",WITH_ISSUES:"Có vấn đề",PENDING_REVIEW:"Đang xét duyệt",
+    DISAPPROVED:"Bị từ chối"})[s] || (s ? s : "");
+}
+const TOKEN_KEY = "meta-report-token";
+try { const t = localStorage.getItem(TOKEN_KEY); if (t){ $("token").value = t; $("remember-token").checked = true; } } catch (e) {}
+function rememberToken(token){
+  try { if ($("remember-token").checked) localStorage.setItem(TOKEN_KEY, token); else localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+}
+$("remember-token").addEventListener("change", () => rememberToken($("token").value.trim()));
+
+$("list-acc").addEventListener("click", async () => {
+  const token = $("token").value.trim();
+  if (!token){ say("api-msg","Dán access token trước.","err"); $("token").focus(); return; }
+  $("list-acc").disabled = true; say("api-msg","Đang tìm tài khoản quảng cáo…","ok");
+  try {
+    const acc = await graph("me/adaccounts", {fields:"name,account_id,currency,account_status", limit:100}, token);
+    const dl = $("accounts"); dl.textContent = "";
+    acc.forEach(a => dl.append(new Option(a.name + " · " + a.currency, a.id)));
+    if (acc.length === 1) $("account").value = acc[0].id;
+    say("api-msg", acc.length ? "Tìm thấy " + acc.length + " tài khoản. Bấm vào ô Tài khoản quảng cáo để chọn." : "Token này không có tài khoản quảng cáo nào.", acc.length ? "ok" : "warn");
+  } catch (e) { say("api-msg", e.message, "err"); }
+  finally { $("list-acc").disabled = false; }
+});
+
+$("api-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const token = $("token").value.trim();
+  const acc = normAcc($("account").value);
+  if (!acc){ say("api-msg","Mã tài khoản có dạng act_ và một dãy số, ví dụ act_1234567890.","err"); return; }
+  const since = $("since").value, until = $("until").value, level = $("level").value, unitId = $("api-unit").value;
+  if (!since || !until || since > until){ say("api-msg","Khoảng ngày chưa đúng.","err"); return; }
+  $("fetch").disabled = true; say("api-msg","Đang lấy số liệu từ Meta…","ok");
+  try {
+    const nameField = level + "_name", idField = level + "_id";
+    const fields = [nameField, idField, "spend","reach","impressions","frequency","clicks","actions","account_currency"].join(",");
+    const common = {time_range: JSON.stringify({since, until}), limit: 500};
+    const [rowsRaw, totalRaw, objects] = await Promise.all([
+      graph(acc + "/insights", Object.assign({level, fields}, common), token),
+      graph(acc + "/insights", Object.assign({level:"account", fields:"spend,reach,impressions,frequency,clicks,actions,account_currency"}, common), token),
+      graph(acc + "/" + (level === "campaign" ? "campaigns" : level === "adset" ? "adsets" : "ads"), {fields:"name,effective_status", limit:500}, token).catch(() => [])
+    ]);
+    const status = new Map(objects.map(o => [o.id, o.effective_status]));
+    const rows = rowsRaw.map(r => {
+      const res = pickResult(r.actions);
+      return {name: r[nameField] || "(không tên)", status: statusLabel(status.get(r[idField])),
+        spend: +r.spend || 0, reach: +r.reach || 0, impressions: +r.impressions || 0,
+        clicks: r.clicks == null ? null : +r.clicks, results: res.value, resultLabel: res.label};
+    });
+    if (!rows.length){ say("api-msg","Không có số liệu trong khoảng ngày này.","warn"); return; }
+    const t = totalRaw[0] || {}, tr = pickResult(t.actions);
+    const total = totalRaw.length ? {spend:+t.spend||0, reach:+t.reach||0, impressions:+t.impressions||0,
+      clicks: t.clicks == null ? null : +t.clicks, results: tr.value, resultLabel: tr.label, reachIsUnique:true} : null;
+    rememberToken(token);
+    // Đơn vị chưa có tài khoản thì nhớ tài khoản vừa dùng
+    const u = db.units.find(x => x.id === unitId);
+    if (u && !u.account) u.account = acc;
+    addReport({rows, total, level, defaultUnitId: unitId,
+      period: fmtDate(since) + " – " + fmtDate(until),
+      source: "API · " + acc + (t.account_currency ? " · " + t.account_currency : "") + (u ? " · " + u.name : "")});
+    say("api-msg","Đã lấy và lưu " + rows.length + " dòng.","ok");
+  } catch (e) { say("api-msg", e.message, "err"); }
+  finally { $("fetch").disabled = false; }
+});
+
+/* ====== Từ file xuất của Ads Manager ====== */
+const drop = $("drop");
+["dragenter","dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+$("file").addEventListener("change", e => { const f = e.target.files[0]; if (f) readFile(f); e.target.value = ""; });
+
+function readFile(file){
+  say("file-msg","Đang đọc " + file.name + "…","ok");
+  const isX = /\.xlsx?$/i.test(file.name);
+  const fr = new FileReader();
+  fr.onerror = () => say("file-msg","Không đọc được file.","err");
+  fr.onload = () => {
+    try {
+      let table;
+      if (isX){
+        if (!window.XLSX) throw new Error("Chưa tải được thư viện đọc Excel (cần mạng). Hãy xuất file dạng .csv.");
+        const wb = XLSX.read(new Uint8Array(fr.result), {type:"array"});
+        table = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:true, defval:""});
+      } else {
+        table = parseCSV(String(fr.result).replace(/^﻿/,""));
+      }
+      const data = fromTable(table);
+      const u = db.units.find(x => x.id === $("file-unit").value);
+      addReport(Object.assign(data, {defaultUnitId: $("file-unit").value,
+        period: $("file-period").value.trim() || file.name.replace(/\.[^.]+$/,""),
+        source: "File " + file.name + (u ? " · " + u.name : "")}));
+      say("file-msg","Đã đọc và lưu " + data.rows.length + " dòng từ " + file.name + ".","ok");
+    } catch (e) { say("file-msg", e.message, "err"); }
+  };
+  isX ? fr.readAsArrayBuffer(file) : fr.readAsText(file, "utf-8");
+}
+function parseCSV(text){
+  const first = text.split("\n")[0];
+  const sep = (first.match(/;/g)||[]).length > (first.match(/,/g)||[]).length ? ";" : ",";
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if (q){
+      if (ch === '"'){ if (text[i+1] === '"'){ cell += '"'; i++; } else q = false; }
+      else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === sep){ row.push(cell); cell = ""; }
+    else if (ch === "\n" || ch === "\r"){ if (ch === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if (cell !== "" || row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ""));
+}
+/* Số từ file: "28577", "28.577", "2,69", "1.234.567,5", "2.69" */
+function num(v){
+  if (v == null) return null;
+  if (typeof v === "number") return v;
+  let s = String(v).split("\n")[0].replace(/[\s ₫$€]|VND|USD/gi,"").trim();
+  if (!s || s === "-" || s === "—") return null;
+  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g,"").replace(",",".");
+  else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g,"");
+  else if (/^-?\d+,\d+$/.test(s)) s = s.replace(",",".");
+  const n = Number(s);
+  return isNaN(n) ? null : n;
+}
+const COLS = {
+  campaign: [/^tên chiến dịch$/i, /^campaign name$/i],
+  adset: [/^tên nhóm quảng cáo$/i, /^ad set name$/i],
+  ad: [/^tên quảng cáo$/i, /^ad name$/i],
+  month: [/^tháng$/i, /^month$/i, /^ngày$/i, /^day$/i],
+  status: [/phân phối/i, /delivery/i],
+  spend: [/^số tiền đã chi/i, /^amount spent/i],
+  reach: [/^người tiếp cận/i, /^reach$/i],
+  impressions: [/^lượt hiển thị/i, /^impressions$/i],
+  frequency: [/^tần suất/i, /^frequency$/i],
+  clicks: [/^lượt click \(tất cả\)/i, /^clicks \(all\)/i, /^lượt click vào liên kết/i, /^link clicks/i],
+  results: [/^kết quả$/i, /^results$/i],
+  resultLabel: [/^chỉ báo kết quả/i, /^result indicator/i, /^loại kết quả/i, /^result type/i]
+};
+function fromTable(table){
+  if (!table.length) throw new Error("File trống.");
+  const h = table.findIndex(r => r.some(c => /người tiếp cận|lượt hiển thị|reach|impressions/i.test(String(c))));
+  if (h < 0) throw new Error("Không thấy cột Người tiếp cận hoặc Lượt hiển thị. Hãy xuất lại báo cáo có các cột này.");
+  const head = table[h].map(c => String(c).split("\n")[0].trim());
+  const idx = {};
+  for (const k in COLS){ idx[k] = head.findIndex(c => COLS[k].some(re => re.test(c))); }
+  const nameKey = idx.ad >= 0 ? "ad" : idx.adset >= 0 && idx.campaign < 0 ? "adset" : "campaign";
+  if (idx[nameKey] < 0) throw new Error("Không thấy cột Tên chiến dịch.");
+  const get = (r,k) => idx[k] >= 0 ? r[idx[k]] : undefined;
+  const first = v => String(v ?? "").split("\n")[0].trim();
+  const isAll = v => v === undefined || first(v) === "" || /^(tất cả|all)$/i.test(first(v));
+  let total = null; const groups = new Map(); let lastName = "";
+  for (const r of table.slice(h+1)){
+    const name = first(get(r,nameKey));
+    const impressions = num(get(r,"impressions"));
+    if (impressions == null && num(get(r,"reach")) == null) continue;
+    const rec = {status: first(get(r,"status")), spend: num(get(r,"spend")), reach: num(get(r,"reach")),
+      impressions, clicks: num(get(r,"clicks")), results: num(get(r,"results")),
+      resultLabel: first(get(r,"resultLabel")) || (String(get(r,"results") ?? "").split("\n")[1] || "").trim()};
+    if ((!name && /tổng|total/i.test(r.map(String).join(" "))) || /^(tổng|total)/i.test(name)){ total = Object.assign(rec,{reachIsUnique:true}); continue; }
+    if (!name){ if (lastName) continue; if (!total) total = Object.assign(rec,{reachIsUnique:true}); continue; }
+    lastName = name;
+    const summary = isAll(nameKey === "campaign" ? get(r,"adset") : undefined) && isAll(get(r,"month"));
+    const g = groups.get(name) || {name, summary:null, parts:[]};
+    if (summary && !g.summary) g.summary = rec; else g.parts.push(rec);
+    groups.set(name, g);
+  }
+  const rows = [...groups.values()].map(g => {
+    if (g.summary) return Object.assign({name:g.name}, g.summary);
+    const sum = k => g.parts.reduce((a,p) => p[k] == null ? a : (a ?? 0) + p[k], null);
+    return {name:g.name, status:g.parts[0].status, spend:sum("spend"), reach:sum("reach"), impressions:sum("impressions"),
+      clicks:sum("clicks"), results:sum("results"), resultLabel:g.parts[0].resultLabel};
+  });
+  if (!rows.length) throw new Error("Không đọc được dòng số liệu nào.");
+  return {rows, total, level: nameKey};
+}
+
+/* ====== Báo cáo đã lưu ====== */
+const view = {reportId: null, unit: "all"};
+function addReport(r){
+  const rep = Object.assign({id: uid(), savedAt: new Date().toISOString()}, r);
+  db.reports.unshift(rep);
+  save();
+  view.reportId = rep.id; view.unit = "all";
+  refreshAll();
+  $("report").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+}
+function totalsOf(rows){
+  const sum = k => rows.reduce((a,r) => r[k] == null ? a : (a ?? 0) + r[k], null);
+  return {spend:sum("spend"), reach:sum("reach"), impressions:sum("impressions"), clicks:sum("clicks"), results:sum("results")};
+}
+function renderSaved(){
+  const tb = $("saved-rows"); tb.textContent = "";
+  $("saved-empty").hidden = db.reports.length > 0;
+  $("saved-count").textContent = db.reports.length ? db.reports.length + " báo cáo" + (storageOk ? " · lưu trong trình duyệt của máy này" : "") : "";
+  db.reports.forEach(r => {
+    const T = r.total || totalsOf(r.rows);
+    const tr = el("tr","click" + (r.id === view.reportId ? " sel" : ""));
+    const c1 = el("td"); c1.append(el("b",null,r.period || "—")); if (r.sample) c1.append(el("span","mark","mẫu"));
+    tr.append(c1, el("td","src",r.source || ""), el("td","src",new Date(r.savedAt).toLocaleString("vi-VN")),
+      el("td","n",r.rows.length), el("td","n",fmtMoney(T.spend ?? totalsOf(r.rows).spend)), el("td","n",fmtInt(T.results ?? totalsOf(r.rows).results)));
+    const td = el("td"), b = el("button","link-btn danger","Xóa"); b.type = "button";
+    b.addEventListener("click", e => e.stopPropagation());
+    armButton(b, "Xóa", () => {
+      db.reports = db.reports.filter(x => x.id !== r.id);
+      if (view.reportId === r.id) view.reportId = db.reports[0] ? db.reports[0].id : null;
+      save(); refreshAll();
+    });
+    td.append(b); tr.append(td);
+    tr.addEventListener("click", () => { view.reportId = r.id; view.unit = "all"; refreshAll(); });
+    tr.tabIndex = 0; tr.addEventListener("keydown", e => { if (e.key === "Enter") tr.click(); });
+    tb.append(tr);
+  });
+}
+
+/* ====== Hiển thị báo cáo đang chọn ====== */
+let currentRows = [];
+function renderReport(){
+  const rep = db.reports.find(r => r.id === view.reportId);
+  $("report").hidden = !rep;
+  if (!rep) return;
+
+  const all = rep.rows.map(r => Object.assign({}, r, {unit: unitOf(r.name, rep)}))
+    .sort((a,b) => (b.impressions||0) - (a.impressions||0));
+  const unitIds = [...new Set(all.map(r => r.unit))];
+
+  // Thẻ lọc đơn vị
+  const tabs = $("unit-tabs"); tabs.textContent = "";
+  const mkTab = (id, label, count) => {
+    const b = el("button","tab"); b.type = "button"; b.setAttribute("aria-pressed", String(view.unit === id));
+    b.append(document.createTextNode(label), el("span","ct",count));
+    b.addEventListener("click", () => { view.unit = id; renderReport(); });
+    tabs.append(b);
+  };
+  if (!unitIds.includes(view.unit) && view.unit !== "all") view.unit = "all";
+  mkTab("all", "Tất cả đơn vị", all.length);
+  db.units.filter(u => unitIds.includes(u.id)).forEach(u => mkTab(u.id, u.name, all.filter(r => r.unit === u.id).length));
+  if (unitIds.includes("")) mkTab("", "Chưa phân đơn vị", all.filter(r => r.unit === "").length);
+
+  const rows = view.unit === "all" ? all : all.filter(r => r.unit === view.unit);
+  currentRows = rows;
+  const T = view.unit === "all" && rep.total ? rep.total : {};
+  const s = totalsOf(rows);
+  const tot = {
+    spend: T.spend ?? s.spend, impressions: T.impressions ?? s.impressions, clicks: T.clicks ?? s.clicks, results: T.results ?? s.results,
+    reach: T.reachIsUnique && T.reach != null ? T.reach : s.reach,
+    reachUnique: !!(T.reachIsUnique && T.reach != null)
+  };
+  const label = (rows.find(r => r.resultLabel) || {}).resultLabel || (rep.total || {}).resultLabel || "";
+  const lvl = {campaign:"chiến dịch", adset:"nhóm quảng cáo", ad:"quảng cáo"}[rep.level] || "chiến dịch";
+
+  $("r-title").textContent = (view.unit === "all" ? "Tất cả đơn vị" : unitName(view.unit)) + (rep.period ? " · " + rep.period : "");
+  $("r-src").textContent = rep.source + " · lưu lúc " + new Date(rep.savedAt).toLocaleString("vi-VN");
+  $("k-spend").textContent = fmtMoney(tot.spend);
+  $("k-reach").textContent = fmtInt(tot.reach);
+  $("k-reach-l").textContent = tot.reachUnique ? "người tiếp cận (không trùng)" : "người tiếp cận (cộng dồn)";
+  $("k-impr").textContent = fmtInt(tot.impressions);
+  $("k-freq").textContent = tot.reach ? fmtDec(tot.impressions / tot.reach) : "—";
+  $("k-res").textContent = fmtInt(tot.results);
+  $("k-res-l").textContent = label ? label.toLowerCase() : "kết quả";
+  $("k-cpr").textContent = tot.spend != null && tot.results ? fmtMoney(tot.spend / tot.results) : "—";
+  $("t-title").textContent = "Chi tiết theo " + lvl;
+  $("b-first-t").textContent = "Lượt hiển thị theo " + lvl;
+
+  // So sánh đơn vị (chỉ khi xem tất cả và có từ 1 đơn vị trở lên)
+  const showCmp = view.unit === "all" && (db.units.length > 0);
+  $("compare-panel").hidden = !showCmp;
+  if (showCmp){
+    const cb = $("cmp-rows"); cb.textContent = "";
+    const groups = unitIds.map(id => ({id, name: unitName(id), rows: all.filter(r => r.unit === id)}))
+      .map(g => Object.assign(g, totalsOf(g.rows)))
+      .sort((a,b) => (b.spend||0) - (a.spend||0) || (b.impressions||0) - (a.impressions||0));
+    const totalSpend = groups.reduce((a,g) => a + (g.spend||0), 0);
+    groups.forEach((g,i) => {
+      const tr = el("tr","click");
+      const n = el("td"); const d = el("span","dot"); d.style.background = COLORS[i % COLORS.length]; n.append(d, document.createTextNode(g.name)); tr.append(n);
+      [g.rows.length, fmtMoney(g.spend), totalSpend ? fmtDec((g.spend||0)/totalSpend*100,0) + "%" : "—", fmtInt(g.reach), fmtInt(g.impressions),
+       fmtInt(g.results), g.spend != null && g.results ? fmtMoney(g.spend/g.results) : "—"].forEach(v => tr.append(el("td","n",v)));
+      tr.title = "Xem riêng " + g.name;
+      tr.addEventListener("click", () => { view.unit = g.id; renderReport(); });
+      cb.append(tr);
+    });
+  }
+
+  const colorOf = new Map(rows.map((r,i) => [r.name, COLORS[i % COLORS.length]]));
+  bars("b-impr", rows.map(r => [r.name, r.impressions]), fmtInt, colorOf);
+  if (rows.some(r => r.spend != null)){ $("b-second-t").textContent = "Số tiền đã chi theo " + lvl; bars("b-second", rows.map(r => [r.name, r.spend]), fmtMoney, colorOf); }
+  else { $("b-second-t").textContent = "Người tiếp cận theo " + lvl; bars("b-second", rows.map(r => [r.name, r.reach]), fmtInt, colorOf); }
+
+  const tb = $("rows"); tb.textContent = "";
+  for (const r of rows){
+    const tr = el("tr");
+    const n = el("td"); const d = el("span","dot"); d.style.background = colorOf.get(r.name); n.append(d, document.createTextNode(r.name)); tr.append(n);
+    // Chọn đơn vị cho từng chiến dịch (ghi nhớ cho các báo cáo sau)
+    const ut = el("td"), sel = el("select"); sel.setAttribute("aria-label", "Đơn vị của " + r.name);
+    sel.append(new Option("Chưa phân đơn vị", ""));
+    db.units.forEach(u => sel.append(new Option(u.name, u.id)));
+    sel.value = r.unit;
+    sel.addEventListener("change", () => {
+      if (sel.value) db.assign[r.name] = sel.value; else delete db.assign[r.name];
+      save(); refreshAll();
+    });
+    ut.append(sel); tr.append(ut);
+    const st = el("td"); if (r.status) st.append(el("span","chip" + (/đang chạy|active/i.test(r.status) ? " on" : ""), r.status)); tr.append(st);
+    const freq = r.reach ? r.impressions / r.reach : null;
+    const cells = [fmtMoney(r.spend), fmtInt(r.reach), fmtInt(r.impressions), null,
+      r.spend != null && r.impressions ? fmtMoney(r.spend / r.impressions * 1000) : "—",
+      fmtInt(r.clicks), r.clicks != null && r.impressions ? fmtDec(r.clicks / r.impressions * 100) + "%" : "—",
+      fmtInt(r.results), r.spend != null && r.results ? fmtMoney(r.spend / r.results) : "—"];
+    cells.forEach((v,i) => {
+      const td = el("td","n");
+      if (i === 3){ td.textContent = fmtDec(freq); if (freq >= 3.5) td.append(" ", el("span","chip hot","cao")); }
+      else td.textContent = v;
+      tr.append(td);
+    });
+    tb.append(tr);
+  }
+  const f = $("foot"); f.textContent = "";
+  const tr = el("tr"); tr.append(el("td",null,"Tổng"), el("td"), el("td"));
+  [fmtMoney(tot.spend), fmtInt(tot.reach), fmtInt(tot.impressions), tot.reach ? fmtDec(tot.impressions/tot.reach) : "—",
+   tot.spend != null && tot.impressions ? fmtMoney(tot.spend / tot.impressions * 1000) : "—",
+   fmtInt(tot.clicks), tot.clicks != null && tot.impressions ? fmtDec(tot.clicks/tot.impressions*100) + "%" : "—",
+   fmtInt(tot.results), tot.spend != null && tot.results ? fmtMoney(tot.spend/tot.results) : "—"].forEach(v => tr.append(el("td","n",v)));
+  f.append(tr);
+
+  notes(rows, tot, label, all);
+}
+
+function bars(id, entries, fmt, colorOf){
+  const box = $(id); box.textContent = "";
+  const list = entries.filter(e => e[1] != null).sort((a,b) => b[1]-a[1]).slice(0,8);
+  if (!list.length){ box.append(el("p","hint","Không có số liệu.")); return; }
+  const max = list[0][1] || 1;
+  for (const [k,v] of list){
+    const row = el("div","bar"); const nm = el("span","nm",k); nm.title = k;
+    const t = el("div","track"), fl = el("div","fill"); fl.style.width = Math.max(0.5, v/max*100) + "%"; fl.style.background = colorOf.get(k); t.append(fl);
+    row.append(nm, t, el("span","v",fmt(v))); box.append(row);
+  }
+}
+
+function notes(rows, tot, label, all){
+  const ul = $("notes"); ul.textContent = ""; const add = t => ul.append(el("li",null,t));
+  const pct = (a,b) => fmtDec(a/b*100,0) + "%";
+  if (view.unit === "all" && db.units.length){
+    const none = all.filter(r => r.unit === "");
+    if (none.length) add(none.length + " chiến dịch chưa thuộc đơn vị nào: " + none.slice(0,4).map(r => r.name).join(", ") + (none.length > 4 ? "…" : "") + ". Chọn đơn vị ở cột Đơn vị trong bảng chi tiết, hoặc thêm từ khóa cho đơn vị.");
+  }
+  if (rows.length && tot.impressions){
+    const top = rows[0];
+    add("\"" + top.name + "\" chiếm " + pct(top.impressions, tot.impressions) + " lượt hiển thị (" + fmtInt(top.impressions) + "/" + fmtInt(tot.impressions) + ").");
+  }
+  const sumReach = rows.reduce((a,r) => a + (r.reach||0), 0);
+  if (tot.reachUnique && rows.length > 1 && sumReach > tot.reach){
+    add("Cộng riêng từng dòng được " + fmtInt(sumReach) + " người, nhưng số người không trùng chỉ " + fmtInt(tot.reach)
+      + ": khoảng " + fmtInt(sumReach - tot.reach) + " lượt tiếp cận rơi vào người đã thấy quảng cáo khác. Nếu các chiến dịch nhắm cùng tệp khách, cân nhắc gộp hoặc loại trừ đối tượng.");
+  }
+  const high = rows.filter(r => r.reach > 100 && r.impressions / r.reach >= 3.5);
+  if (high.length) add("Tần suất cao (≥ 3,5) ở: " + high.map(r => r.name).join(", ") + ". Người xem dễ chán quảng cáo; nên thay mẫu quảng cáo hoặc mở rộng đối tượng.");
+  const tiny = rows.filter(r => tot.impressions && r.impressions / tot.impressions < 0.05 && r.impressions > 10);
+  if (tiny.length) add("Phân phối rất ít (dưới 5% lượt hiển thị): " + tiny.map(r => r.name).join(", ") + ". Kiểm tra ngân sách, đối tượng hoặc trạng thái duyệt.");
+  const withCpr = rows.filter(r => r.spend && r.results);
+  if (withCpr.length >= 2){
+    withCpr.sort((a,b) => a.spend/a.results - b.spend/b.results);
+    const best = withCpr[0], worst = withCpr[withCpr.length-1];
+    add("Chi phí/" + (label ? label.toLowerCase() : "kết quả") + " thấp nhất: \"" + best.name + "\" (" + fmtMoney(best.spend/best.results)
+      + "); cao nhất: \"" + worst.name + "\" (" + fmtMoney(worst.spend/worst.results) + ").");
+  }
+  const noRes = rows.filter(r => r.spend > 0 && !r.results);
+  if (noRes.length && rows.some(r => r.results)) add("Đã chi tiền nhưng chưa có kết quả: " + noRes.map(r => r.name + " (" + fmtMoney(r.spend) + ")").join(", ") + ".");
+  if (tot.spend == null) add("Chưa có cột Số tiền đã chi nên chưa tính được CPM và chi phí/kết quả. Khi xuất báo cáo, thêm cột này.");
+  if (!ul.children.length) add("Chưa đủ số liệu để nhận xét.");
+}
+
+/* ====== Tải file ====== */
+function download(name, text, type){
+  const blob = new Blob([text], {type});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+$("csv").addEventListener("click", () => {
+  const rep = db.reports.find(r => r.id === view.reportId); if (!rep) return;
+  const q = v => { let s = v == null ? "" : String(v); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g,'""') + '"'; };
+  const lines = [["Kỳ","Đơn vị","Tên","Trạng thái","Đã chi","Người tiếp cận","Lượt hiển thị","Tần suất","Click","Kết quả","Chi phí/kết quả"].map(q).join(",")];
+  for (const r of currentRows){
+    lines.push([rep.period, unitName(r.unit), r.name, r.status, r.spend, r.reach, r.impressions, r.reach ? (r.impressions/r.reach).toFixed(2) : "",
+      r.clicks, r.results, r.spend != null && r.results ? Math.round(r.spend/r.results) : ""].map(q).join(","));
+  }
+  download("bao-cao-meta-" + (view.unit === "all" ? "tat-ca" : fold(unitName(view.unit)).replace(/[^a-z0-9]+/g,"-")) + ".csv",
+    "﻿" + lines.join("\r\n"), "text/csv;charset=utf-8");
+});
+
+/* Sao lưu / khôi phục: chuyển dữ liệu sang máy khác hoặc giữ phòng khi xóa lịch sử trình duyệt */
+$("backup").addEventListener("click", () => {
+  download("sao-luu-bao-cao-meta-" + new Date().toISOString().slice(0,10) + ".json", JSON.stringify(db, null, 1), "application/json");
+  say("store-msg","Đã tạo file sao lưu. Mở file này bằng nút Khôi phục trên máy khác để có cùng dữ liệu.","ok");
+});
+$("restore-file").addEventListener("change", e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const d = JSON.parse(fr.result);
+      if (!d || !Array.isArray(d.units) || !Array.isArray(d.reports)) throw new Error();
+      // Gộp: giữ dữ liệu hiện có, thêm mục chưa có (so theo id)
+      const addUnits = d.units.filter(u => u && u.id && !db.units.some(x => x.id === u.id));
+      const addReps = d.reports.filter(r => r && r.id && Array.isArray(r.rows) && !db.reports.some(x => x.id === r.id));
+      db.units.push(...addUnits); db.reports.push(...addReps);
+      db.reports.sort((a,b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+      Object.assign(db.assign, d.assign || {});
+      save(); refreshAll();
+      say("store-msg","Đã khôi phục: thêm " + addUnits.length + " đơn vị và " + addReps.length + " báo cáo.","ok");
+    } catch (err) { say("store-msg","File này không phải file sao lưu của trang báo cáo.","err"); }
+  };
+  fr.readAsText(f, "utf-8");
+});
+
+function refreshAll(){
+  if (view.reportId && !db.reports.some(r => r.id === view.reportId)) view.reportId = null;
+  if (!view.reportId && db.reports[0]) view.reportId = db.reports[0].id;
+  renderUnits(); renderSaved(); renderReport();
+}
+
+/* ====== Khởi động ====== */
+(function(){
+  const now = new Date(), first = new Date(now.getFullYear(), now.getMonth()-1, 1), last = new Date(now.getFullYear(), now.getMonth(), 0);
+  const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  $("since").value = iso(first); $("until").value = iso(last);
+})();
+
+if (!load()){
+  // Lần đầu mở: dữ liệu mẫu từ ảnh chụp tháng 9/2026 để thấy cách trang hoạt động. Xóa được bất cứ lúc nào.
+  const u1 = {id: uid(), name: "TerriTory", account: "", keywords: ["territory"]};
+  const u2 = {id: uid(), name: "Tổng hợp", account: "", keywords: ["tong hop", "qc 09"]};
+  db.units.push(u1, u2);
+  db.reports.push({id: uid(), sample: true, savedAt: new Date().toISOString(), period: "01/09/2026 – 01/10/2026", level: "campaign",
+    defaultUnitId: "", source: "Mẫu chép từ ảnh chụp báo cáo (không có cột chi phí, kết quả bị che)",
+    rows: [
+      {name:"Qc TerriTory 09/2026", status:"Hết hiệu lực", spend:null, reach:10613, impressions:28577, clicks:null, results:null},
+      {name:"Qc Tổng hợp 09/2026", status:"Chưa phân phối", spend:null, reach:7930, impressions:15834, clicks:null, results:null},
+      {name:"QC 09/2026", status:"Hết hiệu lực", spend:null, reach:1301, impressions:1732, clicks:null, results:null},
+      {name:"Bài viết \"MỨC GIÁ CỰ…\"", status:"Đã xóa", spend:null, reach:1, impressions:1, clicks:null, results:null}
+    ],
+    total: {reach:16534, impressions:46144, spend:null, clicks:null, results:null, reachIsUnique:true}});
+  save();
+}
+if (!storageOk) say("store-msg","Trình duyệt đang chặn bộ nhớ của trang (chế độ ẩn danh?). Báo cáo vẫn xem được nhưng sẽ mất khi đóng trang; dùng Sao lưu dữ liệu để giữ lại.","warn");
+refreshAll();
+})();
+</script>
+</body>
+</html>

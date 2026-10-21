@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Hồ sơ nhân viên')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('employees', 'Hồ sơ nhân viên')}"></th:block>
+<div class="sh-main">
+  <div class="wrap">
+    <div class="ph">
+      <div>
+        <h1>Hồ sơ nhân viên</h1>
+        <p>Thông tin cá nhân, giấy tờ, hợp đồng, CV của nhân viên đơn vị. Bấm vào tên để xem / sửa hồ sơ.</p>
+      </div>
+      <span class="sp"></span>
+      <a class="btn btn-brand" th:if="${canAdd}" th:href="@{/hr/employees/new}"><i class="fa-solid fa-user-plus"></i>Thêm nhân viên</a>
+    </div>
+
+    <div class="flash ok" th:if="${message != null}" th:text="${message}"></div>
+    <div class="flash err" th:if="${error != null}" th:text="${error}"></div>
+
+    <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+      <a class="stat" th:href="@{/hr/employees}" style="text-decoration:none"><b th:text="${total}">0</b><span>Nhân viên</span></a>
+      <a class="stat" th:href="@{/hr/employees(filter='incomplete')}" style="text-decoration:none"
+         th:style="${filter == 'incomplete'} ? 'text-decoration:none;border-color:#a5b4fc' : 'text-decoration:none'">
+        <b th:text="${incompleteCount}">0</b><span>Hồ sơ chưa đủ</span></a>
+      <a class="stat" th:href="@{/hr/employees(filter='nocv')}"
+         th:style="${filter == 'nocv'} ? 'text-decoration:none;border-color:#a5b4fc' : 'text-decoration:none'">
+        <b th:text="${noCvCount}">0</b><span>Chưa có CV</span></a>
+      <a class="stat" th:href="@{/hr/employees(filter='expiring')}"
+         th:style="${filter == 'expiring'} ? 'text-decoration:none;border-color:#fda29b' : 'text-decoration:none'">
+        <b th:text="${expiringCount}" th:style="${expiringCount > 0} ? 'color:#b42318' : ''">0</b><span>Hợp đồng hết hạn / còn ≤ 30 ngày</span></a>
+    </div>
+
+    <form th:action="@{/hr/employees}" method="get" style="display:flex;gap:8px;flex-wrap:wrap">
+      <input type="hidden" name="filter" th:value="${filter}" th:if="${filter != ''}">
+      <input class="in" name="q" th:value="${q}" placeholder="Tìm tên, mã NV, điện thoại, chức danh" style="flex:1;min-width:220px">
+      <select class="in" name="dept" onchange="this.form.submit()">
+        <option value="">Tất cả phòng</option>
+        <option th:each="d : ${depts}" th:value="${d}" th:text="${d}" th:selected="${d == dept}">Kinh Doanh 1</option>
+      </select>
+      <button class="btn" type="submit"><i class="fa-solid fa-magnifying-glass"></i>Tìm</button>
+    </form>
+
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Nhân viên</th><th>Phòng / chức danh</th><th>Điện thoại</th><th>Vào làm</th><th>Hợp đồng</th><th>CV</th><th style="min-width:130px">Hồ sơ</th></tr></thead>
+        <tbody>
+        <tr th:each="r : ${rows}" th:with="u=${r.user}, p=${r.p}">
+          <td><a th:href="@{/hr/employees/{id}(id=${u.id})}" style="text-decoration:none"><b th:text="${u.fullName}">Nguyễn Văn A</b></a>
+            <small th:text="${u.employeeNo}">TH70</small></td>
+          <td><span th:text="${u.department} ?: '—'">Kinh Doanh 1</span><small th:if="${p != null and p.jobTitle != null}" th:text="${p.jobTitle}">Tư vấn</small></td>
+          <td th:text="${p != null and p.phone != null} ? ${p.phone} : '—'">0912…</td>
+          <td th:text="${p != null and p.startDate != null} ? ${#temporals.format(p.startDate, 'dd/MM/yyyy')} : '—'">—</td>
+          <td>
+            <span th:text="${p != null and p.contractType != null} ? ${p.contractType} : '—'">—</span>
+            <small th:if="${p != null and p.contractEnd != null}"
+                   th:style="${r.expired or r.expiring} ? 'color:#b42318;font-weight:600' : ''"
+                   th:text="(${r.expired} ? 'Đã hết hạn ' : 'Đến ') + ${#temporals.format(p.contractEnd, 'dd/MM/yyyy')}">Đến 31/12/2026</small>
+          </td>
+          <td><span th:if="${r.cv}" class="pill ok">Có</span><span th:unless="${r.cv}" class="pill gray">Chưa</span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;height:6px;border-radius:99px;background:#f2f4f7;overflow:hidden">
+                <div th:style="'height:100%;width:' + ${r.pct} + '%;background:' + (${r.pct >= 100} ? '#17b26a' : (${r.pct >= 50} ? '#4f46e5' : '#f79009'))"></div>
+              </div>
+              <b th:text="${r.pct} + '%'" style="font-size:12px;min-width:34px;text-align:right">0%</b>
+            </div>
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(rows)}"><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Không có nhân viên phù hợp</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

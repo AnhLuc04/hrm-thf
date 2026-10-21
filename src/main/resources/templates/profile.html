@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <title>Thông tin cá nhân · Thanh Hóa Ford HRM</title>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #f5f6fa; --card: #fff; --ink: #0f172a; --ink2: #334155; --muted: #64748b; --faint: #94a3b8;
+      --line: #e5e8ef; --line2: #eef1f5; --brand: #4f46e5; --brand-600: #4338ca; --brand-50: #eef2ff; --brand-100: #e0e7ff;
+      --green: #059669; --green-50: #ecfdf5; --green-100: #d1fae5;
+      --red: #dc2626; --red-50: #fef2f2; --red-100: #fee2e2;
+      --amber: #d97706; --amber-50: #fffbeb;
+      --r: 16px; --shadow: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+      --sa-t: env(safe-area-inset-top, 0px); --sa-b: env(safe-area-inset-bottom, 0px);
+      --sa-l: env(safe-area-inset-left, 0px); --sa-r: env(safe-area-inset-right, 0px);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink2); min-height: 100vh;
+           font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+           -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; }
+
+    .wrap { width: 100%; max-width: 680px; margin: 0 auto; padding-left: calc(20px + var(--sa-l)); padding-right: calc(20px + var(--sa-r)); }
+
+    /* ── Đường dẫn + tiêu đề ── */
+    .crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--faint); margin-bottom: 8px; }
+    .crumbs a:hover { color: var(--ink2); }
+    .crumbs i { font-size: 9px; }
+    .crumbs span { color: var(--ink2); }
+    .pg-title { margin: 0 0 18px; font-size: 24px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
+
+    main { padding: 28px 0 calc(40px + var(--sa-b)); }
+
+    /* ── Thẻ hồ sơ ── */
+    .id-card { display: flex; align-items: center; gap: 16px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #4f46e5 100%);
+               border-radius: 20px; padding: 22px 24px; color: #fff; margin-bottom: 22px; position: relative; overflow: hidden;
+               box-shadow: 0 20px 40px -20px rgba(49,46,129,.6); }
+    .id-card::before { content: ""; position: absolute; right: -50px; bottom: -70px; width: 220px; height: 220px; border-radius: 50%; border: 30px solid rgba(255,255,255,.06); pointer-events: none; }
+    .avatar { width: 58px; height: 58px; border-radius: 16px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2);
+              display: grid; place-items: center; font-size: 22px; font-weight: 800; flex: none; position: relative; }
+    .id-tx { min-width: 0; position: relative; }
+    .id-tx .name { font-size: 18px; font-weight: 800; letter-spacing: -.01em; margin: 0 0 3px; }
+    .id-tx .meta { font-size: 12.5px; opacity: .8; }
+
+    /* ── Section & Card ── */
+    .sec { margin-bottom: 22px; }
+    .sec-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
+    .sec-h i { font-size: 12px; color: var(--faint); }
+    .sec-h h2 { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+    .card-pad { padding: 6px 20px; }
+    .card-pad.form { padding: 20px; }
+
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line2); }
+    .row:last-child { border-bottom: none; }
+    .row .k { font-size: 13px; color: var(--muted); font-weight: 600; flex: none; }
+    .row .v { font-size: 13.5px; color: var(--ink); font-weight: 600; text-align: right; word-break: break-word; }
+
+    .pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 800; letter-spacing: .01em; padding: 4px 11px; border-radius: 999px; }
+    .pill.role { background: var(--brand-50); color: var(--brand); }
+    .pill.ok { background: var(--green-50); color: var(--green); border: 1px solid var(--green-100); }
+    .pill.muted { background: var(--line2); color: var(--faint); font-weight: 600; }
+
+    /* ── Form ── */
+    label.fl { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink2); margin-bottom: 7px; }
+    .field { margin-bottom: 16px; }
+    .field:last-of-type { margin-bottom: 0; }
+    .hint { margin-top: 6px; font-size: 12px; color: var(--faint); }
+
+    .inp { width: 100%; height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: #fff;
+           font: inherit; font-size: 14px; color: var(--ink); transition: border-color .15s, box-shadow .15s, background .15s; }
+    .inp:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-100); }
+    .inp[readonly] { background: var(--line2); color: var(--muted); }
+    .inp::placeholder { color: var(--faint); }
+
+    .btn { width: 100%; height: 44px; border: 0; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer;
+           display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s, transform .05s; }
+    .btn:active { transform: translateY(1px); }
+    .btn.brand { background: var(--brand); color: #fff; }
+    .btn.brand:hover { background: var(--brand-600); }
+    .btn.green { background: var(--green); color: #fff; }
+    .btn.green:hover { background: #047857; }
+
+    .alert { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; font-weight: 600; padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; line-height: 1.45; }
+    .alert i { margin-top: 1px; }
+    .alert.ok { background: var(--green-50); color: #065f46; border: 1px solid var(--green-100); }
+    .alert.err { background: var(--red-50); color: #991b1b; border: 1px solid var(--red-100); }
+
+
+    @media (max-width: 640px) {
+      .wrap { padding-left: calc(14px + var(--sa-l)); padding-right: calc(14px + var(--sa-r)); }
+      main { padding-top: 18px; }
+      .pg-title { font-size: 20px; margin-bottom: 14px; }
+      .id-card { padding: 18px; border-radius: 16px; gap: 14px; }
+      .avatar { width: 50px; height: 50px; font-size: 19px; border-radius: 14px; }
+      .id-tx .name { font-size: 16px; }
+      .card-pad { padding: 4px 16px; }
+      .card-pad.form { padding: 16px; }
+      .row { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 0; }
+      .row .v { text-align: left; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+  <!-- ═════ HEADER / MENU CHUNG: CSS ═════ -->
+  <style>
+    :root { --sh-side: 240px; }
+    .sh-side, .sh-side *, .sh-top, .sh-top * { box-sizing: border-box; }
+    .sh-side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: var(--sh-side); background: #fff; border-right: 1px solid #eaecf0;
+               display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
+               padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+               font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #344054; }
+    .sh-side a { color: inherit; text-decoration: none; }
+    .sh-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; }
+    .sh-mark { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; letter-spacing: -.02em;
+               background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 6px 14px -6px rgba(79,70,229,.6); }
+    .sh-brand b { display: block; font-size: 14.5px; font-weight: 700; color: #0b1220; line-height: 1.2; }
+    .sh-brand small { display: block; font-size: 11.5px; color: #98a2b3; }
+    .sh-t { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #98a2b3; padding: 14px 10px 6px; }
+    .sh-nav a, .sh-nav button { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; margin: 1px 0; padding: 0 10px; border: 0; border-radius: 8px; background: none;
+                                font-family: inherit; font-size: 13.5px; font-weight: 500; line-height: 1; color: #344054; cursor: pointer; text-align: left; transition: background .12s, color .12s; }
+    .sh-nav i { width: 18px; text-align: center; color: #98a2b3; font-size: 14px; transition: color .12s; }
+    .sh-nav a.on { background: #eef2ff; color: #4338ca; font-weight: 600; }
+    .sh-nav a.on i { color: #4f46e5; }
+    .sh-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid #eaecf0; }
+    .sh-foot form { margin: 0; }
+    .sh-me { display: flex; align-items: center; gap: 10px; padding: 8px 10px 10px; }
+    .sh-av { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #eef2ff; color: #4338ca; font-weight: 700; font-size: 13px; border: 1px solid #e0e7ff; }
+    .sh-me div { min-width: 0; line-height: 1.25; }
+    .sh-me b { display: block; font-size: 13px; font-weight: 600; color: #0b1220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sh-me small { font-size: 11.5px; color: #98a2b3; }
+    .sh-out { color: #b42318 !important; } .sh-out i { color: #f97066 !important; }
+
+    .sh-main { margin-left: var(--sh-side); min-height: 100vh; }
+    .sh-top, .sh-scrim { display: none; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .sh-nav a:not(.on):hover, .sh-nav button:hover { background: #f9fafb; color: #0b1220; }
+      .sh-nav a:not(.on):hover i { color: #667085; }
+    }
+
+    /* Dưới 1180px (máy tính bảng, điện thoại): menu thành ngăn kéo, có thanh trên cùng */
+    @media (max-width: 1179px) {
+      .sh-side { transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); }
+      body.sh-open .sh-side { transform: none; box-shadow: 0 20px 50px rgba(16,24,40,.25); }
+      .sh-scrim { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 59; background: rgba(16,24,40,.4); opacity: 0; pointer-events: none; transition: opacity .2s; }
+      body.sh-open .sh-scrim { opacity: 1; pointer-events: auto; }
+      body.sh-open { overflow: hidden; }
+      .sh-main { margin-left: 0; }
+      .sh-top { display: flex; position: sticky; top: 0; z-index: 40; align-items: center; gap: 10px; height: calc(56px + env(safe-area-inset-top, 0px));
+                padding: env(safe-area-inset-top, 0px) calc(12px + env(safe-area-inset-right, 0px)) 0 calc(12px + env(safe-area-inset-left, 0px));
+                background: rgba(255,255,255,.92); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid #eaecf0;
+                font: 14px/1.4 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+      .sh-burger { width: 38px; height: 38px; flex: none; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff; display: grid; place-items: center; color: #344054; cursor: pointer; }
+      .sh-top b { font-size: 15px; font-weight: 600; color: #0b1220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sh-top .sh-mark { width: 30px; height: 30px; font-size: 11px; margin-left: auto; }
+    }
+    @media print { .sh-side, .sh-top, .sh-scrim { display: none !important; } .sh-main { margin-left: 0 !important; } }
+    @media (prefers-reduced-motion: reduce) { .sh-side, .sh-scrim { transition: none !important; } }
+  </style>
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+</head>
+
+<body>
+<!-- ═════ HEADER / MENU CHUNG ═════ -->
+<!-- MENU CHUNG (fragments/shell.html): giống mọi trang, theo quyền + đơn vị -->
+<th:block th:replace="~{fragments/shell :: nav('profile', 'Hồ sơ & mật khẩu')}"></th:block>
+<div class="sh-main">
+
+
+  <main>
+    <div class="wrap">
+
+      <div class="crumbs"><a th:href="@{/}">Trang chủ</a><i class="fa-solid fa-chevron-right"></i><span>Hồ sơ &amp; mật khẩu</span></div>
+      <h1 class="pg-title">Thông tin cá nhân</h1>
+
+      <!-- ═════════ THẺ HỒ SƠ ═════════ -->
+      <div class="id-card">
+        <div class="avatar" id="pfAv" th:text="${#strings.isEmpty(user.fullName)} ? '?' : ${#strings.substring(user.fullName,0,1)}">A</div>
+        <div class="id-tx">
+          <p class="name" th:text="${user.fullName}">Nguyễn Văn A</p>
+          <p class="meta">Mã NV <span th:text="${user.employeeNo}">000000</span> · <span th:text="${user.department}">Phòng ban</span></p>
+        </div>
+      </div>
+
+      <!-- ═════════ THÔNG TIN CÁ NHÂN ═════════ -->
+      <section class="sec">
+        <div class="sec-h"><i class="fa-regular fa-id-card"></i><h2>Thông tin cá nhân</h2></div>
+        <div class="card">
+          <div class="card-pad">
+            <div class="row">
+              <span class="k">Mã nhân viên</span>
+              <span class="v" th:text="${user.employeeNo}">000000</span>
+            </div>
+            <div class="row">
+              <span class="k">Họ tên</span>
+              <span class="v" th:text="${user.fullName}">Nguyễn Văn A</span>
+            </div>
+            <div class="row">
+              <span class="k">Username</span>
+              <span class="v" th:text="${user.username}">nguyenvana</span>
+            </div>
+            <div class="row">
+              <span class="k">Phòng ban</span>
+              <span class="v" th:text="${user.department}">Kinh doanh</span>
+            </div>
+            <div class="row">
+              <span class="k">Vai trò</span>
+              <span class="v"><span class="pill role" th:text="${user.role}">NHAN_VIEN</span></span>
+            </div>
+            <div class="row">
+              <span class="k">Chức vụ</span>
+              <span class="v" th:text="${user.departmentManager != null and user.departmentManager ? 'Trưởng phòng' : 'Nhân viên'}">Nhân viên</span>
+            </div>
+            <div class="row">
+              <span class="k">Mã lương</span>
+              <span class="v">
+                            <span th:if="${user.salaryCode != null and !#strings.isEmpty(user.salaryCode)}" class="pill ok" th:text="${user.salaryCode}">SL001</span>
+                            <span th:unless="${user.salaryCode != null and !#strings.isEmpty(user.salaryCode)}" class="pill muted">Chưa cập nhật</span>
+                        </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════ CẬP NHẬT MÃ LƯƠNG ═════════ -->
+      <section class="sec">
+        <div class="sec-h"><i class="fa-solid fa-money-check-dollar"></i><h2>Cập nhật mã lương</h2></div>
+        <div class="card">
+          <div class="card-pad form">
+
+            <div th:if="${salaryCodeMessage}" class="alert ok">
+              <i class="fa-solid fa-circle-check"></i><span th:text="${salaryCodeMessage}"></span>
+            </div>
+            <div th:if="${salaryCodeError}" class="alert err">
+              <i class="fa-solid fa-triangle-exclamation"></i><span th:text="${salaryCodeError}"></span>
+            </div>
+
+            <form th:action="@{/profile/update-salary-code}" method="post">
+              <div class="field">
+                <label class="fl">Mã lương hiện tại</label>
+                <input type="text" class="inp" th:value="${user.salaryCode != null ? user.salaryCode : 'Chưa cập nhật'}" readonly>
+              </div>
+              <div class="field">
+                <label class="fl" for="salaryCode">Mã lương mới</label>
+                <input type="text" id="salaryCode" name="salaryCode" class="inp" placeholder="Nhập mã lương mới" maxlength="50" autocomplete="off" required>
+                <p class="hint">Nhập mã lương chính xác của bạn.</p>
+              </div>
+              <button type="submit" class="btn green"><i class="fa-solid fa-check"></i>Cập nhật mã lương</button>
+            </form>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════ ĐỔI MẬT KHẨU ═════════ -->
+      <section class="sec">
+        <div class="sec-h"><i class="fa-solid fa-key"></i><h2>Đổi mật khẩu</h2></div>
+        <div class="card">
+          <div class="card-pad form">
+
+            <div th:if="${message}" class="alert ok">
+              <i class="fa-solid fa-circle-check"></i><span th:text="${message}"></span>
+            </div>
+            <div th:if="${error}" class="alert err">
+              <i class="fa-solid fa-triangle-exclamation"></i><span th:text="${error}"></span>
+            </div>
+
+            <form th:action="@{/change-password}" method="post">
+              <div class="field">
+                <label class="fl" for="oldPassword">Mật khẩu cũ</label>
+                <input type="password" id="oldPassword" name="oldPassword" class="inp" autocomplete="current-password" required>
+              </div>
+              <div class="field">
+                <label class="fl" for="newPassword">Mật khẩu mới</label>
+                <input type="password" id="newPassword" name="newPassword" class="inp" autocomplete="new-password" required>
+              </div>
+              <div class="field">
+                <label class="fl" for="confirmPassword">Xác nhận mật khẩu mới</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" class="inp" autocomplete="new-password" required>
+              </div>
+              <button type="submit" class="btn brand"><i class="fa-solid fa-lock"></i>Cập nhật mật khẩu</button>
+            </form>
+
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+</div><!-- /sh-main -->
+<!-- ═════ HEADER / MENU CHUNG: JS ═════ -->
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+<script>
+  // Ảnh đại diện lấy chữ cái đầu của tên (không phải họ)
+  (function () { var av = document.getElementById('pfAv'); if (!av) return;
+    var nm = (document.querySelector('.id-tx .name') || {}).textContent || '';
+    var w = nm.trim().split(/\s+/).pop(); if (w) av.textContent = w.charAt(0).toUpperCase(); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <title>Phiếu lương · Thanh Hóa Ford HRM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+    :root {
+      --bg: #f7f8fa; --panel: #fff; --ink: #0b1220; --ink2: #344054; --muted: #667085; --faint: #98a2b3;
+      --line: #eaecf0; --line2: #f2f4f7; --hover: #f9fafb;
+      --brand: #4f46e5; --brand-600: #4338ca; --brand-50: #eef2ff; --brand-100: #e0e7ff;
+      --ok: #067647; --r: 14px; --shadow-sm: 0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.04);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink2); font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+           -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+    .content { max-width: 980px; margin: 0 auto; padding: 28px 28px 48px; }
+    .crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--faint); margin-bottom: 10px; }
+    .crumbs i { font-size: 9px; }
+    .ph { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
+    .ph h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; color: var(--ink); letter-spacing: -.025em; }
+    .ph p { margin: 6px 0 0; color: var(--muted); }
+    .ph p b { color: var(--ink2); font-weight: 600; }
+    .ph code { font: 600 12px ui-monospace, Menlo, Consolas, monospace; background: var(--line2); color: var(--ink2); padding: 2px 7px; border-radius: 6px; }
+
+    .btn { height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #d0d5dd; background: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+           font-size: 13.5px; font-weight: 600; color: var(--ink2); cursor: pointer; white-space: nowrap; box-shadow: 0 1px 2px rgba(16,24,40,.05); transition: background .12s; }
+    .btn i { color: var(--muted); }
+
+    /* Ẩn số tiền */
+    body.hide-money .amt { filter: blur(7px); user-select: none; }
+    body.hide-money .bar i { opacity: .25; }
+
+    /* ── Tháng mới nhất ── */
+    .hero { position: relative; overflow: hidden; border-radius: 18px; padding: 24px 26px; color: #fff; margin-bottom: 16px;
+            background: radial-gradient(900px 300px at 110% -30%, rgba(167,139,250,.55), transparent 60%), linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #4f46e5 100%);
+            box-shadow: 0 20px 40px -20px rgba(49,46,129,.6); display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: end; }
+    .hero::before { content: ""; position: absolute; right: -60px; bottom: -80px; width: 240px; height: 240px; border-radius: 50%; border: 32px solid rgba(255,255,255,.06); pointer-events: none; }
+    .hero .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2); padding: 3px 10px; border-radius: 999px; }
+    .hero .lb { margin-top: 12px; font-size: 13px; opacity: .8; }
+    .hero .big { font-size: 40px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .hero .big small { font-size: 14px; font-weight: 600; opacity: .7; margin-left: 6px; letter-spacing: 0; }
+    .hero .sub { margin-top: 8px; font-size: 13px; opacity: .85; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+    .hero .sub b { font-variant-numeric: tabular-nums; }
+    .hero .go { position: relative; height: 42px; padding: 0 18px; border-radius: 11px; background: #fff; color: #312e81; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .hero.empty-hero { display: none; }
+
+    /* THÊM: phiếu lương dự kiến tháng này (không lưu, không nằm trong danh sách) */
+    .fc { display: grid; grid-template-columns: 52px minmax(0, 1fr) 150px 150px 20px; align-items: center; gap: 14px;
+          padding: 14px 18px; margin-bottom: 16px; border-radius: var(--r); background: #fffaeb; border: 1px dashed #fdb022; }
+    .fc .mo { background: #fef0c7; color: #b54708; }
+    .fc .t b { display: block; font-size: 14.5px; font-weight: 600; color: var(--ink); }
+    .fc .t span { font-size: 12.5px; color: #b54708; }
+    .fc .tag2 { display: inline-block; margin-left: 8px; font-size: 10.5px; font-weight: 700; color: #b54708; background: #fef0c7;
+                border: 1px solid #fedf89; padding: 1px 8px; border-radius: 999px; vertical-align: 2px; }
+    .fc .num.net b { color: #b54708; }
+    .fc .chev { color: #fdb022; font-size: 12px; text-align: right; }
+    .fc.wait { background: #eff8ff; border-color: #84caff; }
+    .fc.wait .mo { background: #d1e9ff; color: #175cd3; }
+    .fc.wait .t span, .fc.wait .tag2, .fc.wait .num.net b { color: #175cd3; }
+    .fc.wait .tag2 { background: #d1e9ff; }
+    .fc.wait .chev { color: #84caff; }
+    @media (max-width: 640px) {
+      .fc { grid-template-columns: 46px minmax(0, 1fr) auto 14px; gap: 12px; padding: 12px 14px; }
+      .fc .mo { width: 46px; height: 46px; }
+      .fc .num.gross { display: none; }
+    }
+
+    /* ── Biểu đồ thực nhận ── */
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 16px; }
+    .p-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+    .p-h h2 { margin: 0; font-size: 14.5px; font-weight: 700; color: var(--ink); }
+    .p-h span { font-size: 12px; color: var(--faint); }
+    .chart { display: flex; align-items: flex-end; gap: 8px; height: 170px; padding: 18px 18px 10px; }
+    .bar { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; cursor: pointer; }
+    .bar i { display: block; width: 100%; max-width: 38px; border-radius: 7px 7px 3px 3px; background: #c7d2fe; transition: background .12s, height .3s; min-height: 3px; }
+    .bar.last i { background: var(--brand); }
+    .bar em { font-style: normal; font-size: 11px; font-weight: 600; color: var(--faint); white-space: nowrap; }
+    .bar.last em { color: var(--brand-600); }
+    .bar .v { font-size: 10.5px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; transition: opacity .12s; }
+    .bar:hover .v, .bar.last .v { opacity: 1; }
+
+    /* ── Danh sách theo năm ── */
+    .yr { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; background: #f9fafb; border-bottom: 1px solid var(--line);
+          font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+    .yr b { font-size: 13px; color: var(--ink); letter-spacing: 0; text-transform: none; }
+    .slip { display: grid; grid-template-columns: 52px minmax(0, 1fr) 150px 150px 20px; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--line2); transition: background .12s; }
+    .slip:last-child { border-bottom: 0; }
+    .mo { width: 52px; height: 52px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--brand-50); color: var(--brand-600); line-height: 1.05; }
+    .mo small { font-size: 10px; font-weight: 600; opacity: .8; text-transform: uppercase; }
+    .mo b { font-size: 19px; font-weight: 800; }
+    .slip .t b { display: block; font-size: 14.5px; font-weight: 600; color: var(--ink); }
+    .slip .t span { font-size: 12.5px; color: var(--faint); }
+    .slip .new { display: inline-block; margin-left: 8px; font-size: 10.5px; font-weight: 700; color: var(--ok); background: #ecfdf3; border: 1px solid #abefc6; padding: 1px 8px; border-radius: 999px; vertical-align: 2px; }
+    .num { text-align: right; }
+    .num small { display: block; font-size: 11.5px; color: var(--faint); }
+    .num b { font-size: 15px; font-weight: 600; color: var(--ink2); font-variant-numeric: tabular-nums; }
+    .num.net b { color: var(--ok); font-weight: 700; }
+    .slip .chev { color: #d0d5dd; font-size: 12px; text-align: right; }
+    .unit { padding: 10px 18px; font-size: 12px; color: var(--faint); border-top: 1px solid var(--line); text-align: right; }
+
+    .empty { padding: 56px 16px; text-align: center; color: var(--muted); }
+    .empty .ei { width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 14px; display: grid; place-items: center; background: var(--line2); color: var(--faint); font-size: 22px; }
+    .empty b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .btn:hover { background: var(--hover); }
+      .slip:hover { background: #fafaff; }
+      .slip:hover .chev { color: var(--brand); }
+      .bar:hover i { background: #a5b4fc; }
+      .bar.last:hover i { background: var(--brand-600); }
+      .hero .go:hover { background: #eef2ff; }
+    }
+    @media (max-width: 1179px) { .content { padding: 20px 16px 40px; } }
+    @media (max-width: 640px) {
+      .ph h1 { font-size: 22px; }
+      .hero { grid-template-columns: 1fr; padding: 20px; }
+      .hero .big { font-size: 32px; }
+      .hero .go { justify-content: center; }
+      .chart { gap: 5px; height: 150px; padding: 14px 12px 8px; }
+      .bar .v { display: none; }
+      .bar em { font-size: 10px; }
+      .bar .yy { display: none; }
+      .slip { grid-template-columns: 46px minmax(0, 1fr) auto 14px; gap: 12px; padding: 12px 14px; }
+      .mo { width: 46px; height: 46px; } .mo b { font-size: 17px; }
+      .slip .num.gross { display: none; }
+      .p-h, .yr, .unit { padding-left: 14px; padding-right: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+    <!-- ═════ HEADER / MENU CHUNG: CSS ═════ -->
+    <style>
+    :root { --sh-side: 240px; }
+    .sh-side, .sh-side *, .sh-top, .sh-top * { box-sizing: border-box; }
+    .sh-side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: var(--sh-side); background: #fff; border-right: 1px solid #eaecf0;
+               display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
+               padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+               font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #344054; }
+    .sh-side a { color: inherit; text-decoration: none; }
+    .sh-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; }
+    .sh-mark { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; letter-spacing: -.02em;
+               background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 6px 14px -6px rgba(79,70,229,.6); }
+    .sh-brand b { display: block; font-size: 14.5px; font-weight: 700; color: #0b1220; line-height: 1.2; }
+    .sh-brand small { display: block; font-size: 11.5px; color: #98a2b3; }
+    .sh-t { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #98a2b3; padding: 14px 10px 6px; }
+    .sh-nav a, .sh-nav button { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; margin: 1px 0; padding: 0 10px; border: 0; border-radius: 8px; background: none;
+                                font-family: inherit; font-size: 13.5px; font-weight: 500; line-height: 1; color: #344054; cursor: pointer; text-align: left; transition: background .12s, color .12s; }
+    .sh-nav i { width: 18px; text-align: center; color: #98a2b3; font-size: 14px; transition: color .12s; }
+    .sh-nav a.on { background: #eef2ff; color: #4338ca; font-weight: 600; }
+    .sh-nav a.on i { color: #4f46e5; }
+    .sh-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid #eaecf0; }
+    .sh-foot form { margin: 0; }
+    .sh-me { display: flex; align-items: center; gap: 10px; padding: 8px 10px 10px; }
+    .sh-av { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #eef2ff; color: #4338ca; font-weight: 700; font-size: 13px; border: 1px solid #e0e7ff; }
+    .sh-me div { min-width: 0; line-height: 1.25; }
+    .sh-me b { display: block; font-size: 13px; font-weight: 600; color: #0b1220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sh-me small { font-size: 11.5px; color: #98a2b3; }
+    .sh-out { color: #b42318 !important; } .sh-out i { color: #f97066 !important; }
+
+    .sh-main { margin-left: var(--sh-side); min-height: 100vh; }
+    .sh-top, .sh-scrim { display: none; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .sh-nav a:not(.on):hover, .sh-nav button:hover { background: #f9fafb; color: #0b1220; }
+      .sh-nav a:not(.on):hover i { color: #667085; }
+    }
+
+    /* Dưới 1180px (máy tính bảng, điện thoại): menu thành ngăn kéo, có thanh trên cùng */
+    @media (max-width: 1179px) {
+      .sh-side { transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); }
+      body.sh-open .sh-side { transform: none; box-shadow: 0 20px 50px rgba(16,24,40,.25); }
+      .sh-scrim { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 59; background: rgba(16,24,40,.4); opacity: 0; pointer-events: none; transition: opacity .2s; }
+      body.sh-open .sh-scrim { opacity: 1; pointer-events: auto; }
+      body.sh-open { overflow: hidden; }
+      .sh-main { margin-left: 0; }
+      .sh-top { display: flex; position: sticky; top: 0; z-index: 40; align-items: center; gap: 10px; height: calc(56px + env(safe-area-inset-top, 0px));
+                padding: env(safe-area-inset-top, 0px) calc(12px + env(safe-area-inset-right, 0px)) 0 calc(12px + env(safe-area-inset-left, 0px));
+                background: rgba(255,255,255,.92); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid #eaecf0;
+                font: 14px/1.4 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+      .sh-burger { width: 38px; height: 38px; flex: none; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff; display: grid; place-items: center; color: #344054; cursor: pointer; }
+      .sh-top b { font-size: 15px; font-weight: 600; color: #0b1220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sh-top .sh-mark { width: 30px; height: 30px; font-size: 11px; margin-left: auto; }
+    }
+    @media print { .sh-side, .sh-top, .sh-scrim { display: none !important; } .sh-main { margin-left: 0 !important; } }
+    @media (prefers-reduced-motion: reduce) { .sh-side, .sh-scrim { transition: none !important; } }
+  </style>
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+</head>
+
+<body>
+<!-- ═════ HEADER / MENU CHUNG ═════ -->
+<!-- MENU CHUNG (fragments/shell.html): giống mọi trang, theo quyền + đơn vị -->
+<th:block th:replace="~{fragments/shell :: nav('payroll', 'Phiếu lương')}"></th:block>
+<div class="sh-main">
+    <div class="content">
+
+        <div class="crumbs"><a th:href="@{/}">Trang chủ</a><i class="fa-solid fa-chevron-right"></i><span style="color:var(--ink2)">Phiếu lương</span></div>
+
+        <div class="ph">
+            <div>
+                <h1>Phiếu lương của tôi</h1>
+                <p><b th:text="${user.fullName}">Nguyễn Văn A</b>
+                    <th:block th:if="${user.salaryCode != null and !#strings.isEmpty(user.salaryCode)}"> · Mã lương <code th:text="${user.salaryCode}">SAL-001</code></th:block></p>
+            </div>
+            <button type="button" class="btn" id="eyeBtn" aria-pressed="false"><i class="fa-regular fa-eye-slash"></i><span>Ẩn số tiền</span></button>
+        </div>
+
+        <!-- Phiếu lương DỰ KIẾN: từ ngày 1 đến NGÀY CHI LƯƠNG của đơn vị có 2 thẻ
+             (tháng trước: đủ công, chờ chi + tháng này: đang chạy). Tháng đã có phiếu chính thức thì không hiện. -->
+        <a class="fc" th:each="f : ${forecasts}" th:classappend="${f.complete} ? 'wait'"
+           th:href="@{/salary-forecast(month=${f.month}, year=${f.year})}">
+            <span class="mo"><small>Tháng</small><b th:text="${f.month}">9</b></span>
+            <span class="t">
+                <b><span th:text="'Tháng ' + ${f.month} + '/' + ${f.year}">Tháng 9/2026</span>
+                   <span class="tag2" th:text="${f.complete} ? 'Chờ chi ' + ${#temporals.format(f.payDate, 'dd/MM')} : 'Dự kiến'">Dự kiến</span></b>
+                <span th:text="${f.complete}
+                        ? 'Đủ công tháng ' + ${f.month} + ' · lương chi ngày ' + ${#temporals.format(f.payDate, 'dd/MM/yyyy')}
+                        : 'Tạm tính theo bảng công đến ' + ${#temporals.format(f.upTo, 'dd/MM/yyyy')} + ' · còn thay đổi'">Tạm tính</span>
+            </span>
+            <span class="num gross"><small>Tổng thu nhập</small><b class="amt" th:text="${f.payroll.netSalary != null ? #numbers.formatDecimal(f.payroll.netSalary, 1, 'POINT', 0, 'COMMA') : '—'}">0</b></span>
+            <span class="num net"><small>Thực nhận dự kiến</small><b class="amt" th:text="${f.payroll.thucNhan != null ? #numbers.formatDecimal(f.payroll.thucNhan, 1, 'POINT', 0, 'COMMA') : '—'}">0</b></span>
+            <i class="fa-solid fa-chevron-right chev" aria-hidden="true"></i>
+        </a>
+
+        <!-- Tháng mới nhất (JS điền từ danh sách bên dưới) -->
+        <section class="hero empty-hero" id="hero">
+            <div style="position:relative">
+                <span class="tag"><i class="fa-regular fa-calendar"></i><span id="hTag">Tháng mới nhất</span></span>
+                <div class="lb">Thực nhận</div>
+                <div class="big"><span class="amt" id="hNet">0</span><small>nghìn đồng</small></div>
+                <div class="sub"><span>Tổng thu nhập <b class="amt" id="hGross">0</b></span><span id="hDiff"></span></div>
+            </div>
+            <a class="go" id="hGo" href="#"><i class="fa-regular fa-file-lines"></i>Xem phiếu lương</a>
+        </section>
+
+        <!-- Biểu đồ thực nhận 12 tháng gần nhất -->
+        <section class="panel" id="chartPanel" hidden>
+            <div class="p-h"><h2>Thực nhận theo tháng</h2><span>Bấm vào cột để mở phiếu</span></div>
+            <div class="chart" id="chart"></div>
+        </section>
+
+        <!-- Danh sách phiếu lương -->
+        <section class="panel">
+            <div class="p-h"><h2>Tất cả phiếu lương</h2><span th:text="${#lists.size(payrolls)} + ' phiếu'">0 phiếu</span></div>
+
+            <div id="list">
+                <a class="slip" th:each="p : ${payrolls}"
+                   th:href="@{/payroll/detail/{id}(id=${p.id})}"
+                   th:data-y="${p.year}" th:data-m="${p.month}" th:data-gross="${p.netSalary}" th:data-net="${p.thucNhan}">
+                    <span class="mo"><small>Tháng</small><b th:text="${p.month}">9</b></span>
+                    <span class="t"><b th:text="'Tháng ' + ${p.month} + '/' + ${p.year}">Tháng 9/2026</b><span>Phiếu lương chi tiết</span></span>
+                    <span class="num gross"><small>Tổng thu nhập</small><b class="amt" th:text="${p.netSalary != null ? #numbers.formatDecimal(p.netSalary, 1, 'POINT', 0, 'COMMA') : '—'}">0</b></span>
+                    <span class="num net"><small>Thực nhận</small><b class="amt" th:text="${p.thucNhan != null ? #numbers.formatDecimal(p.thucNhan, 1, 'POINT', 0, 'COMMA') : '—'}">0</b></span>
+                    <i class="fa-solid fa-chevron-right chev" aria-hidden="true"></i>
+                </a>
+            </div>
+
+            <div class="empty" th:if="${#lists.isEmpty(payrolls)}">
+                <div class="ei"><i class="fa-regular fa-file-lines"></i></div>
+                <b>Chưa có phiếu lương</b>
+                Phiếu lương sẽ hiện ở đây sau khi phòng kế toán nhập dữ liệu.
+            </div>
+            <div class="unit" th:unless="${#lists.isEmpty(payrolls)}">ĐVT: 1.000 đồng</div>
+        </section>
+
+    </div>
+</div>
+<!-- ═════ HEADER / MENU CHUNG: JS ═════ -->
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+
+
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  var list = $('#list');
+  var rows = Array.prototype.slice.call(list.querySelectorAll('a.slip'));
+  var num = function (v) { var n = parseFloat(v); return isNaN(n) ? null : n; };
+  var fmt = function (n) { return n == null ? '—' : Math.round(n).toLocaleString('vi-VN'); };
+
+  // Sắp xếp mới → cũ và nhóm theo năm
+  rows.forEach(function (r) { r._k = (+r.getAttribute('data-y') || 0) * 100 + (+r.getAttribute('data-m') || 0); });
+  rows.sort(function (a, b) { return b._k - a._k; });
+  var frag = document.createDocumentFragment(), lastY = null;
+  rows.forEach(function (r, i) {
+    var y = r.getAttribute('data-y');
+    if (y !== lastY) {
+      var cnt = rows.filter(function (x) { return x.getAttribute('data-y') === y; }).length;
+      var h = document.createElement('div');
+      h.className = 'yr';
+      h.innerHTML = '<b>Năm ' + y + '</b><span>' + cnt + ' tháng</span>';
+      frag.appendChild(h); lastY = y;
+    }
+    if (i === 0) r.querySelector('.t b').insertAdjacentHTML('beforeend', '<span class="new">Mới nhất</span>');
+    frag.appendChild(r);
+  });
+  list.appendChild(frag);
+
+  if (rows.length) {
+    // Thẻ tháng mới nhất
+    var r0 = rows[0], net0 = num(r0.getAttribute('data-net')), gross0 = num(r0.getAttribute('data-gross'));
+    $('#hero').classList.remove('empty-hero');
+    $('#hTag').textContent = 'Tháng ' + r0.getAttribute('data-m') + '/' + r0.getAttribute('data-y');
+    $('#hNet').textContent = fmt(net0);
+    $('#hGross').textContent = fmt(gross0);
+    $('#hGo').href = r0.getAttribute('href');
+    if (rows[1] && net0 != null && num(rows[1].getAttribute('data-net')) != null) {
+      var d = net0 - num(rows[1].getAttribute('data-net'));
+      $('#hDiff').innerHTML = (d >= 0 ? '▲ ' : '▼ ') + '<b class="amt">' + fmt(Math.abs(d)) + '</b> so với tháng trước';
+    }
+
+    // Biểu đồ 12 tháng gần nhất (cũ → mới)
+    var pts = rows.slice(0, 12).reverse().filter(function (r) { return num(r.getAttribute('data-net')) != null; });
+    if (pts.length >= 2) {
+      var max = Math.max.apply(null, pts.map(function (r) { return num(r.getAttribute('data-net')); })) || 1;
+      $('#chart').innerHTML = pts.map(function (r, i) {
+        var v = num(r.getAttribute('data-net')), h = Math.max(3, Math.round(v / max * 100));
+        return '<a class="bar' + (i === pts.length - 1 ? ' last' : '') + '" href="' + r.getAttribute('href') + '" title="Tháng ' + r.getAttribute('data-m') + '/' + r.getAttribute('data-y') + ': ' + fmt(v) + '">' +
+               '<span class="v amt">' + fmt(v) + '</span><i style="height:' + h + '%"></i><em>T' + r.getAttribute('data-m') + (r.getAttribute('data-m') === '1' || i === 0 ? '<span class="yy">/' + String(r.getAttribute('data-y')).slice(2) + '</span>' : '') + '</em></a>';
+      }).join('');
+      $('#chartPanel').hidden = false;
+    }
+  }
+
+  // Ẩn / hiện số tiền (nhớ cho lần sau)
+  var eye = $('#eyeBtn');
+  function setHide(v) {
+    document.body.classList.toggle('hide-money', v);
+    eye.setAttribute('aria-pressed', v ? 'true' : 'false');
+    eye.querySelector('i').className = v ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
+    eye.querySelector('span').textContent = v ? 'Hiện số tiền' : 'Ẩn số tiền';
+    try { localStorage.setItem('phieuluong.hide', v ? '1' : '0'); } catch (e) {}
+  }
+  eye.addEventListener('click', function () { setHide(!document.body.classList.contains('hide-money')); });
+  try { if (localStorage.getItem('phieuluong.hide') === '1') setHide(true); } catch (e) {}
+})();
+</script>
+</body>
+</html>

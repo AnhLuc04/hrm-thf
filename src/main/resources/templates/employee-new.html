@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Thêm nhân viên')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('employees', 'Thêm nhân viên')}"></th:block>
+<div class="sh-main">
+  <form class="wrap" style="max-width:900px" th:action="@{/hr/employees/new}" method="post" enctype="multipart/form-data" autocomplete="off">
+    <a th:href="@{/hr/employees}" style="color:var(--muted);text-decoration:none;font-size:13px"><i class="fa-solid fa-chevron-left"></i> Hồ sơ nhân viên</a>
+    <div class="ph">
+      <div>
+        <h1>Thêm nhân viên</h1>
+        <p th:text="'Đơn vị ' + ${unit.label} + '. Tạo tài khoản trên phần mềm và (tuỳ chọn) tạo luôn trên máy chấm công.'">Đơn vị</p>
+      </div>
+    </div>
+
+    <div class="flash err" th:if="${error != null}" th:text="${error}"></div>
+
+    <section class="card">
+      <h2>1. Thông tin nhân viên</h2>
+      <div class="grid">
+        <div class="f"><label for="deviceNo">Mã trên máy chấm công</label>
+          <input id="deviceNo" name="deviceNo" required inputmode="numeric" pattern="[0-9]{1,9}" maxlength="9"
+                 th:value="${draft != null} ? ${draft['deviceNo']} : ${suggestNo}">
+          <small th:text="${unit.legacyUnit} ? 'Mã nhân viên = mã này' : 'Mã nhân viên = ' + ${unit.code} + ' + mã này (VD ' + ${unit.code} + ${suggestNo} + ')'">Mã NV</small></div>
+        <div class="f" style="grid-column: span 2"><label for="fullName">Họ và tên</label>
+          <input id="fullName" name="fullName" required maxlength="150" th:value="${draft != null} ? ${draft['fullName']} : ''" placeholder="VD: Nguyễn Văn An"></div>
+        <div class="f"><label for="gender">Giới tính</label>
+          <select id="gender" name="gender" class="in"><option value="">—</option>
+            <option th:each="g : ${genders}" th:value="${g}" th:text="${g}" th:selected="${draft != null and draft['gender'] == g}">Nam</option></select></div>
+        <div class="f"><label for="phone">Số điện thoại</label>
+          <input id="phone" name="phone" type="tel" maxlength="20" th:value="${draft != null} ? ${draft['phone']} : ''"></div>
+        <div class="f"><label for="department">Phòng ban</label>
+          <input id="department" name="department" list="deptList" maxlength="100" th:value="${draft != null} ? ${draft['department']} : ''" placeholder="Chọn hoặc gõ">
+          <datalist id="deptList"><option th:each="d : ${depts}" th:value="${d}"></option></datalist></div>
+        <div class="f"><label for="position">Chức vụ</label>
+          <select id="position" name="position" class="in"><option value="STAFF">Nhân viên</option><option value="MANAGER">Trưởng phòng</option></select></div>
+        <div class="f"><label for="jobTitle">Chức danh công việc</label>
+          <input id="jobTitle" name="jobTitle" maxlength="150" placeholder="VD: Tư vấn bán hàng"></div>
+        <div class="f"><label for="employeeType">Loại nhân viên</label>
+          <select id="employeeType" name="employeeType" class="in">
+            <option value="THU_VIEC">Thử việc</option><option value="CHINH_THUC">Chính thức</option><option value="HOC_VIEC">Học việc</option></select>
+          <small>Thử việc, học việc không được cộng phép năm</small></div>
+        <div class="f"><label for="contractType">Loại hợp đồng</label>
+          <select id="contractType" name="contractType" class="in"><option value="">—</option>
+            <option th:each="c : ${contractTypes}" th:value="${c}" th:text="${c}">c</option></select></div>
+        <div class="f"><label for="startDate">Ngày vào làm</label>
+          <input id="startDate" name="startDate" type="date" th:value="${#temporals.createToday()}"></div>
+        <div class="f"><label for="password">Mật khẩu đăng nhập ban đầu</label>
+          <input id="password" name="password" type="text" required minlength="6" value="123456">
+          <small>Tên đăng nhập = mã nhân viên. Nhắc nhân viên đổi mật khẩu.</small></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. Máy chấm công</h2>
+      <label class="chk" th:if="${unit.hasDevice}"><input type="checkbox" name="toDevice" checked>
+        <span>Tạo luôn trên máy chấm công <b th:text="${unit.deviceUrl}">http://…</b></span></label>
+      <p class="hint" th:unless="${unit.hasDevice}" style="margin:0">Đơn vị chưa khai máy chấm công: chỉ tạo trên phần mềm.</p>
+      <div class="grid" th:if="${unit.hasDevice}">
+        <div class="f"><label for="face">Ảnh khuôn mặt (tuỳ chọn)</label>
+          <input id="face" name="face" type="file" accept="image/jpeg,image/png" style="padding:6px 10px;height:auto">
+          <small>Chính diện, rõ mặt, đủ sáng, 1 người. Tự thu nhỏ cho vừa máy. Lưu luôn làm ảnh thẻ.</small></div>
+        <div class="f"><label for="cardNo">Số thẻ từ (tuỳ chọn)</label>
+          <input id="cardNo" name="cardNo" inputmode="numeric" pattern="[0-9]{4,20}" maxlength="20"></div>
+      </div>
+      <p class="hint" th:if="${unit.hasDevice}" style="margin:0"><i class="fa-solid fa-fingerprint"></i>
+        Vân tay không gửi qua mạng được: sau khi tạo, nhân viên ra máy, quản trị máy chọn người theo mã để quẹt vân tay.</p>
+    </section>
+
+    <div><button class="btn btn-brand" type="submit"><i class="fa-solid fa-user-plus"></i>Tạo nhân viên</button></div>
+  </form>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

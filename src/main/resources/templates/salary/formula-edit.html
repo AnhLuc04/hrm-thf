@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{salary/fragments :: head(${title})}"></head>
+<body>
+<nav th:replace="~{salary/fragments :: nav('formula')}"></nav>
+
+<div class="container-fluid pb-5">
+
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <a th:href="@{/salary-formula}" class="btn btn-sm btn-outline-secondary">&larr; Danh sách</a>
+        <h4 class="mb-0" th:text="${title}">Công thức</h4>
+    </div>
+
+    <div th:if="${!#lists.isEmpty(errors)}" class="alert alert-danger">
+        <b>Chưa lưu được, vui lòng sửa:</b>
+        <ul class="mb-0 mt-1 mono">
+            <li th:each="e : ${errors}" th:text="${e}"></li>
+        </ul>
+    </div>
+    <div th:replace="~{salary/fragments :: flash}"></div>
+    <div th:if="${readOnlyShared}" class="alert alert-warning py-2">
+        Đây là <b>mẫu dùng chung</b> cho mọi đơn vị (hoặc mẫu của đơn vị khác), chỉ quản trị hệ thống sửa được.
+        Muốn đổi công thức cho đơn vị mình: quay lại danh sách mẫu, bấm <b>Nhân bản</b> rồi sửa bản sao.
+    </div>
+
+    <div class="row g-3">
+
+        <!-- ================= FORM ================= -->
+        <div class="col-xl-8">
+            <form th:action="@{/salary-formula/save}" method="post" id="formulaForm">
+                <input type="hidden" name="id" th:value="${formula.id}">
+
+                <div class="card">
+                    <div class="card-body row g-2">
+                        <div class="col-md-7">
+                            <label class="form-label small mb-1">Tên mẫu <span class="text-danger">*</span></label>
+                            <input name="name" class="form-control form-control-sm" th:value="${formula.name}" required
+                                   placeholder="VD: Kinh doanh, Dịch vụ, Văn phòng, Thử việc">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small mb-1">Mẫu mặc định cho phòng ban</label>
+                            <select name="department" class="form-select form-select-sm">
+                                <option value="">-- Không gắn phòng (chỉ dùng khi chọn cho từng NV) --</option>
+                                <option th:each="d : ${departments}" th:value="${d}" th:text="${d}"
+                                        th:selected="${formula.department != null and #strings.equalsIgnoreCase(d, formula.department)}"></option>
+                            </select>
+                            <div class="form-text" th:if="${formula.department != null}"
+                                 th:text="${deptCount} + ' NV phòng ' + ${formula.department} + ' tự dùng mẫu này (trừ người được chọn mẫu khác)'"></div>
+                            <div class="form-text" th:unless="${formula.department != null}">
+                                Chọn phòng: mọi NV phòng đó chưa được chọn mẫu riêng sẽ tự tính theo mẫu này.</div>
+                        </div>
+                        <div class="col-12 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="active" id="active"
+                                       th:checked="${formula.activeOrDefault()}">
+                                <label class="form-check-label" for="active">Đang dùng
+                                    <span class="text-muted small">(tắt = nhân viên dùng mẫu này tạm không tính lương)</span></label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Ghi chú</label>
+                            <input name="ghiChu" class="form-control form-control-sm" th:value="${formula.ghiChu}">
+                        </div>
+                        <div class="col-12 small text-muted" th:if="${formula.id != null}"
+                             th:text="${#lists.size(testUsers)} + ' nhân viên đang dùng mẫu này. Sửa mẫu sẽ áp dụng cho tất cả họ ở lần tính lương tiếp theo.'"></div>
+                    </div>
+                </div>
+
+                <!-- ---------- THAM SỐ = TỈ LỆ NHẬP THEO NHÂN VIÊN ---------- -->
+                <div class="card">
+                    <div class="card-header">
+                        <b>1. Tham số / tỉ lệ nhập theo nhân viên</b>
+                        <span class="text-muted small">mỗi dòng <code>ten = giá trị mặc định   # tên hiển thị</code>.
+                            Mỗi dòng sẽ thành 1 ô nhập tỉ lệ cho từng nhân viên dùng mẫu này; để trống thì dùng giá trị mặc định ở đây.</span>
+                    </div>
+                    <div class="card-body">
+                        <textarea name="thamSo" class="form-control mono" th:text="${formula.thamSo}"
+                                  placeholder="tyLeHoaHong = 1%        # Tỉ lệ hoa hồng&#10;doanhSo = 0            # Doanh số tháng&#10;heSoOtThuong = 1.5     # HS thêm giờ&#10;congChuanCoDinh = 26   # Công chuẩn cố định"></textarea>
+                        <div class="form-text">Ghi đè được cả tham số mặc định của hệ thống (bảng bên phải), VD <code>tyLeBhxh = 10.5%</code>
+                            để nhập tỉ lệ BHXH riêng từng người.</div>
+                    </div>
+                </div>
+
+                <!-- ---------- BIẾN TRUNG GIAN ---------- -->
+                <div class="card">
+                    <div class="card-header">
+                        <b>2. Biến trung gian</b>
+                        <span class="text-muted small">mỗi dòng <code>ten = biểu thức</code>, tính sau khi có dữ liệu chấm công,
+                            trước các hạng mục lương. Dùng để đặt tên cho khoản mới rồi cộng vào Tổng thu nhập.</span>
+                    </div>
+                    <div class="card-body">
+                        <textarea name="bienTrungGian" class="form-control mono" th:text="${formula.bienTrungGian}"
+                                  placeholder="# VD&#10;phuCapDienThoai = 500000 * tyLeCong&#10;hoaHong = doanhSo * tyLeHoaHong"></textarea>
+                    </div>
+                </div>
+
+                <!-- ---------- HẠNG MỤC ---------- -->
+                <div class="card">
+                    <div class="card-header">
+                        <b>3. Hạng mục lương</b>
+                        <span class="text-muted small">tính từ trên xuống; mục dưới dùng được kết quả mục trên (theo mã).
+                            Mục <b>thưởng (II.1–II.4)</b> để trống = lấy đúng số nhập ở Khoản theo tháng / ERP;
+                            muốn thưởng theo tỉ lệ từng NV thì khai báo tỉ lệ ở ô Tham số, VD
+                            <code>tyLeThuongDichVu = 100%</code> rồi viết <code>nhapThuongDichVu * tyLeThuongDichVu</code>.</span>
+                        <button type="button" id="fillAll" class="btn btn-sm btn-outline-primary float-end">Điền mẫu cho các ô trống</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                            <tr th:each="it : ${items}">
+                                <td style="width: 28%">
+                                    <div th:text="${it.label()}">Lương ngày công</div>
+                                    <span th:if="${it.optional()}" class="badge text-bg-light border fw-normal">tuỳ chọn</span>
+                                    <code class="small" th:text="${it.code()}">luongNgayCong</code>
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input class="form-control mono formula-input"
+                                               th:name="'item_' + ${it.code()}"
+                                               th:value="${formula.items.get(it.code())}"
+                                               th:attr="data-suggest=${it.defaultFormula()}"
+                                               th:placeholder="'Gợi ý: ' + ${it.defaultFormula()}">
+                                        <button type="button" class="btn btn-outline-secondary copy-inherit"
+                                                title="Thay bằng công thức gợi ý">Mẫu</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary">Kiểm tra &amp; lưu</button>
+                    <a th:href="@{/salary-formula}" class="btn btn-outline-secondary">Huỷ</a>
+                </div>
+            </form>
+
+            <!-- ---------- THỬ TÍNH ---------- -->
+            <div class="card mt-3" th:if="${formula.id != null and !#lists.isEmpty(testUsers)}">
+                <div class="card-body">
+                    <form th:action="@{/payroll/auto-calculate/trace}" method="get" target="_blank" class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small mb-1">Thử tính cho nhân viên đang dùng mẫu (công thức ĐÃ LƯU)</label>
+                            <select name="userId" class="form-select form-select-sm">
+                                <option th:each="u : ${testUsers}" th:value="${u.id}"
+                                        th:text="${u.employeeNo} + ' - ' + ${u.fullName}"></option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Tháng</label>
+                            <input type="number" name="month" min="1" max="12" class="form-control form-control-sm" th:value="${testMonth}">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Năm</label>
+                            <input type="number" name="year" class="form-control form-control-sm" th:value="${testYear}">
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-sm btn-outline-success">Xem giải trình</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TRỢ GIÚP ================= -->
+        <div class="col-xl-4">
+            <div class="card help-panel">
+                <div class="card-body">
+                    <h6>Cú pháp</h6>
+                    <p class="mb-2">Như Excel: <code>+ - * / ^ ( )</code>, so sánh <code>= &lt;&gt; &lt; &lt;= &gt; &gt;=</code>,
+                        <code>AND OR NOT</code>. Số thập phân dùng dấu chấm <code>0.105</code>, được viết <code>10.5%</code>,
+                        <code>15_500_000</code>. Tên biến không phân biệt hoa thường. Bấm vào tên biến để chèn vào ô đang chọn.</p>
+
+                    <h6 class="mt-3">Hàm</h6>
+                    <div th:each="fn : ${functions}" class="mb-1">
+                        <code th:text="${fn.syntax()}"></code>
+                        <div class="text-muted" th:text="${fn.description()}"></div>
+                    </div>
+
+                    <h6 class="mt-3">Tham số mặc định</h6>
+                    <table class="table table-sm small mb-2">
+                        <tr th:each="p : ${builtinParams}">
+                            <td><code class="ins" th:text="${p.name()}"></code></td>
+                            <td class="num" th:text="${@salaryFmt.num(p.value())}"></td>
+                            <td class="text-muted" th:text="${p.label()}"></td>
+                        </tr>
+                    </table>
+
+                    <th:block th:each="g : ${inputGroups}">
+                        <h6 class="mt-3" th:text="${g.key}">Nhóm</h6>
+                        <div th:each="v : ${g.value}" class="mb-1">
+                            <code class="ins" th:text="${v.name()}"></code>
+                            <span class="text-muted" th:text="${v.label()}"></span>
+                        </div>
+                    </th:block>
+
+                    <h6 class="mt-3">Hạng mục (dùng được ở mục phía sau)</h6>
+                    <div th:each="it : ${items}" class="mb-1">
+                        <code class="ins" th:text="${it.code()}"></code>
+                        <span class="text-muted" th:text="${it.label()}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{salary/fragments :: scripts}"></th:block>
+<script>
+    // Chép công thức kế thừa (placeholder) vào ô để sửa tiếp
+    document.querySelectorAll('.copy-inherit').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = btn.parentElement.querySelector('input');
+            if (!input.value.trim() || input.value.trim() === input.dataset.suggest
+                || confirm('Thay công thức đang có bằng công thức gợi ý?')) {
+                input.value = input.dataset.suggest;
+            }
+            input.focus();
+        });
+    });
+
+    // Công thức chung: điền mẫu gợi ý cho mọi ô đang trống
+    const fillAll = document.getElementById('fillAll');
+    if (fillAll) fillAll.addEventListener('click', () => {
+        document.querySelectorAll('input.formula-input').forEach(i => {
+            if (!i.value.trim()) i.value = i.dataset.suggest;
+        });
+    });
+
+    // Bấm tên biến ở khung trợ giúp -> chèn vào ô đang soạn gần nhất
+    let lastField = null;
+    document.querySelectorAll('#formulaForm input.mono, #formulaForm textarea.mono')
+        .forEach(el => el.addEventListener('focus', () => lastField = el));
+    document.querySelectorAll('code.ins').forEach(code => {
+        code.title = 'Bấm để chèn';
+        code.addEventListener('click', () => {
+            if (!lastField) return;
+            const s = lastField.selectionStart ?? lastField.value.length;
+            const e = lastField.selectionEnd ?? lastField.value.length;
+            const text = code.textContent;
+            lastField.value = lastField.value.slice(0, s) + text + lastField.value.slice(e);
+            lastField.focus();
+            lastField.setSelectionRange(s + text.length, s + text.length);
+        });
+    });
+</script>
+</body>
+</html>

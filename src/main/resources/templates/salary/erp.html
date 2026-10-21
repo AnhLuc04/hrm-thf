@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{salary/fragments :: head('Kết nối ERP')}"></head>
+<body>
+<nav th:replace="~{salary/fragments :: nav('erp')}"></nav>
+
+<div class="container pb-5">
+  <div th:replace="~{salary/fragments :: flash}"></div>
+
+  <h4>Kết nối SQL Server (Cyber ERP) - lấy thưởng tự động</h4>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <table class="table table-sm mb-0">
+        <tr>
+          <th style="width:220px">Trạng thái</th>
+          <td>
+            <span th:if="${erp.enabled}" class="badge text-bg-success">ĐANG BẬT</span>
+            <span th:unless="${erp.enabled}" class="badge text-bg-secondary">TẮT</span>
+            <span th:if="${erp.flagEnabled and !erp.enabled}" class="text-danger small">(đã bật nhưng thiếu payroll.erp.url)</span>
+            <span th:unless="${erp.enabled}" class="small text-muted">- đang dùng số nhập tay ở Khoản theo tháng cho mọi loại thưởng</span>
+          </td>
+        </tr>
+        <tr>
+          <th>Chuỗi kết nối</th>
+          <td class="mono" th:text="${erp.urlMasked != '' ? erp.urlMasked : '(chưa khai báo)'}"></td>
+        </tr>
+        <tr>
+          <th>Tài khoản</th>
+          <td class="mono" th:text="${erp.username != null and erp.username != '' ? erp.username : '(chưa khai báo)'}"></td>
+        </tr>
+        <tr>
+          <th>Đơn vị số tiền SQL trả về</th>
+          <td th:text="${erp.amountUnit == 1000 ? 'nghìn đồng (×1.000)' : (erp.amountUnit == 1 ? 'đồng' : '×' + erp.amountUnit)}"></td>
+        </tr>
+        <tr>
+          <th>Bộ nhớ đệm</th>
+          <td>
+            <span th:text="${erp.cacheMinutes} + ' phút'"></span>
+            <form th:action="@{/salary-erp/clear-cache}" method="post" class="d-inline ms-2">
+              <input type="hidden" name="month" th:value="${month}">
+              <input type="hidden" name="year" th:value="${year}">
+              <button class="btn btn-sm btn-outline-secondary py-0">Xoá bộ nhớ đệm</button>
+            </form>
+          </td>
+        </tr>
+        <tr th:if="${erp.lastError != null}">
+          <th class="text-danger">Lỗi gần nhất</th>
+          <td class="mono text-danger small" th:text="${erp.lastError}"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <h5>Câu SQL theo loại thưởng</h5>
+  <div class="card mb-3">
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0 align-middle">
+        <thead class="table-light">
+        <tr>
+          <th>Loại thưởng</th>
+          <th>Khai báo</th>
+          <th>Câu SQL</th>
+          <th style="width:260px">Chạy thử</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="t : ${types}">
+          <td>
+            <span th:text="${t['type'].label}"></span>
+            <span th:if="${t['active']}" class="badge text-bg-info">ERP</span>
+            <span th:unless="${t['active']}" class="badge text-bg-light border">nhập tay</span>
+          </td>
+          <td class="mono small" th:text="'payroll.erp.sql.' + ${t['type'].name()}"></td>
+          <td class="mono small">
+            <span th:if="${t['sql'] != null}" th:text="${t['sql']}"></span>
+            <span th:if="${t['sql'] == null}" class="text-muted">(chưa cấu hình)</span>
+          </td>
+          <td>
+            <form th:if="${t['active']}" th:action="@{/salary-erp/test}" method="post" class="d-flex gap-1">
+              <input type="hidden" name="type" th:value="${t['type'].name()}">
+              <input type="number" name="month" min="1" max="12" class="form-control form-control-sm" style="width:65px" th:value="${month}">
+              <input type="number" name="year" class="form-control form-control-sm" style="width:80px" th:value="${year}">
+              <button class="btn btn-sm btn-outline-primary">Thử</button>
+            </form>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ---------- KẾT QUẢ CHẠY THỬ ---------- -->
+  <div th:if="${test != null}" class="card mb-3">
+    <div class="card-header">
+      Kết quả chạy thử: <b th:text="${test['type'].label}"></b> tháng <span th:text="${month} + '/' + ${year}"></span>
+      <span class="text-muted small" th:text="'(' + ${test['ms']} + ' ms)'"></span>
+    </div>
+    <div class="card-body">
+      <div th:if="${test['error'] != null}" class="alert alert-danger mono small" th:text="${test['error']}"></div>
+      <p class="mb-2">
+        <b th:text="${test['rows']}"></b> mã NV, tổng <b th:text="${@salaryFmt.money(test['total'])}"></b> đồng.
+        <span th:if="${!#lists.isEmpty(test['unmatched'])}" class="text-danger"
+              th:text="${#lists.size(test['unmatched'])} + ' mã không khớp nhân viên nào trong HRM: ' + ${#strings.listJoin(test['unmatched'], ', ')}"></span>
+      </p>
+      <table class="table table-sm" th:if="${!#lists.isEmpty(test['sample'])}">
+        <thead><tr><th>Mã NV (ERP)</th><th>Nhân viên HRM</th><th class="num">Số tiền (đồng)</th></tr></thead>
+        <tbody>
+        <tr th:each="r : ${test['sample']}">
+          <td class="mono" th:text="${r['code']}"></td>
+          <td th:text="${r['name'] ?: '— không khớp —'}" th:classappend="${r['name'] == null} ? 'text-danger'"></td>
+          <td class="num" th:text="${@salaryFmt.money(r['amount'])}"></td>
+        </tr>
+        </tbody>
+      </table>
+      <div class="small text-muted" th:if="${test['rows'] > 50}">Chỉ hiện 50 dòng đầu.</div>
+    </div>
+  </div>
+
+  <!-- ---------- HƯỚNG DẪN ---------- -->
+  <div class="card">
+    <div class="card-header">Cách bật (khai báo trong <code>application.properties</code>, khởi động lại ứng dụng)</div>
+    <div class="card-body small">
+<pre class="mono bg-light p-2 border rounded mb-2">payroll.erp.enabled=true
+payroll.erp.url=jdbc:sqlserver://10.0.0.5:1433;databaseName=CYBER;encrypt=false
+payroll.erp.username=hrm_read
+payroll.erp.password=********
+payroll.erp.amount-unit=1        # SQL trả về ĐỒNG (1000 nếu trả về nghìn đồng)
+payroll.erp.cache-minutes=10
+
+# Mỗi loại 1 câu, tham số :year :month :from :to ; trả về 2 cột: mã NV, số tiền
+payroll.erp.sql.THUONG_CHINH_SACH=SELECT ma_nv, so_tien FROM v_thuong_chinh_sach WHERE nam = :year AND thang = :month
+payroll.erp.sql.THUONG_DICH_VU=EXEC dbo.usp_ThuongDichVu @Nam = :year, @Thang = :month</pre>
+      <ul class="mb-0">
+        <li><code>build.gradle</code> cần thêm driver: <code>runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'</code></li>
+        <li>Nên dùng tài khoản SQL <b>chỉ có quyền đọc</b> (SELECT / EXECUTE) các view / thủ tục thưởng.</li>
+        <li>Loại chưa khai báo câu SQL vẫn nhập tay ở <a th:href="@{/salary-monthly}">Khoản theo tháng</a>.</li>
+        <li>ERP lỗi / mất kết nối: hệ thống dùng số lấy được lần trước (nếu có), ghi log và hiện cảnh báo trên trang Tính lương - không làm hỏng việc tính lương.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<th:block th:replace="~{salary/fragments :: scripts}"></th:block>
+</body>
+</html>

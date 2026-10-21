@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>Hạn xác nhận công · Thanh Hóa Ford HRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+  <style>
+    :root { --bg: #f7f8fa; --panel: #fff; --ink: #0b1220; --ink2: #344054; --muted: #667085; --faint: #98a2b3; --line: #eaecf0;
+            --brand: #4f46e5; --brand-50: #eef2ff; --warn: #b54708; --warn-50: #fffaeb; --ok: #067647; --ok-50: #ecfdf3; --err: #b42318; --err-50: #fef3f2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink2); font: 14px/1.55 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 24px 48px; display: grid; gap: 16px; }
+    .ph { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }
+    .ph h1 { margin: 0; font-size: 22px; color: var(--ink); }
+    .ph p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+    .ph form { display: flex; gap: 8px; align-items: center; }
+    .flash { border-radius: 10px; padding: 10px 14px; font-weight: 500; }
+    .flash.ok { background: var(--ok-50); color: var(--ok); } .flash.err { background: var(--err-50); color: var(--err); }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+    .stat small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+    .stat b { font-size: 24px; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .stat.err b { color: var(--err); } .stat.warn b { color: var(--warn); }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    .panel > h2 { margin: 0; padding: 14px 16px; font-size: 15px; color: var(--ink); border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center; }
+    .panel > h2 span { font-weight: 500; color: var(--muted); font-size: 13px; }
+    .row { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(0, 1.4fr) minmax(0, 1.2fr) auto; gap: 14px; align-items: start; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .row:last-child { border-bottom: 0; }
+    .who b { display: block; color: var(--ink); }
+    .who small { color: var(--muted); }
+    .lab { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); margin-bottom: 3px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .chip { font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+    .chip.lock { background: var(--err-50); color: var(--err); }
+    .chip.due { background: var(--warn-50); color: var(--warn); }
+    .none { color: var(--faint); font-size: 12.5px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff;
+           font: inherit; font-weight: 600; font-size: 13px; color: var(--ink2); cursor: pointer; white-space: nowrap; }
+    .btn-brand { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .btn-del { color: var(--err); border-color: #fecdca; background: var(--err-50); height: 30px; }
+    details.open-form { grid-column: 1 / -1; }
+    details.open-form > summary { list-style: none; }
+    details.open-form > summary::-webkit-details-marker { display: none; }
+    .of { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 10px; align-items: end; padding: 12px; margin-top: 4px; background: #f8f9ff; border: 1px solid #e0e7ff; border-radius: 12px; }
+    .f { display: grid; gap: 4px; min-width: 0; }
+    .f label { font-size: 12px; font-weight: 600; }
+    .f input, .f select { width: 100%; min-width: 0; height: 36px; border: 1px solid #d0d5dd; border-radius: 9px; padding: 0 10px; font: inherit; background: #fff; color: var(--ink); }
+    .empty { padding: 26px 16px; text-align: center; color: var(--muted); }
+    .ext { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .ext:last-child { border-bottom: 0; }
+    .ext b { color: var(--ink); }
+    .ext small { display: block; color: var(--muted); }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    @media (max-width: 860px) {
+      .wrap { padding: 18px 16px 40px; }
+      .row { grid-template-columns: minmax(0, 1fr) auto; }
+      .row .c-lock, .row .c-due { grid-column: 1 / -1; }
+      .row .c-act { grid-column: 2; grid-row: 1; }
+      .of { grid-template-columns: 1fr 1fr; }
+      .of .f.wide, .of button { grid-column: 1 / -1; }
+      .stats { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+      .stat { padding: 10px 12px; } .stat b { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('deadline', 'Hạn xác nhận công')}"></th:block>
+<div class="sh-main">
+  <div class="wrap">
+    <div class="ph">
+      <div>
+        <h1>Hạn xác nhận công</h1>
+        <p th:text="${scopeLabel} + ': ' + (${confirmDays > 0}
+              ? 'ngày lỗi chấm công phải gửi giải trình trong ' + ${confirmDays} + ' ngày, quá hạn tự khóa. Mở lại cho nhân viên có lý do chính đáng (ốm, công tác...).'
+              : 'đơn vị không giới hạn hạn xác nhận (cài ở Đơn vị & giờ làm).')">Hạn 7 ngày</p>
+      </div>
+      <form method="get" th:action="@{/attendance/deadline}">
+        <label for="month" class="lab" style="margin:0">Tháng</label>
+        <input id="month" type="month" name="month" th:value="${month}" th:max="${#temporals.format(today, 'yyyy-MM')}"
+               class="btn" style="font-weight:500" onchange="this.form.submit()">
+      </form>
+    </div>
+    <div th:if="${message}" class="flash ok" th:text="${message}"></div>
+    <div th:if="${error}" class="flash err" th:text="${error}"></div>
+
+    <div class="stats">
+      <div class="stat err"><small>Ngày đã khóa</small><b th:text="${lockedTotal}">3</b></div>
+      <div class="stat warn"><small>Sắp hết hạn (≤ 2 ngày)</small><b th:text="${dueTotal}">5</b></div>
+      <div class="stat"><small>Đang mở lại</small><b th:text="${#lists.size(extensions)}">1</b></div>
+    </div>
+
+    <section class="panel" aria-label="Nhân viên chưa xác nhận">
+      <h2>Chưa xác nhận <span th:text="'· tháng ' + ${monthLabel}">· tháng 10/2026</span></h2>
+      <div class="row" th:each="r : ${rows}">
+        <div class="who">
+          <b th:text="${r.user.fullName}">Nguyễn Văn Minh</b>
+          <small th:text="${r.user.employeeNo} + ' · ' + (${r.user.department} ?: '')">00070 · Kinh Doanh 1</small>
+        </div>
+        <div class="c-lock"><span class="lab">Đã khóa</span>
+          <div class="chips" th:unless="${#lists.isEmpty(r.locked)}"><span class="chip lock" th:each="d : ${r.locked}" th:text="${#temporals.format(d, 'dd/MM')}">02/10</span></div>
+          <span class="none" th:if="${#lists.isEmpty(r.locked)}">Không có</span></div>
+        <div class="c-due"><span class="lab" th:text="${r.nearestDeadline != null} ? 'Sắp hết hạn · hạn gần nhất ' + ${#temporals.format(r.nearestDeadline, 'dd/MM')} : 'Sắp hết hạn'">Sắp hết hạn</span>
+          <div class="chips" th:unless="${#lists.isEmpty(r.dueSoon)}"><span class="chip due" th:each="d : ${r.dueSoon}" th:text="${#temporals.format(d, 'dd/MM')}">07/10</span></div>
+          <span class="none" th:if="${#lists.isEmpty(r.dueSoon)}">Không có</span></div>
+        <div class="c-act">
+          <button th:if="${r.firstLocked != null}" type="button" class="btn" th:attr="data-open=${r.user.employeeNo}">
+            <i class="fa-solid fa-lock-open"></i>Mở lại</button>
+        </div>
+        <details class="open-form" th:if="${r.firstLocked != null}" th:id="'of-' + ${r.user.employeeNo}">
+          <summary hidden>Mở lại</summary>
+          <form class="of" method="post" th:action="@{/attendance/deadline/open}">
+            <input type="hidden" name="employeeNo" th:value="${r.user.employeeNo}">
+            <input type="hidden" name="month" th:value="${month}">
+            <div class="f"><label>Ngày lỗi từ</label><input type="date" name="fromDate" required th:value="${r.firstLocked}"></div>
+            <div class="f"><label>đến</label><input type="date" name="toDate" required th:value="${r.lastLocked}"></div>
+            <div class="f"><label>Cho gửi đến hết</label><input type="date" name="openUntil" required th:value="${defaultUntil}" th:min="${today}" th:max="${maxUntil}"></div>
+            <div class="f wide"><label>Lý do</label><input name="reason" maxlength="300" placeholder="VD: nghỉ ốm có giấy viện"></div>
+            <button class="btn btn-brand" type="submit"><i class="fa-solid fa-lock-open"></i>Mở lại</button>
+          </form>
+        </details>
+      </div>
+      <div class="empty" th:if="${#lists.isEmpty(rows)}">Không ai có ngày bị khóa hay sắp hết hạn trong tháng này.</div>
+    </section>
+
+    <section class="panel" aria-label="Mở lại cho nhân viên">
+      <h2>Mở lại cho nhân viên khác <span>· VD ngày lỗi tháng trước</span></h2>
+      <form class="of" method="post" th:action="@{/attendance/deadline/open}" style="margin:12px 16px 16px">
+        <input type="hidden" name="month" th:value="${month}">
+        <div class="f wide"><label for="eNo">Nhân viên</label>
+          <select id="eNo" name="employeeNo" required>
+            <option value="">Chọn nhân viên</option>
+            <option th:each="u : ${staff}" th:value="${u.employeeNo}" th:text="${u.employeeNo} + ' · ' + ${u.fullName}">00070 · Nguyễn Văn Minh</option>
+          </select></div>
+        <div class="f"><label>Ngày lỗi từ</label><input type="date" name="fromDate" required></div>
+        <div class="f"><label>đến</label><input type="date" name="toDate" required></div>
+        <div class="f"><label>Cho gửi đến hết</label><input type="date" name="openUntil" required th:value="${defaultUntil}" th:min="${today}" th:max="${maxUntil}"></div>
+        <div class="f wide"><label>Lý do</label><input name="reason" maxlength="300"></div>
+        <button class="btn btn-brand" type="submit">Mở lại</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-label="Đang mở lại">
+      <h2>Đang mở lại</h2>
+      <div class="ext" th:each="e : ${extensions}" th:with="u=${byNo[e.employeeNo]}">
+        <div>
+          <b th:text="${u != null ? u.fullName : e.employeeNo}">Nguyễn Văn Minh</b>
+          <small th:text="'Ngày lỗi ' + ${#temporals.format(e.fromDate, 'dd/MM')} + ' – ' + ${#temporals.format(e.toDate, 'dd/MM')}
+                          + ' · gửi được đến hết ' + ${#temporals.format(e.openUntil, 'dd/MM/yyyy')}
+                          + ' · ' + (${e.grantedByName} ?: ${e.grantedBy}) + (${e.reason != null and !#strings.isEmpty(e.reason)} ? ' · ' + ${e.reason} : '')">...</small>
+        </div>
+        <form method="post" th:action="@{/attendance/deadline/{id}/revoke(id=${e.id})}" onsubmit="return confirm('Huỷ mở lại?')">
+          <input type="hidden" name="month" th:value="${month}">
+          <button class="btn btn-del" type="submit">Huỷ</button>
+        </form>
+      </div>
+      <div class="empty" th:if="${#lists.isEmpty(extensions)}">Chưa mở lại cho ai.</div>
+    </section>
+  </div>
+</div>
+<script>
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-open]');
+    if (!b) return;
+    const d = document.getElementById('of-' + b.dataset.open);
+    if (d) { d.open = !d.open; if (d.open) d.querySelector('input[name=reason]').focus(); }
+  });
+</script>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

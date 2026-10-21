@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đơn Nghỉ Phép | Quản Lý Chấm Công</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .appear { animation: fadeInUp .3s ease both; }
+    .session-radio:checked + label {
+      border-color: #6366f1; background: #eef2ff; color: #4338ca;
+      box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+    }
+    .session-radio:checked + label .session-icon { background: #6366f1; color: #fff; }
+    .tab-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .6; }
+  </style>
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen"
+      th:with="lst=${leaves != null ? leaves : {}},
+               cntPending=${#lists.size(lst.?[status == 'PENDING'])},
+               cntApproved=${#lists.size(lst.?[status == 'APPROVED'])},
+               cntRejected=${#lists.size(lst.?[status == 'REJECTED'])}">
+<th:block th:replace="~{fragments/shell :: nav('leave', 'Đơn nghỉ phép')}"></th:block>
+<div class="sh-main">
+
+
+  <div class="max-w-6xl mx-auto px-4 py-6 md:py-8 space-y-6">
+
+    <!-- ═════════════ HEADER ═════════════ -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white
+                  flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">
+          <i class="fa-solid fa-plane-departure text-lg"></i>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-indigo-500 uppercase tracking-widest">Quản lý nghỉ phép</p>
+          <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Đơn nghỉ của tôi</h1>
+        </div>
+      </div>
+      <a href="javascript:history.back()"
+         class="bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-medium
+              hover:bg-slate-50 transition shadow-sm flex items-center gap-2">
+        <i class="fa-solid fa-arrow-left text-slate-400"></i> Quay lại
+      </a>
+    </div>
+
+    <!-- ═════════════ FLASH MESSAGE ═════════════ -->
+    <div th:if="${message}" class="appear flex items-start gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm">
+      <i class="fa-solid fa-circle-check mt-0.5 text-emerald-500"></i>
+      <span th:text="${message}">Gửi đơn thành công</span>
+    </div>
+    <div th:if="${error}" class="appear flex items-start gap-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl px-4 py-3 text-sm">
+      <i class="fa-solid fa-circle-exclamation mt-0.5 text-rose-500"></i>
+      <span th:text="${error}">Có lỗi xảy ra</span>
+    </div>
+
+    <!-- ═════════════ STATS ═════════════ -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fa-solid fa-file-lines"></i></div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tổng đơn</div>
+          <div class="text-xl font-black text-slate-800" th:text="${#lists.size(lst)}">0</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-amber-200 p-4 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-wider text-amber-500">Chờ duyệt</div>
+          <div class="text-xl font-black text-amber-600" th:text="${cntPending}">0</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-emerald-200 p-4 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center"><i class="fa-solid fa-circle-check"></i></div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Đã duyệt</div>
+          <div class="text-xl font-black text-emerald-600" th:text="${cntApproved}">0</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-rose-200 p-4 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"><i class="fa-solid fa-circle-xmark"></i></div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-wider text-rose-500">Từ chối</div>
+          <div class="text-xl font-black text-rose-600" th:text="${cntRejected}">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+
+      <!-- ═════════════ FORM TẠO ĐƠN ═════════════ -->
+      <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden lg:sticky lg:top-6">
+        <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-white flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-indigo-500"></i>
+          <h2 class="font-bold text-slate-900">Tạo đơn nghỉ mới</h2>
+        </div>
+
+        <form th:action="@{/leave/create}" method="post" th:object="${newLeave}"
+              id="leaveForm" class="p-5 space-y-4" onsubmit="return validateLeaveForm()">
+
+          <!-- Ngày -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="fromDate" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Từ ngày</label>
+              <input type="date" id="fromDate" th:field="*{fromDate}" required
+                     class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+            </div>
+            <div>
+              <label for="toDate" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Đến ngày</label>
+              <input type="date" id="toDate" th:field="*{toDate}" required
+                     class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+            </div>
+          </div>
+
+          <!-- Loại ca -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Loại ca</label>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <input type="radio" id="ss-full" value="FULL_DAY" th:field="*{sessionType}" class="session-radio sr-only">
+                <label for="ss-full" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-200 cursor-pointer text-slate-600 hover:bg-slate-50 transition">
+                  <span class="session-icon w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center transition"><i class="fa-solid fa-sun"></i></span>
+                  <span class="text-xs font-bold">Cả ngày</span>
+                </label>
+              </div>
+              <div>
+                <input type="radio" id="ss-morning" value="MORNING" th:field="*{sessionType}" class="session-radio sr-only">
+                <label for="ss-morning" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-200 cursor-pointer text-slate-600 hover:bg-slate-50 transition">
+                  <span class="session-icon w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center transition"><i class="fa-solid fa-mug-hot"></i></span>
+                  <span class="text-xs font-bold">Buổi sáng</span>
+                </label>
+              </div>
+              <div>
+                <input type="radio" id="ss-afternoon" value="AFTERNOON" th:field="*{sessionType}" class="session-radio sr-only">
+                <label for="ss-afternoon" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-200 cursor-pointer text-slate-600 hover:bg-slate-50 transition">
+                  <span class="session-icon w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center transition"><i class="fa-solid fa-cloud-sun"></i></span>
+                  <span class="text-xs font-bold">Buổi chiều</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ước tính số ngày -->
+          <div id="estimateBox" class="hidden items-center justify-between bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
+            <div class="text-xs font-semibold text-indigo-600">
+              <i class="fa-solid fa-calculator mr-1"></i> Ước tính số ngày nghỉ
+              <div class="text-[10px] font-medium text-indigo-400 mt-0.5">Đã trừ Chủ nhật · số chính thức do hệ thống tính</div>
+            </div>
+            <div class="text-2xl font-black text-indigo-700" id="estimateDays">0</div>
+          </div>
+          <div id="dateError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-2.5">
+            <i class="fa-solid fa-circle-exclamation mr-1"></i> "Đến ngày" phải lớn hơn hoặc bằng "Từ ngày".
+          </div>
+
+          <!-- Lý do -->
+          <div>
+            <label for="reason" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Lý do</label>
+            <textarea id="reason" th:field="*{reason}" rows="3" required maxlength="500"
+                      placeholder="VD: Việc gia đình, khám sức khỏe..."
+                      class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm resize-none
+                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"></textarea>
+          </div>
+
+          <button type="submit"
+                  class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[.98] text-white font-bold text-sm
+                       rounded-xl shadow-md shadow-indigo-100 transition flex items-center justify-center gap-2">
+            <i class="fa-regular fa-paper-plane"></i> Gửi đơn
+          </button>
+        </form>
+      </div>
+
+      <!-- ═════════════ DANH SÁCH ĐƠN ═════════════ -->
+      <div class="lg:col-span-3 space-y-4">
+
+        <!-- Tabs lọc -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Lịch sử đơn nghỉ
+          </h2>
+          <div class="flex gap-1.5 text-xs font-bold" th:if="${!#lists.isEmpty(lst)}">
+            <button type="button" data-filter="ALL"      class="tab-btn active px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 transition">Tất cả</button>
+            <button type="button" data-filter="PENDING"  class="tab-btn px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 transition">Chờ duyệt</button>
+            <button type="button" data-filter="APPROVED" class="tab-btn px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 transition">Đã duyệt</button>
+            <button type="button" data-filter="REJECTED" class="tab-btn px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 transition">Từ chối</button>
+          </div>
+        </div>
+
+        <!-- Empty -->
+        <div th:if="${#lists.isEmpty(lst)}"
+             class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+          <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-umbrella-beach text-2xl text-slate-400"></i>
+          </div>
+          <h3 class="font-semibold text-slate-700">Chưa có đơn nghỉ nào</h3>
+          <p class="text-slate-400 text-sm mt-1">Tạo đơn đầu tiên ở khung bên trái.</p>
+        </div>
+
+        <!-- Cards -->
+        <div class="space-y-3" id="leaveList">
+          <div th:each="l : ${lst}" th:data-status="${l.status}"
+               class="leave-card appear bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition overflow-hidden">
+
+            <div class="h-0.5 w-full"
+                 th:classappend="${l.status == 'APPROVED'} ? 'bg-emerald-400' : (${l.status == 'REJECTED'} ? 'bg-rose-400' : 'bg-amber-400')"></div>
+
+            <div class="p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+
+              <!-- Số ngày -->
+              <div class="flex sm:flex-col items-center sm:justify-center gap-2 sm:gap-0 sm:w-20 shrink-0
+                        sm:border-r sm:border-slate-100 sm:pr-4">
+                <div class="text-3xl font-black text-indigo-600 leading-none" th:text="${l.totalDays}">1.0</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:mt-1">ngày</div>
+              </div>
+
+              <!-- Info -->
+              <div class="flex-1 min-w-0 space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900">
+                  <i class="fa-regular fa-calendar text-slate-400"></i>
+                  <span th:text="${l.fromDate != null ? #temporals.format(l.fromDate, 'dd/MM/yyyy') : '—'}">01/10/2026</span>
+                  <i class="fa-solid fa-arrow-right-long text-slate-300 text-xs"></i>
+                  <span th:text="${l.toDate != null ? #temporals.format(l.toDate, 'dd/MM/yyyy') : '—'}">02/10/2026</span>
+                </span>
+
+                  <span th:switch="${l.sessionType}">
+                  <span th:case="'FULL_DAY'"  class="px-2 py-0.5 text-[10px] uppercase font-bold rounded bg-indigo-50 text-indigo-600"><i class="fa-solid fa-sun mr-0.5"></i> Cả ngày</span>
+                  <span th:case="'MORNING'"   class="px-2 py-0.5 text-[10px] uppercase font-bold rounded bg-sky-50 text-sky-600"><i class="fa-solid fa-mug-hot mr-0.5"></i> Sáng</span>
+                  <span th:case="'AFTERNOON'" class="px-2 py-0.5 text-[10px] uppercase font-bold rounded bg-violet-50 text-violet-600"><i class="fa-solid fa-cloud-sun mr-0.5"></i> Chiều</span>
+                  <span th:case="*" th:text="${l.sessionType}" class="px-2 py-0.5 text-[10px] uppercase font-bold rounded bg-slate-100 text-slate-600"></span>
+                </span>
+
+                  <span class="text-[10px] font-mono text-slate-400" th:text="'#' + ${l.id}">#1</span>
+                </div>
+
+                <p class="text-sm text-slate-600 italic border-l-2 border-indigo-200 pl-3 leading-relaxed line-clamp-2"
+                   th:text="${l.reason != null and !#strings.isEmpty(l.reason) ? l.reason : 'Không có lý do.'}">Lý do...</p>
+              </div>
+
+              <!-- Trạng thái + hành động -->
+              <div class="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0
+                        border-t border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
+              <span th:switch="${l.status}">
+                <span th:case="'PENDING'"  class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200"><i class="fa-solid fa-hourglass-half"></i> Chờ duyệt</span>
+                <span th:case="'APPROVED'" class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"><i class="fa-solid fa-circle-check"></i> Đã duyệt</span>
+                <span th:case="'REJECTED'" class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200"><i class="fa-solid fa-circle-xmark"></i> Từ chối</span>
+                <span th:case="*" th:text="${l.status}" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600"></span>
+              </span>
+
+                <!-- Nút duyệt/từ chối: chỉ hiện khi đơn đang chờ -->
+                <div class="flex gap-1.5" th:if="${l.status == 'PENDING'}">
+                  <a th:href="@{'/leave/approve/' + ${l.id}}"
+                     onclick="return confirm('Bạn có chắc chắn muốn DUYỆT đơn này?')"
+                     class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition whitespace-nowrap">
+                    <i class="fa-solid fa-check mr-0.5"></i> Duyệt
+                  </a>
+                  <a th:href="@{'/leave/reject/' + ${l.id}}"
+                     onclick="return confirm('Bạn có chắc chắn muốn TỪ CHỐI đơn này?')"
+                     class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-600 rounded-lg text-xs font-bold transition whitespace-nowrap">
+                    <i class="fa-solid fa-xmark mr-0.5"></i> Từ chối
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="filterEmpty" class="hidden text-center py-10 bg-white rounded-xl border border-dashed border-slate-300 text-sm text-slate-400">
+          Không có đơn nào ở trạng thái này.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ── Mặc định chọn "Cả ngày" nếu chưa có giá trị ──
+  (function () {
+    const radios = document.querySelectorAll('input[name="sessionType"]');
+    if (![...radios].some(r => r.checked)) {
+      const full = document.getElementById('ss-full');
+      if (full) full.checked = true;
+    }
+  })();
+
+  // ── Ước tính số ngày (trừ Chủ nhật) ──
+  const fromEl = document.getElementById('fromDate');
+  const toEl = document.getElementById('toDate');
+  const estimateBox = document.getElementById('estimateBox');
+  const estimateDays = document.getElementById('estimateDays');
+  const dateError = document.getElementById('dateError');
+
+  function getSession() {
+    const r = document.querySelector('input[name="sessionType"]:checked');
+    return r ? r.value : 'FULL_DAY';
+  }
+
+  function updateEstimate() {
+    const f = fromEl.value, t = toEl.value;
+    if (!f || !t) { estimateBox.classList.add('hidden'); estimateBox.classList.remove('flex'); dateError.classList.add('hidden'); return true; }
+
+    const from = new Date(f + 'T00:00:00'), to = new Date(t + 'T00:00:00');
+    if (to < from) {
+      dateError.classList.remove('hidden');
+      estimateBox.classList.add('hidden'); estimateBox.classList.remove('flex');
+      return false;
+    }
+    dateError.classList.add('hidden');
+
+    let days = 0;
+    for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+      if (d.getDay() !== 0) days++;
+    }
+    const perDay = getSession() === 'FULL_DAY' ? 1 : 0.5;
+    estimateDays.textContent = (days * perDay).toFixed(1);
+    estimateBox.classList.remove('hidden'); estimateBox.classList.add('flex');
+    return true;
+  }
+
+  fromEl.addEventListener('change', () => {
+    if (fromEl.value && (!toEl.value || toEl.value < fromEl.value)) toEl.value = fromEl.value;
+    toEl.min = fromEl.value;
+    updateEstimate();
+  });
+  toEl.addEventListener('change', updateEstimate);
+  document.querySelectorAll('input[name="sessionType"]').forEach(r => r.addEventListener('change', updateEstimate));
+  updateEstimate();
+
+  function validateLeaveForm() {
+    if (!updateEstimate()) { toEl.focus(); return false; }
+    return true;
+  }
+
+  // ── Lọc theo trạng thái ──
+  const tabs = document.querySelectorAll('.tab-btn');
+  const cards = document.querySelectorAll('.leave-card');
+  const filterEmpty = document.getElementById('filterEmpty');
+
+  tabs.forEach(btn => btn.addEventListener('click', () => {
+    tabs.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    let visible = 0;
+    cards.forEach(c => {
+      const show = f === 'ALL' || c.dataset.status === f;
+      c.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    filterEmpty.classList.toggle('hidden', visible > 0);
+  }));
+</script>
+</div><!-- /sh-main -->
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

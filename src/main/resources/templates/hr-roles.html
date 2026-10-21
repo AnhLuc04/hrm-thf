@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Chức vụ & phòng ban')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('roles', 'Chức vụ & phòng ban')}"></th:block>
+<div class="sh-main">
+  <div class="wrap">
+    <div class="ph">
+      <div>
+        <h1>Chức vụ &amp; phòng ban</h1>
+        <p th:if="${unit != null}">HCNS đơn vị <b th:text="${unit.label}">TH · Thanh Hóa Ford</b> chia Giám đốc, trưởng phòng, nhân viên. Chỉ thấy người của đơn vị mình.</p>
+      </div>
+    </div>
+
+    <div class="flash warn" th:if="${noUnit == true}">Chọn 1 đơn vị ở "Đang xem đơn vị" trên menu trái trước.</div>
+    <div class="flash ok" th:if="${message != null}" th:text="${message}"></div>
+    <div class="flash err" th:if="${error != null}" th:text="${error}"></div>
+
+    <th:block th:if="${unit != null}">
+      <div class="flash warn" th:unless="${#lists.isEmpty(warnings)}">
+        Cần xem lại:
+        <ul><li th:each="w : ${warnings}" th:text="${w}"></li></ul>
+      </div>
+
+      <!-- 1. NGƯỜI DUYỆT CẤP ĐƠN VỊ -->
+      <form class="card" th:action="@{/hr/roles/leaders}" method="post">
+        <h2>1. Ban giám đốc (người duyệt cấp đơn vị)</h2>
+        <p class="hint">Đơn xác nhận công của trưởng phòng Kinh doanh, quản trị và phòng chưa có trưởng lên Giám đốc. Phòng Dịch vụ lên GĐ dịch vụ, phòng Kế toán lên Kế toán trưởng (trống = Giám đốc duyệt).</p>
+        <div class="grid">
+          <div class="f"><label for="directorNo">Giám đốc</label>
+            <select id="directorNo" name="directorNo">
+              <option value="">— Chưa chọn —</option>
+              <option th:each="s : ${staff}" th:value="${s.employeeNo}" th:text="${s.employeeNo} + ' · ' + ${s.fullName}"
+                      th:selected="${unit.directorNo != null and #strings.equalsIgnoreCase(unit.directorNo, s.employeeNo)}"></option>
+            </select></div>
+          <div class="f"><label for="serviceDirectorNo">Giám đốc dịch vụ</label>
+            <select id="serviceDirectorNo" name="serviceDirectorNo">
+              <option value="">— Trống: Giám đốc duyệt —</option>
+              <option th:each="s : ${staff}" th:value="${s.employeeNo}" th:text="${s.employeeNo} + ' · ' + ${s.fullName}"
+                      th:selected="${unit.serviceDirectorNo != null and #strings.equalsIgnoreCase(unit.serviceDirectorNo, s.employeeNo)}"></option>
+            </select></div>
+          <div class="f"><label for="chiefAccountantNo">Kế toán trưởng</label>
+            <select id="chiefAccountantNo" name="chiefAccountantNo">
+              <option value="">— Trống: Giám đốc duyệt —</option>
+              <option th:each="s : ${staff}" th:value="${s.employeeNo}" th:text="${s.employeeNo} + ' · ' + ${s.fullName}"
+                      th:selected="${unit.chiefAccountantNo != null and #strings.equalsIgnoreCase(unit.chiefAccountantNo, s.employeeNo)}"></option>
+            </select></div>
+        </div>
+        <div><button class="btn btn-brand" type="submit"><i class="fa-solid fa-check"></i>Lưu ban giám đốc</button></div>
+      </form>
+
+      <!-- 2. PHÒNG BAN + AI DUYỆT PHÒNG NÀO -->
+      <form class="card" th:action="@{/hr/roles/departments}" method="post">
+        <h2>2. Phòng ban &amp; người duyệt</h2>
+        <p class="hint">Mỗi phòng chọn người duyệt đơn giải trình công. Để trống = theo mặc định (trưởng phòng; phòng Dịch vụ lên GĐ dịch vụ;
+          Kế toán lên Kế toán trưởng; phòng chưa có trưởng lên Giám đốc). Người duyệt tự gửi đơn thì đơn của họ theo mặc định.</p>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Phòng ban</th><th>Nhân viên</th><th>Người duyệt</th><th style="width:60px">Xoá</th></tr></thead>
+            <tbody>
+            <tr th:each="r, st : ${deptRows}">
+              <td><b th:text="${r.name}">Kinh Doanh 1</b>
+                <input type="hidden" th:name="'name_' + ${st.index}" th:value="${r.name}">
+                <small th:unless="${#lists.isEmpty(r.heads)}" th:text="'Trưởng phòng: ' + ${#strings.listJoin(r.heads, ', ')}">Trưởng phòng</small></td>
+              <td th:text="${r.count}">12</td>
+              <td>
+                <select class="in sm" th:name="'approver_' + ${st.index}" style="min-width:240px">
+                  <option value="" th:text="'Mặc định: ' + ${r.defaultRule}">Mặc định</option>
+                  <option th:each="s : ${staff}" th:value="${s.employeeNo}" th:text="${s.employeeNo} + ' · ' + ${s.fullName} + (${s.department} != null ? ' · ' + ${s.department} : '')"
+                          th:selected="${r.approverNo != null and #strings.equalsIgnoreCase(r.approverNo, s.employeeNo)}"></option>
+                </select>
+              </td>
+              <td style="text-align:center"><input type="checkbox" th:name="'del_' + ${st.index}" th:disabled="${r.count > 0}"
+                     th:title="${r.count > 0} ? 'Còn người trong phòng, chuyển họ đi trước' : 'Xoá phòng'" aria-label="Xoá phòng"></td>
+            </tr>
+            <tr>
+              <td colspan="2"><input class="in sm" name="newDept" maxlength="100" placeholder="+ Thêm phòng mới (VD: Kinh Doanh 7)" style="width:100%"></td>
+              <td>
+                <select class="in sm" name="newApprover" style="min-width:240px">
+                  <option value="">Mặc định</option>
+                  <option th:each="s : ${staff}" th:value="${s.employeeNo}" th:text="${s.employeeNo} + ' · ' + ${s.fullName}"></option>
+                </select>
+              </td>
+              <td></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div><button class="btn btn-brand" type="submit"><i class="fa-solid fa-check"></i>Lưu phòng ban &amp; người duyệt</button></div>
+      </form>
+
+      <!-- 3. PHÒNG BAN + TRƯỞNG PHÒNG / NHÂN VIÊN -->
+      <form th:action="@{/hr/roles/save}" method="post" id="rolesForm" style="display:grid;gap:12px">
+        <div class="ph">
+          <div>
+            <h2 style="margin:0;font-size:15px;color:var(--ink)">3. Nhân viên: phòng ban &amp; chức vụ</h2>
+            <p class="msg" th:text="${#lists.size(staff)} + ' nhân viên · ' + ${managerCount} + ' trưởng phòng'">0 nhân viên</p>
+          </div>
+          <span class="sp"></span>
+          <input class="in" id="filter" type="search" placeholder="Lọc theo tên, mã, phòng" style="min-width:220px" aria-label="Lọc">
+        </div>
+        <datalist id="deptList"><option th:each="d : ${depts}" th:value="${d}"></option></datalist>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Nhân viên</th><th>Phòng ban</th><th>Chức vụ</th></tr></thead>
+            <tbody>
+            <tr th:each="s : ${staff}" class="r" th:attr="data-k=${#strings.toLowerCase((s.fullName ?: '') + ' ' + s.employeeNo + ' ' + (s.department ?: ''))}">
+              <td><b th:text="${s.fullName}">Nguyễn Văn A</b>
+                <small><span th:text="${s.employeeNo}">TH70</span>
+                  <span th:if="${leaderOf[s.employeeNo] != null}" class="pill info" style="margin-left:6px" th:text="${leaderOf[s.employeeNo]}">Giám đốc</span></small></td>
+              <td><input class="in sm" list="deptList" maxlength="100" th:name="'dept_' + ${s.id}" th:value="${s.department}" placeholder="Chọn hoặc gõ tên phòng" style="width:100%;min-width:160px"></td>
+              <td>
+                <select class="in sm" th:name="'pos_' + ${s.id}">
+                  <option value="STAFF" th:selected="${s.departmentManager != true}">Nhân viên</option>
+                  <option value="MANAGER" th:selected="${s.departmentManager == true}">Trưởng phòng</option>
+                </select>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(staff)}"><td colspan="3" style="text-align:center;color:var(--muted);padding:24px">Đơn vị chưa có nhân viên. Quản trị hệ thống kéo nhân viên từ máy chấm công hoặc chia người vào đơn vị trước.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bar">
+          <span class="msg">Đổi xong bấm Lưu. Đơn đang chờ duyệt tự chuyển sang trưởng phòng / Giám đốc mới.</span>
+          <span class="sp"></span>
+          <button class="btn btn-brand" type="submit"><i class="fa-solid fa-check"></i>Lưu chức vụ &amp; phòng ban</button>
+        </div>
+      </form>
+    </th:block>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+<script>
+(function () {
+  var f = document.getElementById('filter');
+  if (!f) return;
+  f.addEventListener('input', function () {
+    var q = f.value.trim().toLowerCase();
+    document.querySelectorAll('tr.r').forEach(function (r) {
+      r.hidden = q !== '' && (r.dataset.k || '').indexOf(q) < 0;
+    });
+  });
+})();
+</script>
+</body>
+</html>

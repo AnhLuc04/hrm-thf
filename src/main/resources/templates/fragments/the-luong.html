@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<!--
+  THẺ LƯƠNG CÁ NHÂN (mẫu giấy) - dùng chung cho web và điện thoại.
+  Cần trong model: payroll, user, dayInfo (duCong). Tuỳ chọn: autoInfo, preview.
+    <head>: <th:block th:replace="~{fragments/the-luong :: css}"></th:block>
+    <body>: <div th:replace="~{fragments/the-luong :: the(${payroll}, ${user})}"></div>
+  Máy tính / in A4: bảng 6 cột như mẫu. Điện thoại (< 700px): I, II, III xếp dọc, cùng số liệu.
+  Tên công ty, người lập phiếu, nơi ký: cấu hình từng đơn vị ở /units (mục Thẻ lương).
+  Ảnh logo / chữ ký đặt ở static/uploads/payslip/: logo-{MÃ ĐƠN VỊ}.png, sign-{MÃ ĐƠN VỊ}.png
+  (không có file của đơn vị thì dùng logo.png / sign.png; không có nữa thì tự ẩn).
+-->
+<head>
+<th:block th:fragment="css">
+<style>
+  @page { size: A4; margin: 12mm; }
+  .tl { --tl-blue: #1f4e78; --tl-red: #c00000; --tl-grey: #d9d9d9; --tl-head: #eeeeee; --tl-orange: #fce4d6; --tl-total: #f2f2f2;
+        width: 780px; max-width: 100%; margin: 0 auto; background: #fff; color: #000; padding: 18px 22px 24px;
+        border: 2px solid var(--tl-blue); border-radius: 4px; box-sizing: border-box; font: 13px/1.35 "Times New Roman", Times, serif; }
+  .tl * { box-sizing: border-box; }
+  .tl .tl-header { position: relative; text-align: center; border-bottom: 2px solid #000; padding: 0 96px 8px; margin-bottom: 10px; min-height: 60px; }
+  .tl .tl-header img { position: absolute; left: 0; top: 0; width: 90px; }
+  .tl .tl-header h2 { margin: 2px 0; font-size: 19px; }
+  .tl .tl-header h3 { margin: 2px 0; font-size: 17px; }
+  .tl .tl-prov { font-size: 12.5px; font-style: italic; color: var(--tl-red); }
+  .tl .tl-code { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .tl .tl-code b { margin-right: 4px; }
+  .tl .tl-code span { display: inline-block; min-width: 20px; height: 22px; line-height: 22px; text-align: center; border: 1px solid #000; color: var(--tl-red); font-weight: bold; font-size: 14px; }
+  .tl .tl-info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid #000; margin-bottom: 6px; }
+  .tl .tl-info > div { padding: 6px 8px; border-right: 1px solid #000; min-width: 0; }
+  .tl .tl-info > div:last-child { border-right: 0; }
+  .tl .tl-info small { display: block; font-weight: bold; font-size: 13px; }
+  .tl .tl-info b { display: block; background: var(--tl-grey); padding: 3px 10px; margin-top: 3px; min-height: 22px; overflow-wrap: anywhere; }
+  .tl .tl-dvt { text-align: right; font-size: 12px; margin: -2px 2px 8px; }
+  .tl table { width: 100%; border-collapse: collapse; }
+  .tl td, .tl th { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; }
+  .tl .tl-cong td { padding: 6px 8px; font-weight: bold; }
+  .tl .tl-cong td.v { text-align: center; width: 70px; }
+  .tl .tl-detail { font-size: 12.5px; margin-top: 4px; }
+  .tl .tl-detail th { text-align: center; background: var(--tl-head); }
+  .tl td.m { text-align: right; width: 68px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tl tr.o td { background: var(--tl-orange); }
+  .tl tr.t td { font-weight: bold; background: var(--tl-total); }
+  .tl tr.t td.m3 { color: var(--tl-red); }
+  .tl .tl-grand { margin-top: 8px; font-size: 14px; font-weight: bold; }
+  .tl .tl-grand p { margin: 6px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .tl .tl-grand .a { min-width: 90px; text-align: right; padding: 2px 10px; font-variant-numeric: tabular-nums; }
+  .tl .tl-grand .iv { background: #ffff00; }
+  .tl .tl-grand .v { color: var(--tl-blue); }
+  .tl .tl-sign { margin-top: 40px; display: flex; justify-content: space-between; gap: 16px; text-align: center; }
+  .tl .tl-sign img { height: 110px; margin: 2px 0; }
+  .tl .tl-stack { display: none; }
+
+  /* ĐIỆN THOẠI: I, II, III xếp dọc */
+  @media screen and (max-width: 700px) {
+    .tl { padding: 12px 12px 18px; border-width: 1px; }
+    .tl .tl-header { padding: 0 0 8px 64px; text-align: left; min-height: 56px; }
+    .tl .tl-header img { width: 56px; }
+    .tl .tl-header h2 { font-size: 15px; }
+    .tl .tl-header h3 { font-size: 14.5px; }
+    .tl .tl-code { justify-content: flex-start; }
+    .tl .tl-info { grid-template-columns: 1fr; }
+    .tl .tl-info > div { border-right: 0; border-bottom: 1px solid #000; }
+    .tl .tl-info > div:last-child { border-bottom: 0; }
+    .tl .tl-cong, .tl .tl-cong tbody, .tl .tl-cong tr { display: grid; grid-template-columns: 1fr auto; }
+    .tl .tl-cong td.v { width: auto; min-width: 70px; }
+    .tl .tl-cong td { margin: -1px 0 0 -1px; }
+    .tl .tl-detail { display: none; }
+    .tl .tl-stack { display: grid; gap: 10px; margin-top: 4px; font-size: 13.5px; }
+    .tl .tl-stack table td.m { width: 90px; }
+    .tl .tl-stack caption { text-align: left; font-weight: bold; background: var(--tl-head); border: 1px solid #000; border-bottom: 0; padding: 5px 6px; }
+    .tl .tl-grand { font-size: 14.5px; }
+    .tl .tl-sign { margin-top: 24px; }
+  }
+  @media print { .tl { border: 0; width: auto; padding: 0; } .tl .tl-detail { display: table !important; } .tl .tl-stack { display: none !important; } }
+</style>
+</th:block>
+</head>
+<body>
+
+<div th:fragment="the(payroll, user)" class="tl"
+     th:with="
+       unit = ${user.unit},
+       unitCode = ${user.unit != null ? user.unit.code : ''},
+       I = ${ {
+         {'1. Lương theo ngày công', payroll.luongNgayCong, '', false},
+         {'2. Lương thêm giờ', payroll.luongThemGio, '', false},
+         {'3. Thâm niên hàng năm', payroll.thamNien5Nam, '', false},
+         {'*. Trách nhiệm (tổ trưởng, đào tạo, độc hại)', null, 'dash', true},
+         {'- HS T.Nhiệm', payroll.heSoTrachNhiem, 'pct', true},
+         {'4. T.Nhiệm được nhận', payroll.trachNhiemDuocNhan, '', false},
+         {'5. Phụ cấp Level', payroll.phuCapLevel, '', false},
+         {'6. PC kiêm nhiệm (nếu có)', payroll.phuCapKiemNhiem, '', false} } },
+       II = ${ {
+         {'1. Thưởng Dịch vụ', payroll.thuongDichVu, '', false},
+         {'2. Thưởng chính sách, gián tiếp, kế toán', payroll.thuongChinhSach, '', false},
+         {'3. Thưởng tư vấn bán hàng (xe, bảo hiểm, PK)', payroll.thuongTuVanBanHang, '', false},
+         {'4. Thưởng khác (nếu có)', payroll.banLanhDao, '', true},
+         {'5. Thâm niên 10 năm', null, 'dash', true},
+         {'', null, 'blank', false}, {'', null, 'blank', false}, {'', null, 'blank', false} } },
+       III = ${ {
+         {'1. Ký quỹ', payroll.kyQuy, '', false},
+         {'2. Phạt vi phạm đồng phục, chấm công, quy trình DV', payroll.phatViPham, '', false},
+         {'3. Bảo hiểm xã hội', payroll.bhxh, '', false},
+         {'4. Tạm ứng lương, truy thu công nợ', payroll.tamUngLuong, '', true},
+         {'5. Công đoàn', payroll.congDoan, '', true},
+         {'6. Thuế TNCN', payroll.thueTNCN, '', false},
+         {'7. Phạt KD, DV vi phạm. Tạm thu hàng tồn >90 ngày', payroll.phongChongThienTai, '', false},
+         {'8. Rủi ro', payroll.ruiRo, '', false} } },
+       congI = ${(payroll.luongNgayCong ?: 0) + (payroll.luongThemGio ?: 0) + (payroll.thamNien5Nam ?: 0)
+               + (payroll.trachNhiemDuocNhan ?: 0) + (payroll.phuCapLevel ?: 0) + (payroll.phuCapKiemNhiem ?: 0)},
+       congII = ${(payroll.thuongDichVu ?: 0) + (payroll.thuongChinhSach ?: 0) + (payroll.thuongTuVanBanHang ?: 0) + (payroll.banLanhDao ?: 0)},
+       congIII = ${(payroll.kyQuy ?: 0) + (payroll.phatViPham ?: 0) + (payroll.bhxh ?: 0) + (payroll.tamUngLuong ?: 0)
+                 + (payroll.congDoan ?: 0) + (payroll.thueTNCN ?: 0) + (payroll.phongChongThienTai ?: 0) + (payroll.ruiRo ?: 0)}">
+
+  <!-- ===== ĐẦU PHIẾU: tên công ty theo ĐƠN VỊ của nhân viên ===== -->
+  <div class="tl-header">
+    <img th:src="@{/uploads/payslip/logo-{c}.png(c=${unitCode})}" alt=""
+         onerror="if(!this.dataset.f){this.dataset.f=1;this.src=this.src.replace(/logo-[^/]*\.png$/,'logo.png')}else{this.remove()}">
+    <h2 th:text="${unit != null} ? ${unit.slipCompanyOrDefault} : 'CÔNG TY CP TM Ô TÔ THANH HÓA'">CÔNG TY CP TM Ô TÔ THANH HÓA</h2>
+    <h3>THẺ LƯƠNG CÁ NHÂN THÁNG <span th:text="${payroll.month} + ' / ' + ${payroll.year}">9 / 2026</span></h3>
+    <div th:if="${autoInfo != null and autoInfo.provisional}" class="tl-prov">
+      (<span th:text="${preview == true} ? 'Dự kiến' : 'Tạm tính'">Tạm tính</span> đến ngày
+      <span th:text="${#temporals.format(autoInfo.calcUpTo, 'dd/MM/yyyy')}"></span>)
+    </div>
+  </div>
+
+  <!-- ===== MÃ NHÂN VIÊN: từng ký tự 1 ô (chưa có mã lương thì dùng mã NV) ===== -->
+  <div class="tl-code" th:with="code = ${user.salaryCode != null and !#strings.isEmpty(user.salaryCode)} ? ${user.salaryCode} : ${user.employeeNo}">
+    <b>Mã nhân viên</b>
+    <th:block th:if="${code != null}"><span th:each="c : ${code.toCharArray()}" th:text="${c}">0</span></th:block>
+  </div>
+
+  <div class="tl-info">
+    <div><small>Họ và tên</small><b th:text="${user.fullName}">Nguyễn Văn A</b></div>
+    <div><small>Chức vụ</small><b th:text="${payroll.position}">Nhân viên</b></div>
+    <div><small>Mã tài khoản</small><b>&nbsp;</b></div>
+  </div>
+  <div class="tl-dvt">ĐVT: 1.000đồng</div>
+
+  <table class="tl-cong">
+    <tr>
+      <td>Lương cơ bản</td>
+      <td class="v" th:text="${payroll.congChuan != null} ? ${#numbers.formatDecimal(payroll.congChuan, 1, 'POINT', 0, 'COMMA')} : '-'">-</td>
+      <td>Công chuẩn = NTT - CN</td>
+      <td class="v" th:text="${dayInfo != null} ? ${dayInfo.duCong} : '-'">-</td>
+      <td>Công HL = Thực làm + N.Lễ</td>
+      <td class="v" th:text="${payroll.congHL != null} ? ${#numbers.formatDecimal(payroll.congHL, 1, 'POINT', 1, 'COMMA')} : '-'">-</td>
+    </tr>
+  </table>
+
+  <!-- ===== MÁY TÍNH / IN: bảng 6 cột như mẫu giấy ===== -->
+  <table class="tl-detail">
+    <tr><th colspan="2">I. LƯƠNG + PHỤ CẤP</th><th colspan="2">II. THƯỞNG</th><th colspan="2">III. CÁC KHOẢN GIẢM TRỪ</th></tr>
+    <tr th:each="i : ${#numbers.sequence(0, 7)}" th:classappend="${i == 3 or i == 4} ? 'o'">
+      <th:block th:each="col : ${ {I, II, III} }" th:with="r = ${col[i]}">
+        <td th:text="${r[0]}"></td>
+        <td class="m" th:text="${r[2] == 'blank'} ? '' : (${r[2] == 'dash' or r[1] == null} ? '-'
+             : (${r[2] == 'pct'} ? ${#numbers.formatDecimal(r[1], 1, 'POINT', 0, 'COMMA')} + '%' : ${#numbers.formatDecimal(r[1], 1, 'POINT', 0, 'COMMA')}))"></td>
+      </th:block>
+    </tr>
+    <tr class="t">
+      <td>CỘNG I</td><td class="m" th:text="${#numbers.formatDecimal(congI, 1, 'POINT', 0, 'COMMA')}">0</td>
+      <td>CỘNG II</td><td class="m" th:text="${#numbers.formatDecimal(congII, 1, 'POINT', 0, 'COMMA')}">0</td>
+      <td>CỘNG III</td><td class="m m3" th:text="${#numbers.formatDecimal(congIII, 1, 'POINT', 0, 'COMMA')}">0</td>
+    </tr>
+  </table>
+
+  <!-- ===== ĐIỆN THOẠI: cùng số liệu, xếp dọc ===== -->
+  <div class="tl-stack">
+    <table th:each="sec, st : ${ { {'I. LƯƠNG + PHỤ CẤP', I, congI}, {'II. THƯỞNG', II, congII}, {'III. CÁC KHOẢN GIẢM TRỪ', III, congIII} } }">
+      <caption th:text="${sec[0]}">I. LƯƠNG + PHỤ CẤP</caption>
+      <tr th:each="r : ${sec[1]}" th:if="${r[2] != 'blank'}" th:classappend="${r[3]} ? 'o'">
+        <td th:text="${r[0]}"></td>
+        <td class="m" th:text="${r[2] == 'dash' or r[1] == null} ? '-'
+             : (${r[2] == 'pct'} ? ${#numbers.formatDecimal(r[1], 1, 'POINT', 0, 'COMMA')} + '%' : ${#numbers.formatDecimal(r[1], 1, 'POINT', 0, 'COMMA')})"></td>
+      </tr>
+      <tr class="t"><td th:text="'CỘNG ' + ${st.count == 1 ? 'I' : (st.count == 2 ? 'II' : 'III')}">CỘNG I</td>
+        <td class="m" th:classappend="${st.count == 3} ? 'm3'" th:text="${#numbers.formatDecimal(sec[2], 1, 'POINT', 0, 'COMMA')}">0</td></tr>
+    </table>
+  </div>
+
+  <div class="tl-grand">
+    <p><span>IV. Tổng thu nhập = I + II :</span><span class="a iv" th:text="${#numbers.formatDecimal(congI + congII, 1, 'POINT', 0, 'COMMA')}">0</span></p>
+    <p><span>V. Tổng cộng thực nhận = IV - III :</span><span class="a v" th:text="${#numbers.formatDecimal(congI + congII - congIII, 1, 'POINT', 0, 'COMMA')}">0</span></p>
+  </div>
+
+  <!-- ===== KÝ TÊN: chữ ký người lập phiếu theo đơn vị ===== -->
+  <div class="tl-sign">
+    <div>
+      Người lập phiếu<br>
+      <img th:src="@{/uploads/payslip/sign-{c}.png(c=${unitCode})}" alt=""
+           onerror="if(!this.dataset.f){this.dataset.f=1;this.src=this.src.replace(/sign-[^/]*\.png$/,'sign.png')}else{this.remove()}"><br>
+      <b th:text="${unit != null} ? ${unit.slipPreparerOrDefault} : 'Lê Thị Lan Anh'">Lê Thị Lan Anh</b>
+    </div>
+    <div>
+      <span th:text="(${unit != null} ? ${unit.slipPlaceOrDefault} : 'Thanh Hóa') + ', Ngày...Tháng...Năm'">Thanh Hóa, Ngày...Tháng...Năm</span><br><br>
+      Người nhận<br><br><br>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

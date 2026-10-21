@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Thông báo')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('notifications', 'Thông báo')}"></th:block>
+<div class="sh-main">
+  <div class="wrap" style="max-width:820px">
+    <div class="ph">
+      <div>
+        <h1>Thông báo</h1>
+        <p th:text="${unread > 0} ? ${unread} + ' thông báo chưa đọc' : 'Đã đọc hết'">3 thông báo chưa đọc</p>
+      </div>
+      <span class="sp"></span>
+      <form th:if="${unread > 0}" th:action="@{/notifications/read-all}" method="post">
+        <button class="btn" type="submit"><i class="fa-solid fa-check-double"></i>Đánh dấu đã đọc hết</button>
+      </form>
+    </div>
+
+    <div class="nt-list" th:unless="${#lists.isEmpty(items)}">
+      <a class="nt" th:each="n : ${items}" th:href="@{/notifications/{id}/open(id=${n.id})}" th:classappend="${n.unread} ? 'new'">
+        <span class="nt-ic" th:switch="${n.type}"
+              th:classappend="${n.type == 'ATTENDANCE'} ? 'att' : (${n.type == 'CONFIRM'} ? 'cf' : (${n.type == 'PAYROLL'} ? 'pay' : (${n.type == 'LEAVE'} ? 'lv' : 'news')))">
+          <i th:case="'ATTENDANCE'" class="fa-solid fa-user-clock"></i>
+          <i th:case="'CONFIRM'" class="fa-solid fa-clipboard-check"></i>
+          <i th:case="'PAYROLL'" class="fa-solid fa-wallet"></i>
+          <i th:case="'LEAVE'" class="fa-solid fa-umbrella-beach"></i>
+          <i th:case="*" class="fa-regular fa-newspaper"></i>
+        </span>
+        <span class="nt-tx">
+          <b th:text="${n.title}">Ngày 09/10: Đi muộn ca Sáng (vào 07:52)</b>
+          <span th:if="${n.body != null}" th:text="${n.body}">Gửi giải trình trước hết ngày 16/10 (còn 7 ngày).</span>
+          <small th:text="${#temporals.format(n.createdAt, 'HH:mm dd/MM/yyyy')}">09:30 09/10/2026</small>
+        </span>
+        <span class="nt-dot" th:if="${n.unread}" aria-label="Chưa đọc"></span>
+      </a>
+    </div>
+
+    <div class="card" th:if="${#lists.isEmpty(items)}" style="text-align:center;padding:40px 18px;color:var(--muted)">
+      <i class="fa-regular fa-bell" style="font-size:28px;color:#c7d2fe"></i>
+      <div>Chưa có thông báo nào.</div>
+    </div>
+
+    <!-- 📱 THÔNG BÁO TRÊN ĐIỆN THOẠI / MÁY TÍNH -->
+    <section class="card" id="push" th:if="${pushAvailable}">
+      <h2><i class="fa-solid fa-mobile-screen-button" style="color:var(--brand);margin-right:6px"></i>Thông báo trên điện thoại / máy tính</h2>
+      <p class="hint">Bật để thông báo hiện lên màn hình khoá, kể cả khi không mở SunClub. Bật riêng trên từng thiết bị.</p>
+
+      <div class="push-box">
+        <div id="pushState" class="push-state">Đang kiểm tra thiết bị này…</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-brand" id="pushOn" hidden><i class="fa-solid fa-bell"></i>Bật trên thiết bị này</button>
+          <button type="button" class="btn" id="pushOff" hidden><i class="fa-regular fa-bell-slash"></i>Tắt trên thiết bị này</button>
+          <form th:action="@{/push/test}" method="post" th:unless="${#lists.isEmpty(devices)}">
+            <button class="btn" type="submit"><i class="fa-regular fa-paper-plane"></i>Gửi thử</button>
+          </form>
+        </div>
+      </div>
+      <details class="ios-help" open id="diagBox">
+        <summary>Kiểm tra vì sao điện thoại không hiện thông báo</summary>
+        <ul id="diag" style="margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.7"></ul>
+      </details>
+      <details class="ios-help">
+        <summary>iPhone / iPad: cách bật</summary>
+        <ol>
+          <li>Mở SunClub bằng <b>Safari</b> → bấm nút <b>Chia sẻ</b> → <b>Thêm vào MH chính</b>.</li>
+          <li>Mở app <b>SunClub</b> vừa thêm ở màn hình chính, đăng nhập, vào <b>Thông báo</b> → <b>Bật trên thiết bị này</b> → Cho phép.</li>
+          <li>Cần iOS 16.4 trở lên. Android / máy tính: dùng Chrome, Edge, Firefox là bật được ngay.</li>
+        </ol>
+      </details>
+
+      <form th:action="@{/notifications/settings}" method="post" style="display:grid;gap:10px">
+        <label class="chk"><input type="checkbox" name="pushEnabled" th:checked="${pushOn}">
+          <span><b>Nhận thông báo đẩy</b> (tắt = chỉ còn chuông trong app, mọi thiết bị đều không rung báo)</span></label>
+        <div class="push-types">
+          <label class="chk" th:each="t : ${pushTypes}">
+            <input type="checkbox" name="types" th:value="${t.key}" th:checked="${!muted.contains(t.key)}">
+            <span th:text="${t.value}">Loại</span>
+          </label>
+        </div>
+        <div><button class="btn" type="submit"><i class="fa-solid fa-check"></i>Lưu cài đặt</button></div>
+      </form>
+
+      <div th:unless="${#lists.isEmpty(devices)}">
+        <h3 style="font-size:13px;color:var(--muted);margin:6px 0">Thiết bị đã bật</h3>
+        <div class="dev" th:each="d : ${devices}">
+          <i class="fa-solid fa-mobile-screen" style="color:var(--faint)"></i>
+          <span th:text="${d.deviceLabel}">Android · Chrome</span>
+          <small th:text="'bật ' + ${#temporals.format(d.createdAt, 'dd/MM/yyyy')} + (${d.lastOkAt != null} ? ' · gửi được lần cuối ' + ${#temporals.format(d.lastOkAt, 'HH:mm dd/MM')} : '')"></small>
+          <small th:if="${d.lastError != null}" style="color:#b42318;flex-basis:100%" th:text="'Lỗi: ' + ${d.lastError}"></small>
+          <form th:action="@{/push/devices/{id}/delete(id=${d.id})}" method="post" style="margin-left:auto">
+            <button class="btn btn-sm" type="submit" title="Gỡ thiết bị">Gỡ</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <p class="msg">Bạn nhận thông báo khi: có lỗi chấm công cần giải trình (và trước khi hết hạn), đơn giải trình được duyệt / từ chối / trả lại,
+      có đơn cần bạn duyệt, đơn nghỉ phép có kết quả, HCNS mở lại hạn giải trình, có tin mới trên bảng tin, lương tháng đã chốt.</p>
+  </div>
+</div>
+<style>
+  .nt-list { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .nt { display: grid; grid-template-columns: 40px minmax(0, 1fr) 10px; gap: 12px; align-items: start; padding: 14px 16px;
+        border-bottom: 1px solid #f2f4f7; text-decoration: none; color: inherit; }
+  .nt:last-child { border-bottom: 0; }
+  .nt:hover { background: #f9fafb; }
+  .nt.new { background: #f8f9ff; }
+  .nt-ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-size: 16px; background: #f2f4f7; color: var(--muted); }
+  .nt-ic.att { background: #fffaeb; color: #b54708; }
+  .nt-ic.cf { background: #eef2ff; color: #4338ca; }
+  .nt-ic.pay { background: #ecfdf3; color: #067647; }
+  .nt-ic.lv { background: #f0f9ff; color: #026aa2; }
+  .nt-ic.news { background: #fdf2fa; color: #c11574; }
+  .nt-tx { display: grid; gap: 2px; min-width: 0; }
+  .nt-tx b { color: var(--ink); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+  .nt:not(.new) .nt-tx b { font-weight: 500; color: var(--ink2); }
+  .nt-tx span { color: var(--ink2); font-size: 13px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .nt-tx small { color: var(--faint); font-size: 12px; }
+  .push-box { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+              background: #f8f9ff; border: 1px solid #e0e7ff; border-radius: 12px; padding: 12px 14px; }
+  .push-state { font-weight: 600; color: var(--ink2); }
+  .push-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px; padding-left: 24px; }
+  .ios-help summary { cursor: pointer; color: var(--brand-600); font-weight: 600; font-size: 13px; }
+  .ios-help ol { margin: 6px 0 0; padding-left: 20px; font-size: 13px; color: var(--ink2); }
+  .dev { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #f2f4f7; font-size: 13px; flex-wrap: wrap; }
+  .dev small { color: var(--muted); }
+  .dev form { margin: 0; }
+  .nt-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); margin-top: 6px; }
+</style>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+<script th:inline="javascript">
+(function () {
+  var state = document.getElementById('pushState'), on = document.getElementById('pushOn'), off = document.getElementById('pushOff');
+  if (!state) return;
+  var base = /*[[@{/}]]*/ '/';
+  function show(t, canOn, canOff) { state.textContent = t; on.hidden = !canOn; off.hidden = !canOff; }
+  function b64(s) { var p = '='.repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/'));
+    var a = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i); return a; }
+  function post(url, body) { return fetch(base + url, { method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
+
+  // ---- CHẨN ĐOÁN: liệt kê từng điều kiện, cái nào hỏng hiện đỏ
+  var diag = document.getElementById('diag');
+  function row(ok, text) { var li = document.createElement('li'); li.textContent = (ok ? '✅ ' : '❌ ') + text;
+    li.style.color = ok ? '#067647' : '#b42318'; diag.appendChild(li); }
+  row(location.protocol === 'https:', 'Mở bằng https:// (đang: ' + location.protocol + '//' + location.host + ')');
+  row(window.isSecureContext, 'Trình duyệt tin chứng chỉ HTTPS (chứng chỉ tự ký / truy cập bằng IP thường bị từ chối)');
+  row('serviceWorker' in navigator, 'Trình duyệt hỗ trợ service worker');
+  row('PushManager' in window, 'Trình duyệt hỗ trợ thông báo đẩy' + (/iPhone|iPad/.test(navigator.userAgent) ? ' (iPhone: phải mở từ biểu tượng SunClub trên màn hình chính)' : ''));
+  if ('Notification' in window) row(Notification.permission === 'granted', 'Quyền thông báo: ' + ({granted: 'đã cho phép', denied: 'ĐÃ CHẶN - mở cài đặt trang để cho phép', 'default': 'chưa hỏi - bấm Bật'}[Notification.permission] || Notification.permission));
+  if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistration('/').then(function (r) {
+    row(!!r, r ? 'Service worker đã đăng ký' : 'Service worker CHƯA đăng ký được (thường do chứng chỉ HTTPS không hợp lệ)');
+    if (r && r.pushManager) r.pushManager.getSubscription().then(function (s) { row(!!s, s ? 'Thiết bị đã đăng ký nhận ('
+      + new URL(s.endpoint).host + ')' : 'Thiết bị chưa đăng ký nhận: bấm "Bật trên thiết bị này"'); });
+  });
+
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    show(ios ? 'iPhone / iPad: cần thêm SunClub vào màn hình chính rồi mở từ đó (xem hướng dẫn bên dưới).'
+             : 'Trình duyệt này không hỗ trợ thông báo đẩy. Dùng Chrome, Edge hoặc Firefox.', false, false);
+    return;
+  }
+  if (!window.isSecureContext) { show('Cần mở SunClub bằng https:// mới bật được thông báo.', false, false); return; }
+
+  function refresh() {
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (Notification.permission === 'denied') show('Bạn đã chặn thông báo cho trang này. Mở cài đặt trình duyệt → Quyền thông báo → Cho phép, rồi tải lại.', false, false);
+      else if (sub) { post('push/subscribe', sub.toJSON()); show('✅ Thiết bị này ĐANG nhận thông báo.', false, true); }
+      else show('Thiết bị này chưa bật nhận thông báo.', true, false);
+    });
+  }
+  navigator.serviceWorker.register(base + 'sw.js', { scope: base }).then(refresh).catch(function () { show('Không đăng ký được service worker.', false, false); });
+
+  on.addEventListener('click', function () {
+    on.disabled = true;
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') { show('Chưa cho phép thông báo.', true, false); on.disabled = false; return; }
+      return fetch(base + 'push/key', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (k) {
+        return navigator.serviceWorker.ready.then(function (reg) {
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(k.key) });
+        });
+      }).then(function (sub) { return post('push/subscribe', sub.toJSON()); })
+        .then(function () { location.reload(); });
+    }).catch(function (e) { show('Không bật được: ' + e, true, false); on.disabled = false; });
+  });
+  off.addEventListener('click', function () {
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (!sub) return;
+      return post('push/unsubscribe', { endpoint: sub.endpoint }).then(function () { return sub.unsubscribe(); });
+    }).then(function () { location.reload(); });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <th:block th:replace="~{fragments/the-luong :: css}"></th:block>
+  <title th:text="'Phiếu lương tháng ' + ${payroll.month} + '/' + ${payroll.year} + ' · Thanh Hóa Ford HRM'">Phiếu lương cá nhân</title>
+
+  <style>
+
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f8fa;
+      font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== THANH CÔNG CỤ PHÍA TRÊN PHIẾU (không in) ===== */
+    .slip-page { max-width: 860px; margin: 0 auto; padding: 24px 24px 48px; }
+    .slip-crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #98a2b3; margin-bottom: 10px; }
+    .slip-crumbs a { color: inherit; text-decoration: none; }
+    .slip-crumbs a:hover { color: #344054; }
+    .slip-crumbs i { font-size: 9px; }
+    .slip-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .slip-bar h1 { margin: 0; font-size: 24px; font-weight: 700; color: #0b1220; letter-spacing: -.02em; }
+    .slip-bar p { margin: 4px 0 0; font-size: 13.5px; color: #667085; }
+    .slip-bar .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+    .s-btn { height: 38px; padding: 0 14px; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff; color: #344054; display: inline-flex; align-items: center; gap: 8px;
+             font: 600 13.5px "Inter", system-ui, sans-serif; text-decoration: none; cursor: pointer; box-shadow: 0 1px 2px rgba(16,24,40,.05); white-space: nowrap; }
+    .s-btn i { color: #667085; }
+    .s-btn.primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .s-btn.primary i { color: #c7d2fe; }
+    .s-btn:hover { background: #f9fafb; }
+    .s-btn.primary:hover { background: #4338ca; }
+    .slip-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .slip-sum div { background: #fff; border: 1px solid #eaecf0; border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+    .slip-sum small { display: block; font-size: 12px; color: #667085; font-weight: 500; }
+    .slip-sum b { font-size: 20px; font-weight: 700; color: #0b1220; font-variant-numeric: tabular-nums; }
+    .slip-sum .net b { color: #067647; }
+    .slip-sum .minus b { color: #b42318; }
+    .slip-sum em { font-style: normal; font-size: 11.5px; color: #98a2b3; margin-left: 4px; }
+
+    /* Khung chứa tờ phiếu: điện thoại tự thu nhỏ cho vừa màn hình */
+    .slip-fit { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 6px; }
+    .slip-fit .salary-slip { box-shadow: 0 10px 30px -12px rgba(16,24,40,.25); font-family: "Times New Roman", Times, serif; color: #000; line-height: normal; }
+
+    @media (max-width: 1179px) { .slip-page { padding: 18px 14px 40px; } }
+    @media (max-width: 640px) {
+      .slip-bar h1 { font-size: 20px; }
+      .slip-bar .acts { width: 100%; }
+      .slip-bar .acts .s-btn { flex: 1; justify-content: center; }
+      .slip-sum { grid-template-columns: 1fr 1fr; }
+      .slip-sum .net { grid-column: 1 / -1; }
+    }
+
+    /* ===== IN ẤN: chỉ in tờ phiếu ===== */
+    @media print {
+      body { background: #fff; }
+      .slip-crumbs, .slip-bar, .slip-sum, .no-print { display: none !important; }
+      .slip-page { padding: 0; max-width: none; }
+      .slip-fit { overflow: visible; }
+      .slip-fit .salary-slip { box-shadow: none; zoom: 1 !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    .salary-slip {
+      width: 780px;
+      margin: auto;
+      background: #ffffff;
+      padding: 18px 22px 24px;
+      border: 2px solid #1f4e78;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      position: relative;
+      text-align: center;
+      border-bottom: 2px solid #000;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .header img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 90px;
+    }
+
+    .header h2 {
+      margin: 2px 0;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .header h3 {
+      margin: 2px 0;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    /* ===== MÃ NHÂN VIÊN (ô số) ===== */
+    .employee-code-row {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .employee-code-row .label {
+      font-weight: bold;
+      margin-right: 4px;
+    }
+
+    .code-box {
+      display: inline-block;
+      width: 20px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      border: 1px solid #000;
+      color: #c00000;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    /* ===== INFO (Họ tên / Chức vụ / Mã tài khoản) ===== */
+    .info {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      border: 1px solid #000;
+      margin-bottom: 6px;
+      position: relative;
+    }
+
+    .info > div {
+      padding: 6px 8px;
+      border-right: 1px solid #000;
+    }
+
+    .info > div:last-child {
+      border-right: none;
+    }
+
+    .info .field-label {
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .info .field-value {
+      display: inline-block;
+      background: #d9d9d9;
+      padding: 3px 10px;
+      margin-top: 3px;
+      font-weight: bold;
+      min-width: 90%;
+    }
+
+    .dvt {
+      text-align: right;
+      font-size: 12px;
+      margin: -2px 2px 8px;
+    }
+
+    /* ===== HÀNG LƯƠNG CƠ BẢN / CÔNG CHUẨN / CÔNG HL ===== */
+    .cong-info {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .cong-info td {
+      border: 1px solid #000;
+      padding: 6px 8px;
+    }
+
+    .cong-info td.label-cell {
+      font-weight: bold;
+    }
+
+    .cong-info td.value-cell {
+      font-weight: bold;
+      text-align: center;
+      width: 70px;
+    }
+
+    /* ===== BẢNG CHI TIẾT I / II / III ===== */
+    table.detail {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    table.detail th,
+    table.detail td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      vertical-align: middle;
+    }
+
+    table.detail th {
+      text-align: center;
+      background: #eeeeee;
+      font-weight: bold;
+    }
+
+    table.detail td.money {
+      text-align: right;
+      width: 65px;
+      white-space: nowrap;
+    }
+
+    tr.highlight-orange td {
+      background: #fce4d6;
+    }
+
+    tr.total-row td {
+      font-weight: bold;
+      background: #f2f2f2;
+    }
+
+    tr.total-row td.money.total-3 {
+      color: #c00000;
+    }
+
+    /* ===== IV / V TỔNG ===== */
+    .grand-total {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .grand-total p {
+      margin: 6px 0;
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+    }
+
+    .grand-total .amount {
+      min-width: 90px;
+      text-align: right;
+      padding: 2px 10px;
+    }
+
+    .grand-total .amount.total-iv {
+      background: #ffff00;
+    }
+
+    .grand-total .amount.total-v {
+      color: #1f4e78;
+    }
+
+    /* ===== KÝ TÊN ===== */
+    .sign {
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .sign .date-block {
+      text-align: center;
+    }
+
+  </style>
+
+  <!-- ═════ HEADER / MENU CHUNG: CSS ═════ -->
+  <style>
+    :root { --sh-side: 240px; }
+    .sh-side, .sh-side *, .sh-top, .sh-top * { box-sizing: border-box; }
+    .sh-side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: var(--sh-side); background: #fff; border-right: 1px solid #eaecf0;
+               display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
+               padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+               font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #344054; }
+    .sh-side a { color: inherit; text-decoration: none; }
+    .sh-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; }
+    .sh-mark { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; letter-spacing: -.02em;
+               background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 6px 14px -6px rgba(79,70,229,.6); }
+    .sh-brand b { display: block; font-size: 14.5px; font-weight: 700; color: #0b1220; line-height: 1.2; }
+    .sh-brand small { display: block; font-size: 11.5px; color: #98a2b3; }
+    .sh-t { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #98a2b3; padding: 14px 10px 6px; }
+    .sh-nav a, .sh-nav button { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; margin: 1px 0; padding: 0 10px; border: 0; border-radius: 8px; background: none;
+                                font-family: inherit; font-size: 13.5px; font-weight: 500; line-height: 1; color: #344054; cursor: pointer; text-align: left; transition: background .12s, color .12s; }
+    .sh-nav i { width: 18px; text-align: center; color: #98a2b3; font-size: 14px; transition: color .12s; }
+    .sh-nav a.on { background: #eef2ff; color: #4338ca; font-weight: 600; }
+    .sh-nav a.on i { color: #4f46e5; }
+    .sh-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid #eaecf0; }
+    .sh-foot form { margin: 0; }
+    .sh-me { display: flex; align-items: center; gap: 10px; padding: 8px 10px 10px; }
+    .sh-av { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #eef2ff; color: #4338ca; font-weight: 700; font-size: 13px; border: 1px solid #e0e7ff; }
+    .sh-me div { min-width: 0; line-height: 1.25; }
+    .sh-me b { display: block; font-size: 13px; font-weight: 600; color: #0b1220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sh-me small { font-size: 11.5px; color: #98a2b3; }
+    .sh-out { color: #b42318 !important; } .sh-out i { color: #f97066 !important; }
+
+    .sh-main { margin-left: var(--sh-side); min-height: 100vh; }
+    .sh-top, .sh-scrim { display: none; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .sh-nav a:not(.on):hover, .sh-nav button:hover { background: #f9fafb; color: #0b1220; }
+      .sh-nav a:not(.on):hover i { color: #667085; }
+    }
+
+    /* Dưới 1180px (máy tính bảng, điện thoại): menu thành ngăn kéo, có thanh trên cùng */
+    @media (max-width: 1179px) {
+      .sh-side { transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); }
+      body.sh-open .sh-side { transform: none; box-shadow: 0 20px 50px rgba(16,24,40,.25); }
+      .sh-scrim { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 59; background: rgba(16,24,40,.4); opacity: 0; pointer-events: none; transition: opacity .2s; }
+      body.sh-open .sh-scrim { opacity: 1; pointer-events: auto; }
+      body.sh-open { overflow: hidden; }
+      .sh-main { margin-left: 0; }
+      .sh-top { display: flex; position: sticky; top: 0; z-index: 40; align-items: center; gap: 10px; height: calc(56px + env(safe-area-inset-top, 0px));
+                padding: env(safe-area-inset-top, 0px) calc(12px + env(safe-area-inset-right, 0px)) 0 calc(12px + env(safe-area-inset-left, 0px));
+                background: rgba(255,255,255,.92); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid #eaecf0;
+                font: 14px/1.4 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+      .sh-burger { width: 38px; height: 38px; flex: none; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff; display: grid; place-items: center; color: #344054; cursor: pointer; }
+      .sh-top b { font-size: 15px; font-weight: 600; color: #0b1220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sh-top .sh-mark { width: 30px; height: 30px; font-size: 11px; margin-left: auto; }
+    }
+    @media print { .sh-side, .sh-top, .sh-scrim { display: none !important; } .sh-main { margin-left: 0 !important; } }
+    @media (prefers-reduced-motion: reduce) { .sh-side, .sh-scrim { transition: none !important; } }
+  </style>
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+</head>
+
+
+<body>
+<!-- ═════ HEADER / MENU CHUNG ═════ -->
+<!-- MENU CHUNG (fragments/shell.html): giống mọi trang, theo quyền + đơn vị -->
+<th:block th:replace="~{fragments/shell :: nav('payroll', 'Phiếu lương')}"></th:block>
+<div class="sh-main">
+  <div class="slip-page">
+
+    <div class="slip-crumbs">
+      <a th:href="@{/}">Trang chủ</a><i class="fa-solid fa-chevron-right"></i>
+      <a th:href="@{/payroll/my}">Phiếu lương</a><i class="fa-solid fa-chevron-right"></i>
+      <span style="color:#344054" th:text="'Tháng ' + ${payroll.month} + '/' + ${payroll.year}">Tháng 9/2026</span>
+    </div>
+
+    <div class="slip-bar">
+      <div>
+        <h1 th:text="'Phiếu lương tháng ' + ${payroll.month} + '/' + ${payroll.year} + (${preview == true} ? ' (dự kiến)' : (${autoInfo != null and autoInfo.provisional} ? ' (tạm tính)' : ''))">Phiếu lương tháng 9/2026</h1>
+        <p th:text="${user.fullName}">Nguyễn Văn A</p>
+      </div>
+      <div class="acts">
+        <a class="s-btn" th:href="@{/payroll/my}"><i class="fa-solid fa-arrow-left"></i>Tất cả phiếu lương</a>
+        <button type="button" class="s-btn primary" onclick="window.print()"><i class="fa-solid fa-print"></i>In / Lưu PDF</button>
+      </div>
+    </div>
+
+    <div th:with="
+       congI = (${payroll.luongNgayCong} ?: 0)
+             + (${payroll.luongThemGio} ?: 0)
+             + (${payroll.phuCapThamNien} ?: 0)
+             + (${payroll.trachNhiemDuocNhan} ?: 0)
+             + (${payroll.phuCapLevel} ?: 0)
+             + (${payroll.phuCapKiemNhiem} ?: 0),
+       congII = (${payroll.thuongDichVu} ?: 0)
+              + (${payroll.thuongChinhSach} ?: 0)
+              + (${payroll.thuongTuVanBanHang} ?: 0)
+              + (${payroll.banLanhDao} ?: 0)
+              + (${payroll.thamNien5Nam} ?: 0),
+       congIII = (${payroll.kyQuy} ?: 0)
+               + (${payroll.phatViPham} ?: 0)
+               + (${payroll.bhxh} ?: 0)
+               + (${payroll.tamUngLuong} ?: 0)
+               + (${payroll.congDoan} ?: 0)
+               + (${payroll.thueTNCN} ?: 0)
+               + (${payroll.phongChongThienTai} ?: 0)
+               + (${payroll.ruiRo} ?: 0),
+       tongThuNhap = (${payroll.netSalary}) ?: (${congI + congII}),
+       thucNhan = (${payroll.thucNhan}) ?: (${congI + congII - congIII})
+     ">
+
+      <!-- THÊM: phiếu tạm tính theo bảng công (không in) -->
+      <div th:if="${autoInfo != null}" class="no-print"
+           style="display:flex;gap:10px;align-items:flex-start;background:#fffaeb;border:1px solid #fedf89;color:#93370d;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13.5px">
+        <i class="fa-solid fa-clock-rotate-left" style="margin-top:3px"></i>
+        <div th:if="${preview == true}">
+          <b>Phiếu lương dự kiến</b> tính ngay theo bảng công đến ngày
+          <b th:text="${#temporals.format(autoInfo.calcUpTo, 'dd/MM/yyyy')}"></b>
+          (xem trước, không phải phiếu chính thức). Số liệu thay đổi theo công từng ngày; phòng Kế toán chốt cuối tháng.
+        </div>
+        <div th:if="${preview != true and autoInfo.provisional}">
+          <b>Phiếu lương tạm tính</b> theo bảng công đến ngày
+          <b th:text="${#temporals.format(autoInfo.calcUpTo, 'dd/MM/yyyy')}"></b>,
+          tự cập nhật hằng ngày khi có công mới. Số liệu chính thức do phòng Kế toán chốt cuối tháng.
+        </div>
+        <div th:if="${preview != true and !autoInfo.provisional}">
+          <b>Phiếu lương tính tự động</b> theo bảng công cả tháng
+          (cập nhật lần cuối <span th:text="${#temporals.format(autoInfo.calculatedAt, 'dd/MM/yyyy HH:mm')}"></span>).
+          Số liệu chính thức do phòng Kế toán chốt.
+        </div>
+      </div>
+
+      <!-- Tóm tắt nhanh (không in) -->
+      <div class="slip-sum">
+        <div><small>IV. Tổng thu nhập</small><b th:text="${#numbers.formatDecimal(tongThuNhap, 1, 'POINT', 0, 'COMMA')}">0</b><em>nghìn đ</em></div>
+        <div class="minus"><small>III. Các khoản giảm trừ</small><b th:text="${#numbers.formatDecimal(congIII, 1, 'POINT', 0, 'COMMA')}">0</b><em>nghìn đ</em></div>
+        <div class="net"><small>V. Thực nhận</small><b th:text="${#numbers.formatDecimal(thucNhan, 1, 'POINT', 0, 'COMMA')}">0</b><em>nghìn đ</em></div>
+      </div>
+
+      <div class="slip-fit" id="slipFit">
+        <!-- THẺ LƯƠNG mẫu giấy (fragments/the-luong.html): tên công ty / người lập / nơi ký theo đơn vị -->
+        <div id="slip"><div th:replace="~{fragments/the-luong :: the(${payroll}, ${user})}"></div></div>
+      </div><!-- /slip-fit -->
+    </div><!-- /th:with -->
+
+  </div><!-- /slip-page -->
+</div><!-- /sh-main -->
+<!-- ═════ HEADER / MENU CHUNG: JS ═════ -->
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+
+
+<script>
+/* Điện thoại / màn hẹp: thu nhỏ tờ phiếu (rộng 780px) cho vừa khung, không phải kéo ngang */
+(function () {
+  var fit = document.getElementById('slipFit'), slip = document.getElementById('slip');
+  if (!fit || !slip) return;
+  var W = 780;
+  function resize() {
+    var avail = fit.clientWidth, z = Math.min(1, avail / W);
+    if ('zoom' in slip.style) { slip.style.zoom = z < 1 ? z.toFixed(4) : ''; }
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  window.addEventListener('beforeprint', function () { slip.style.zoom = ''; });
+  window.addEventListener('afterprint', resize);
+})();
+</script>
+</body>
+
+</html>

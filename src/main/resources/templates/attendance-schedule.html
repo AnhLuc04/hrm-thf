@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Lịch làm việc & giờ chấm công')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('schedule', 'Lịch làm việc')}"></th:block>
+<div class="sh-main">
+  <div class="wrap" style="max-width:980px">
+    <div class="ph">
+      <div>
+        <h1>Lịch làm việc &amp; giờ chấm công</h1>
+        <p th:if="${unit != null}" th:text="${unit.code} + ' · ' + ${unit.name} + ' — áp dụng cho trang xác nhận công, bảng công tổng và phiếu lương chưa chốt kỳ của đơn vị này.'">TH · Thanh Hóa</p>
+        <p th:if="${unit == null}">Quản trị hệ thống: chọn 1 đơn vị để xem / sửa lịch làm việc.</p>
+      </div>
+    </div>
+    <div th:if="${message}" class="flash ok" th:text="${message}"></div>
+    <div th:if="${error}" class="flash err" th:text="${error}"></div>
+
+    <!-- quản trị đang xem "Tất cả đơn vị" -->
+    <section class="units" th:if="${unit == null}">
+      <article class="unit" th:each="u : ${units}">
+        <div class="u-top"><span class="code" th:text="${u.code}">TH</span>
+          <div class="n"><b th:text="${u.name}">Thanh Hóa</b><small th:text="${u.workDaysLabel}">T2–T7 cả ngày · CN nghỉ</small></div></div>
+        <form th:action="@{/units/view}" method="get">
+          <input type="hidden" name="unitId" th:value="${u.id}">
+          <input type="hidden" name="back" value="/attendance/schedule">
+          <button class="btn btn-sm" type="submit">Mở lịch làm việc</button>
+        </form>
+      </article>
+    </section>
+
+    <form th:if="${unit != null}" th:action="@{/attendance/schedule}" method="post" style="display:grid;gap:18px">
+      <input type="hidden" name="unitId" th:value="${unit.id}">
+      <div class="flash warn" th:unless="${canEdit}">Bạn chỉ xem được. HCNS của đơn vị sửa lịch làm việc.</div>
+      <fieldset th:disabled="${!canEdit}" style="border:0;margin:0;padding:0;min-width:0;display:grid;gap:18px">
+
+        <section class="card">
+          <h2>1. Ngày làm trong tuần</h2>
+          <p class="hint">Nghỉ: không báo lỗi chấm công, không tính công chuẩn; ai đi làm được tính giờ làm ngày nghỉ (như Chủ nhật).
+            Buổi sáng: chỉ xét giờ vào ca sáng, không báo thiếu ca chiều, tính 0,5 công chuẩn.</p>
+          <div th:replace="~{units/fragments :: weekdays(${unit})}"></div>
+          <div class="rows" style="max-width:460px">
+            <div th:each="m : ${months}"><span th:text="'Công chuẩn tháng ' + ${m.key}">Công chuẩn tháng 10/2026</span><b th:text="${m.value} + ' công'">27 công</b></div>
+          </div>
+          <small style="color:var(--muted)">Công chuẩn trên tính theo lịch đang lưu; bấm Lưu để cập nhật. Mẫu lương có khai "congChuanCoDinh" thì vẫn dùng số cố định đó.</small>
+        </section>
+
+        <section class="card">
+          <h2>2. Giờ chấm công</h2>
+          <p class="hint">Máy chấm công chỉ ghi giờ quẹt; các mốc dưới đây quyết định thế nào là đi muộn, về sớm.</p>
+          <div class="grid">
+            <div class="f"><label for="lateAfter">Báo đi muộn khi vào sau</label>
+              <input id="lateAfter" type="time" name="lateAfter" required th:value="${#temporals.format(unit.lateAfterOrDefault(), 'HH:mm')}">
+              <small>VD vào làm 7:30, cho phép muộn 5 phút → 07:35</small></div>
+            <div class="f"><label for="violationAfter">Tính 1 lần vi phạm khi vào sau</label>
+              <input id="violationAfter" type="time" name="violationAfter" required th:value="${#temporals.format(unit.violationAfterOrDefault(), 'HH:mm')}">
+              <small>Cột vi phạm / tiền phạt trên bảng công tổng</small></div>
+            <div class="f"><label for="noonSplit">Mốc chia ca sáng / chiều</label>
+              <input id="noonSplit" type="time" name="noonSplit" required th:value="${#temporals.format(unit.noonOrDefault(), 'HH:mm')}">
+              <small>Quẹt trước mốc = ca sáng, sau mốc = ca chiều</small></div>
+            <div class="f"><label for="earlyBefore">Báo về sớm khi ra trước</label>
+              <input id="earlyBefore" type="time" name="earlyBefore" required th:value="${#temporals.format(unit.earlyBeforeOrDefault(), 'HH:mm')}">
+              <small>Không áp dụng cho ngày chỉ làm buổi sáng</small></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>3. Hạn gửi xác nhận công</h2>
+          <div class="grid">
+            <div class="f"><label for="confirmDays">Số ngày được gửi giải trình kể từ ngày lỗi</label>
+              <input id="confirmDays" type="number" name="confirmDays" min="0" max="31" th:value="${unit.confirmDaysOrDefault()}">
+              <small>7: muộn ngày 09 thì hạn hết ngày 16, quá hạn tự khóa. 0 = không giới hạn.</small></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>4. Ngày dừng (khoá sổ tháng trước) &amp; cộng phép năm</h2>
+          <p class="hint">Sang tháng mới, công tháng trước còn mở đến hết ngày dưới đây rồi tự khoá. 0 = sang tháng là khoá ngay.</p>
+          <div class="grid">
+            <div class="f"><label for="confirmCutoffDay">Ngày dừng xác nhận công</label>
+              <input id="confirmCutoffDay" type="number" name="confirmCutoffDay" min="0" max="28" th:value="${unit.confirmCutoffDayOrDefault()}">
+              <small th:text="${unit.confirmCutoffDayOrDefault() == 0} ? 'Nhân viên gửi giải trình trong tháng, sang tháng là hết' : 'Nhân viên còn gửi giải trình công tháng trước đến hết ngày ' + ${unit.confirmCutoffDayOrDefault()} + ' tháng sau'">Còn gửi đến hết ngày 1</small></div>
+            <div class="f"><label for="reportCutoffDay">Ngày dừng duyệt &amp; chốt bảng công tổng</label>
+              <input id="reportCutoffDay" type="number" name="reportCutoffDay" min="0" max="28" th:value="${unit.reportCutoffDayOrDefault()}">
+              <small th:text="'Quản lý còn duyệt / xem đơn tháng trước đến hết ngày ' + ${unit.reportCutoffDayOrDefault()} + '; sau đó bảng công tháng trước chốt'">Duyệt đến hết ngày 1</small></div>
+            <div class="f"><label for="leaveAccrualDay">Ngày cộng phép năm hằng tháng</label>
+              <input id="leaveAccrualDay" type="number" name="leaveAccrualDay" min="1" max="28" th:value="${unit.leaveAccrualDayOrDefault()}">
+              <small>Đến ngày này mỗi tháng, nhân viên chính thức được cộng phép của tháng (thử việc, học việc không cộng).</small></div>
+          </div>
+          <p class="hint" style="margin:0">Nên đặt ngày dừng duyệt ≥ ngày dừng xác nhận, để quản lý kịp duyệt các đơn gửi ngày cuối.</p>
+        </section>
+
+        <section class="card">
+          <h2>5. Lịch tự kéo công từ máy chấm công</h2>
+          <p class="hint" style="margin:0">Quản trị hệ thống cài lịch kéo công và kéo lại dữ liệu ở trang Đơn vị &amp; máy chấm công. HCNS chỉ xem.</p>
+          <div class="rows">
+            <div><span>Lịch kéo</span><span th:text="${unit.syncScheduleLabel}">Mọi ngày · 09:00, 20:00</span></div>
+            <div><span>Lần kéo tiếp theo</span><span th:text="${nextSync}">20:00 hôm nay</span></div>
+            <div><span>Lần kéo gần nhất</span><span th:text="${unit.lastSyncAt != null} ? ${#temporals.format(unit.lastSyncAt, 'HH:mm dd/MM/yyyy')} + (${unit.lastMessage != null} ? ' · ' + ${unit.lastMessage} : '') : 'Chưa kéo'">09:01</span></div>
+          </div>
+        </section>
+
+        <div class="ph" th:if="${canEdit}">
+          <small style="color:var(--muted)" th:if="${unit.scheduleUpdatedAt != null}"
+                 th:text="'Sửa lần cuối: ' + ${unit.scheduleUpdatedBy} + ' lúc ' + ${#temporals.format(unit.scheduleUpdatedAt, 'HH:mm dd/MM/yyyy')}">Sửa lần cuối</small>
+          <span class="sp"></span>
+          <button class="btn btn-brand" type="submit"><i class="fa-solid fa-check"></i>Lưu lịch làm việc</button>
+        </div>
+      </fieldset>
+    </form>
+
+
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

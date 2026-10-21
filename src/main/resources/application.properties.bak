@@ -1,0 +1,38 @@
+spring.application.name=hrm
+# Server
+server.port=8081
+server.address=0.0.0.0
+#server.ssl.enabled=true
+#server.ssl.key-store=classpath:keystore.p12
+#server.ssl.key-store-password=HrmTh26xQ7mPv4Lz
+#server.ssl.key-store-type=PKCS12
+#server.ssl.key-alias=hrm
+server.ssl.enabled=true
+server.ssl.bundle=web
+spring.ssl.bundle.pem.web.keystore.certificate=file:C:/ssl/thfgroup.ddns.net-chain.pem
+spring.ssl.bundle.pem.web.keystore.private-key=file:C:/ssl/thfgroup.ddns.net-key.pem
+spring.ssl.bundle.pem.web.reload-on-update=true
+# MySQL
+spring.datasource.url=jdbc:mysql://localhost:3306/test_hrm
+spring.datasource.username=root
+spring.datasource.password=luclh04032001@
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+debug=true
+spring.mvc.static-path-pattern=/uploads/**
+spring.web.resources.static-locations=classpath:/static/uploads/
+
+# Device connection
+#device.api.url=http://taybacford.smartddns.tv
+#device.api.username=admin
+#device.api.password=Admin@26cc
+
+
+device.api.url=http://172.16.3.251
+device.api.username=admin
+device.api.password=Admin@36

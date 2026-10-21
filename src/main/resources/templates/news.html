@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>Bảng tin · Thanh Hóa Ford HRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+  <style>
+    :root { --bg: #f7f8fa; --panel: #fff; --ink: #0b1220; --ink2: #344054; --muted: #667085; --faint: #98a2b3; --line: #eaecf0;
+            --brand: #4f46e5; --brand-600: #4338ca; --brand-50: #eef2ff; --warn: #b54708; --warn-50: #fffaeb; --ok: #067647; --ok-50: #ecfdf3; --err: #b42318; --err-50: #fef3f2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink2); font: 14px/1.55 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 24px 48px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+    .ph { grid-column: 1 / -1; }
+    .ph h1 { margin: 0; font-size: 22px; color: var(--ink); letter-spacing: -.01em; }
+    .ph p { margin: 4px 0 0; color: var(--muted); }
+    .flash { grid-column: 1 / -1; border-radius: 10px; padding: 10px 14px; font-weight: 500; }
+    .flash.ok { background: var(--ok-50); color: var(--ok); } .flash.err { background: var(--err-50); color: var(--err); }
+    .feed { display: grid; gap: 12px; min-width: 0; }
+    .post { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 8px; }
+    .post.pin { border-color: #fedf89; box-shadow: inset 4px 0 0 #fdb022; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: #f2f4f7; color: var(--muted); }
+    .tag.pin { background: var(--warn-50); color: var(--warn); }
+    .tag.exp { background: var(--err-50); color: var(--err); }
+    .tags time { margin-left: auto; font-size: 12.5px; color: var(--faint); }
+    .post h2 { margin: 0; font-size: 16.5px; color: var(--ink); text-wrap: balance; }
+    .post .body { white-space: pre-line; overflow-wrap: anywhere; max-width: 70ch; }
+    .post .foot { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+    .post .foot form { margin: 0 0 0 auto; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff;
+           font: inherit; font-weight: 600; font-size: 13.5px; color: var(--ink2); cursor: pointer; }
+    .btn-brand { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .btn-del { height: 30px; font-size: 12.5px; color: var(--err); border-color: #fecdca; background: var(--err-50); }
+    .empty { background: var(--panel); border: 1px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--muted); }
+    .compose { position: sticky; top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+    .compose h2 { margin: 0; font-size: 15px; color: var(--ink); }
+    .f { display: grid; gap: 4px; }
+    .f label { font-size: 12.5px; font-weight: 600; }
+    .f input, .f select, .f textarea { width: 100%; min-width: 0; border: 1px solid #d0d5dd; border-radius: 9px; padding: 8px 10px; font: inherit; background: #fff; color: var(--ink); }
+    .f textarea { min-height: 120px; resize: vertical; }
+    .f small { font-size: 12px; color: var(--muted); }
+    .chk { display: flex; gap: 8px; align-items: center; font-size: 13.5px; }
+    .chk input { width: 17px; height: 17px; accent-color: var(--brand); }
+    /* ảnh / file đính kèm */
+    .gal { display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-width: 640px; }
+    .gal.one { grid-template-columns: minmax(0, 480px); }
+    .gal a { display: block; border-radius: 10px; overflow: hidden; background: #f2f4f7; aspect-ratio: 4 / 3; }
+    .gal.one a { aspect-ratio: auto; max-height: 420px; }
+    .gal img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gal.one img { object-fit: contain; max-height: 420px; }
+    .docs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .doc { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px;
+           background: #fcfcfd; color: var(--ink2); text-decoration: none; font-size: 13px; }
+    .doc:hover { border-color: #c7d2fe; background: var(--brand-50); }
+    .doc .ex { flex: none; min-width: 38px; text-align: center; font-size: 10.5px; font-weight: 800; padding: 3px 5px; border-radius: 5px; background: var(--brand-50); color: var(--brand); }
+    .doc .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; font-weight: 600; }
+    .doc small { color: var(--faint); white-space: nowrap; }
+    .drop { display: grid; gap: 6px; place-items: center; text-align: center; padding: 14px 10px; border: 1.5px dashed #c7d2fe; border-radius: 10px;
+            background: #f8f9ff; color: var(--muted); font-size: 12.5px; cursor: pointer; }
+    .drop.over { border-color: var(--brand); background: var(--brand-50); }
+    .drop b { color: var(--brand); font-weight: 600; }
+    .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .picked { display: grid; gap: 6px; }
+    .picked:empty { display: none; }
+    .pk { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; }
+    .pk img, .pk .ex { width: 40px; height: 40px; border-radius: 7px; object-fit: cover; background: var(--brand-50); color: var(--brand);
+                      display: grid; place-items: center; font-size: 10px; font-weight: 800; }
+    .pk span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pk button { border: 0; background: none; color: var(--faint); cursor: pointer; font-size: 14px; padding: 4px; }
+    .pk button:hover { color: var(--err); }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; padding: 18px 16px 40px; } .compose { position: static; order: -1; } }
+  </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('news', 'Bảng tin')}"></th:block>
+<div class="sh-main">
+  <div class="wrap">
+    <div class="ph">
+      <h1>Bảng tin</h1>
+      <p th:text="${isGlobal} ? 'Quản trị hệ thống: thấy tin của mọi đơn vị, đăng được tin toàn hệ thống hoặc cho 1 đơn vị.'
+                              : 'Tin của ' + (${myUnit != null} ? ${myUnit.name} : 'công ty') + ' và tin toàn hệ thống. Không thấy tin nội bộ của đơn vị khác.'"></p>
+    </div>
+    <div th:if="${message}" class="flash ok" th:text="${message}"></div>
+    <div th:if="${error}" class="flash err" th:text="${error}"></div>
+
+    <section class="feed" aria-label="Danh sách tin">
+      <article class="post" th:each="a : ${news}" th:classappend="${a.pin} ? 'pin'">
+        <div class="tags">
+          <span th:if="${a.pin}" class="tag pin"><i class="fa-solid fa-thumbtack"></i> Ghim</span>
+          <span class="tag" th:text="${a.scopeLabel}">TH · Thanh Hóa</span>
+          <span th:if="${a.isExpired(today)}" class="tag exp">Đã hết hạn (chỉ người quản lý tin thấy)</span>
+          <time th:text="${a.createdAt != null} ? ${#temporals.format(a.createdAt, 'HH:mm dd/MM/yyyy')} : ''"></time>
+        </div>
+        <h2 th:text="${a.title}">Lịch chi lương tháng 9</h2>
+        <div class="body" th:if="${a.body != null and !#strings.isEmpty(a.body)}" th:text="${a.body}"></div>
+        <div class="gal" th:unless="${#lists.isEmpty(a.images)}" th:classappend="${#lists.size(a.images) == 1} ? 'one'">
+          <a th:each="f : ${a.images}" th:href="@{/news/file/{id}(id=${f.id})}" target="_blank" rel="noopener" th:title="${f.originalName}">
+            <img th:src="@{/news/file/{id}(id=${f.id})}" th:alt="${f.originalName}" loading="lazy">
+          </a>
+        </div>
+        <div class="docs" th:unless="${#lists.isEmpty(a.documents)}">
+          <a class="doc" th:each="f : ${a.documents}" th:href="@{/news/file/{id}(id=${f.id})}" target="_blank" rel="noopener">
+            <span class="ex" th:text="${f.ext}">PDF</span>
+            <span class="nm" th:text="${f.originalName}">Lich-chi-luong.pdf</span>
+            <small th:text="${f.sizeLabel}">350 KB</small>
+          </a>
+        </div>
+        <div class="foot">
+          <span th:text="${a.createdByName ?: a.createdBy}">Đỗ Thu Trang</span>
+          <span th:if="${a.expiresOn != null}" th:text="'· hiển thị đến ' + ${#temporals.format(a.expiresOn, 'dd/MM/yyyy')}"></span>
+          <form th:if="${canDelete.test(a)}" th:action="@{/news/{id}/delete(id=${a.id})}" method="post"
+                onsubmit="return confirm('Xoá tin này?')">
+            <button class="btn btn-del" type="submit"><i class="fa-regular fa-trash-can"></i>Xoá</button>
+          </form>
+        </div>
+      </article>
+      <div class="empty" th:if="${#lists.isEmpty(news)}">Chưa có tin nào.</div>
+    </section>
+
+    <form class="compose" th:if="${canPost}" th:action="@{/news}" method="post" enctype="multipart/form-data">
+      <h2>Đăng tin</h2>
+      <div class="f"><label for="title">Tiêu đề</label><input id="title" name="title" maxlength="200" required placeholder="VD: Lịch chi lương tháng 9"></div>
+      <div class="f"><label for="body">Nội dung</label><textarea id="body" name="body" maxlength="5000"></textarea></div>
+      <div class="f"><span style="font-size:12.5px;font-weight:600">Ảnh / file đính kèm</span>
+        <label class="drop" id="drop" style="position:relative">
+          <i class="fa-regular fa-images" style="font-size:20px;color:#818cf8" aria-hidden="true"></i>
+          <span><b>Chọn ảnh, file</b> hoặc kéo thả vào đây</span>
+          <span th:text="'Ảnh, PDF, Word, Excel, PowerPoint, ZIP · tối đa ' + ${maxFiles} + ' file, mỗi file 20 MB'">Tối đa 10 file</span>
+          <input id="files" name="files" type="file" multiple th:accept="${fileAccept}">
+        </label>
+        <div class="picked" id="picked" aria-live="polite"></div></div>
+      <div class="f" th:if="${isGlobal}"><label for="unitId">Gửi tới</label>
+        <select id="unitId" name="unitId">
+          <option value="">Toàn hệ thống (mọi đơn vị)</option>
+          <option th:each="u : ${units}" th:value="${u.id}" th:text="${u.code} + ' · ' + ${u.name}">TH</option>
+        </select></div>
+      <div class="f" th:unless="${isGlobal}"><label>Gửi tới</label>
+        <small th:text="'Đơn vị ' + (${myUnit != null} ? ${myUnit.code} + ' · ' + ${myUnit.name} : 'của bạn') + ' (không gửi sang đơn vị khác)'"></small></div>
+      <div class="f"><label for="department">Phòng</label>
+        <select id="department" name="department">
+          <option value="">Cả đơn vị</option>
+          <option th:each="d : ${departments}" th:value="${d}" th:text="${d}">Kinh Doanh 1</option>
+        </select>
+        <small>Chọn 1 phòng thì chỉ nhân viên phòng đó thấy.</small></div>
+      <div class="f"><label for="expiresOn">Hiển thị đến ngày</label><input id="expiresOn" name="expiresOn" type="date"><small>Để trống: không hết hạn.</small></div>
+      <label class="chk" th:if="${canPin}"><input type="checkbox" name="pinned" value="1"> Ghim lên đầu bảng tin</label>
+      <button class="btn btn-brand" type="submit"><i class="fa-regular fa-paper-plane"></i>Đăng tin</button>
+    </form>
+  </div>
+</div>
+<script th:inline="javascript">
+(() => {
+  const input = document.getElementById('files');
+  if (!input) return;
+  const MAX = /*[[${maxFiles}]]*/ 10, MAX_BYTES = 20 * 1024 * 1024;
+  const drop = document.getElementById('drop'), picked = document.getElementById('picked');
+  let list = [];
+  const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const size = b => b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+  function sync() {
+    const dt = new DataTransfer();
+    list.forEach(f => dt.items.add(f));
+    input.files = dt.files;
+    picked.innerHTML = list.map((f, i) => {
+      const img = /^image\//.test(f.type);
+      const ext = (f.name.split('.').pop() || '').toUpperCase().slice(0, 4);
+      return '<div class="pk">' + (img ? '<img alt="" data-i="' + i + '">' : '<span class="ex">' + esc(ext) + '</span>') +
+        '<span title="' + esc(f.name) + '">' + esc(f.name) + ' · ' + size(f.size) + '</span>' +
+        '<button type="button" data-rm="' + i + '" aria-label="Bỏ file ' + esc(f.name) + '"><i class="fa-solid fa-xmark"></i></button></div>';
+    }).join('');
+    picked.querySelectorAll('img[data-i]').forEach(im => { im.src = URL.createObjectURL(list[+im.dataset.i]); });
+  }
+  function add(files) {
+    for (const f of files) {
+      if (list.length >= MAX) { alert('Tối đa ' + MAX + ' file cho 1 tin'); break; }
+      if (f.size > MAX_BYTES) { alert('"' + f.name + '" quá 20 MB'); continue; }
+      if (!list.some(x => x.name === f.name && x.size === f.size)) list.push(f);
+    }
+    sync();
+  }
+  input.addEventListener('change', () => add([...input.files]));
+  picked.addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (b) { list.splice(+b.dataset.rm, 1); sync(); } });
+  ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => add([...e.dataTransfer.files]));
+})();
+</script>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#1e1b4b">
+    <title>Trang chủ · Thanh Hóa Ford HRM</title>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS viết tay, không cần Bootstrap → tải nhanh, giao diện đồng bộ với các trang chấm công -->
+    <style>
+    :root {
+      --bg: #f5f6fa; --card: #fff; --ink: #0f172a; --ink2: #334155; --muted: #64748b; --faint: #94a3b8;
+      --line: #e5e8ef; --line2: #eef1f5; --brand: #4f46e5; --brand-600: #4338ca; --brand-50: #eef2ff; --brand-100: #e0e7ff;
+      --r: 16px; --shadow: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+      --sa-t: env(safe-area-inset-top, 0px); --sa-b: env(safe-area-inset-bottom, 0px);
+      --sa-l: env(safe-area-inset-left, 0px); --sa-r: env(safe-area-inset-right, 0px);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink2);
+           font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+           -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; }
+    .wrap { width: 100%; max-width: 1160px; margin: 0 auto; padding-left: calc(24px + var(--sa-l)); padding-right: calc(24px + var(--sa-r)); }
+
+    /* ── Thanh trên cùng ── */
+    .top { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.85); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px);
+           border-bottom: 1px solid var(--line); padding-top: var(--sa-t); }
+    .top .wrap { height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .mark { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 13px; letter-spacing: -.02em;
+            background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 6px 14px -6px rgba(79,70,229,.6); }
+    .brand .bt { min-width: 0; }
+    .brand b { display: block; font-size: 15px; font-weight: 800; color: var(--ink); line-height: 1.15; white-space: nowrap; }
+    .brand small { display: block; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+
+    /* Menu tài khoản: dùng <details> gốc của trình duyệt → không cần JS, chạy mọi thiết bị */
+    .acct { position: relative; }
+    .acct summary { list-style: none; display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 8px 0 4px; border-radius: 12px; cursor: pointer; user-select: none; }
+    .acct summary::-webkit-details-marker { display: none; }
+    .acct summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-50); color: var(--brand); font-weight: 800; font-size: 13px; border: 1px solid var(--brand-100); }
+    .acct .who { text-align: right; line-height: 1.2; }
+    .acct .who b { display: block; font-size: 13px; color: var(--ink); }
+    .acct .who span { font-size: 11.5px; color: var(--muted); }
+    .acct .caret { font-size: 10px; color: var(--faint); transition: transform .15s; }
+    .acct[open] .caret { transform: rotate(180deg); }
+    .menu { position: absolute; right: 0; top: calc(100% + 8px); width: 240px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 6px;
+            box-shadow: 0 18px 40px -12px rgba(15,23,42,.28); }
+    .menu .mh { padding: 10px 12px 8px; border-bottom: 1px solid var(--line2); margin-bottom: 6px; }
+    .menu .mh b { display: block; color: var(--ink); font-size: 13.5px; }
+    .menu .mh span { font-size: 12px; color: var(--muted); }
+    .menu a, .menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 10px; background: none; cursor: pointer; font-size: 13.5px; font-weight: 600; text-align: left; }
+    .menu i { width: 16px; text-align: center; color: var(--faint); }
+    .menu form { margin: 0; border-top: 1px solid var(--line2); margin-top: 6px; padding-top: 6px; }
+    .menu .out { color: #dc2626; } .menu .out i { color: #f87171; }
+
+    /* ── Lời chào ── */
+    .hello { position: relative; overflow: hidden; margin-top: 28px; border-radius: 20px; padding: 28px 30px; color: #fff;
+             background: radial-gradient(1200px 400px at 110% -20%, rgba(167,139,250,.55), transparent 60%), linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #4f46e5 100%);
+             box-shadow: 0 20px 40px -20px rgba(49,46,129,.7); display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px; }
+    .hello::before { content: ""; position: absolute; right: -60px; bottom: -80px; width: 260px; height: 260px; border-radius: 50%; border: 36px solid rgba(255,255,255,.05); pointer-events: none; }
+    .hello .date { font-size: 12.5px; font-weight: 600; opacity: .75; letter-spacing: .02em; }
+    .hello h1 { margin: 6px 0 4px; font-size: 28px; line-height: 1.2; font-weight: 800; letter-spacing: -.02em; }
+    .hello p { margin: 0; opacity: .8; font-size: 14px; max-width: 520px; }
+    .hello .qa { display: flex; flex-wrap: wrap; gap: 10px; position: relative; }
+    .qbtn { height: 42px; padding: 0 16px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; white-space: nowrap; transition: background .15s, transform .05s; }
+    .qbtn:active { transform: translateY(1px); }
+    .qbtn.light { background: #fff; color: #312e81; }
+    .qbtn.ghost { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.22); }
+
+    /* ── Nhóm chức năng ── */
+    main { flex: 1; padding-bottom: 32px; }
+    .sec { margin-top: 28px; }
+    .sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .sec-h h2 { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .sec-h span { font-size: 12px; color: var(--faint); }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+
+    .tile { position: relative; display: flex; align-items: flex-start; gap: 14px; padding: 18px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+            box-shadow: var(--shadow); transition: border-color .15s, box-shadow .15s, transform .15s; min-width: 0; }
+    .tile:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .tile .ic { width: 46px; height: 46px; border-radius: 13px; flex: none; display: grid; place-items: center; font-size: 19px; color: var(--c); background: var(--cb); }
+    .tile .tx { min-width: 0; flex: 1; }
+    .tile h3 { margin: 1px 0 3px; font-size: 15.5px; font-weight: 800; color: var(--ink); letter-spacing: -.01em; }
+    .tile p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+    .tile .go { align-self: center; width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center; color: var(--faint); font-size: 12px; transition: background .15s, color .15s, transform .15s; }
+    .tile .badge { position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--cb); color: var(--c); }
+    .tile.feat { grid-column: span 1; }
+    .tile h3 .badge { position: static; display: inline-block; margin-left: 6px; vertical-align: 2px; font-size: 9.5px; padding: 1px 7px; }
+
+    .c-amber  { --c: #d97706; --cb: #fef3c7; }
+    .c-violet { --c: #7c3aed; --cb: #ede9fe; }
+    .c-sky    { --c: #0284c7; --cb: #e0f2fe; }
+    .c-indigo { --c: #4f46e5; --cb: #e0e7ff; }
+    .c-rose   { --c: #e11d48; --cb: #ffe4e6; }
+    .c-emerald{ --c: #059669; --cb: #d1fae5; }
+    .c-slate  { --c: #475569; --cb: #eef1f5; }
+    .c-teal   { --c: #0d9488; --cb: #ccfbf1; }
+
+    footer { border-top: 1px solid var(--line); padding: 16px 0 calc(16px + var(--sa-b)); font-size: 12px; color: var(--faint); }
+    footer .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    /* ── Thanh điều hướng đáy (điện thoại) ── */
+    .tabbar { display: none; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .tile:hover { border-color: #c7d2fe; box-shadow: 0 12px 28px -14px rgba(79,70,229,.35); transform: translateY(-2px); }
+      .tile:hover .go { background: var(--brand-50); color: var(--brand); transform: translateX(2px); }
+      .acct summary:hover { background: #f4f5f9; }
+      .menu a:hover, .menu button:hover { background: #f5f6fa; }
+      .menu .out:hover { background: #fef2f2; }
+      .qbtn.light:hover { background: #eef2ff; }
+      .qbtn.ghost:hover { background: rgba(255,255,255,.2); }
+    }
+
+    @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+    @media (max-width: 640px) {
+      .wrap { padding-left: calc(14px + var(--sa-l)); padding-right: calc(14px + var(--sa-r)); }
+      .top .wrap { height: 56px; }
+      .brand small { display: none; }
+      .acct .who, .acct .caret { display: none; }
+      .acct summary { padding: 0; }
+      .menu { width: min(260px, calc(100vw - 28px)); }
+
+      .hello { margin-top: 14px; padding: 22px 18px; border-radius: 18px; }
+      .hello h1 { font-size: 23px; }
+      .hello p { font-size: 13px; }
+      .hello .qa { width: 100%; }
+      .qbtn { flex: 1 1 0; justify-content: center; padding: 0 10px; }
+
+      .sec { margin-top: 22px; }
+      .grid { grid-template-columns: 1fr; gap: 10px; }
+      .tile { padding: 14px; gap: 12px; align-items: center; }
+      .tile .ic { width: 42px; height: 42px; font-size: 17px; border-radius: 12px; }
+      .tile h3 { font-size: 15px; margin: 0 0 1px; }
+      .tile p { font-size: 12.5px; }
+
+
+      .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+                background: rgba(255,255,255,.92); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px);
+                border-top: 1px solid var(--line); padding: 6px calc(6px + var(--sa-r)) calc(6px + var(--sa-b)) calc(6px + var(--sa-l)); }
+      .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 52px; border-radius: 12px; font-size: 10.5px; font-weight: 700; color: var(--muted); }
+      .tabbar a i { font-size: 18px; }
+      .tabbar a.on { color: var(--brand); }
+      .tabbar a:active { background: #f1f3f9; }
+    }
+
+    @media (max-width: 360px) {
+      .hello h1 { font-size: 20px; }
+      .qbtn { font-size: 12.5px; gap: 6px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+    <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+</head>
+
+<body>
+<th:block th:replace="~{fragments/shell :: nav('home', 'Trang chủ')}"></th:block>
+<div class="sh-main">
+
+
+
+    <main th:with="mgr=${isManager == true or navIsManager == true},
+                   adm=${isAdmin == true or navIsAdmin == true},
+                   acc=${navIsAccountant == true},
+                   hr=${navIsHr == true}">
+        <div class="wrap">
+
+            <!-- ═════════ LỜI CHÀO ═════════ -->
+            <section class="hello">
+                <div style="position:relative">
+                    <div class="date" id="today">Hôm nay</div>
+                    <h1><span id="greet">Xin chào</span> 👋</h1>
+                    <p>Xác nhận công, xem bảng tin, ký hợp đồng và gửi đề xuất — tất cả tại một nơi.</p>
+                </div>
+                <div class="qa">
+                    <a class="qbtn light" th:href="@{/attendance/confirm/{empNo}(empNo=${username})}"><i class="fa-solid fa-pen-to-square"></i>Giải trình công</a>
+                    <a class="qbtn ghost" th:href="@{/news}"><i class="fa-regular fa-newspaper"></i>Bảng tin</a>
+                </div>
+            </section>
+
+            <!-- ═════════ CÁ NHÂN ═════════ -->
+            <section class="sec">
+                <div class="sec-h"><h2>Cá nhân</h2><span>Tiện ích dành cho bạn</span></div>
+                <div class="grid">
+                    <a class="tile c-amber" th:href="@{/attendance/confirm/{empNo}(empNo=${username})}">
+                        <span class="ic"><i class="fa-solid fa-user-check"></i></span>
+                        <span class="tx"><h3>Xác nhận công</h3><p>Giải trình đi muộn, về sớm, quên chấm hoặc vắng mặt.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-indigo" th:unless="${mgr}" th:href="@{/attendance/report}">
+                        <span class="ic"><i class="fa-regular fa-calendar-check"></i></span>
+                        <span class="tx"><h3>Lịch công của tôi</h3><p>Xem giờ vào/ra, ngày công và phép năm trong tháng.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-sky" th:href="@{/news}">
+                        <span class="ic"><i class="fa-regular fa-newspaper"></i></span>
+                        <span class="tx"><h3>Bảng tin <span class="badge">Sắp có</span></h3><p>Thông báo, tin nội bộ và lịch sự kiện của công ty.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-emerald" th:href="@{/contract/my}">
+                        <span class="ic"><i class="fa-solid fa-file-signature"></i></span>
+                        <span class="tx"><h3>Ký hợp đồng lao động <span class="badge">Sắp có</span></h3><p>Xem và ký điện tử hợp đồng, phụ lục hợp đồng.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-violet" th:href="@{/proposal/salary}">
+                        <span class="ic"><i class="fa-solid fa-arrow-trend-up"></i></span>
+                        <span class="tx"><h3>Đề xuất tăng lương <span class="badge">Sắp có</span></h3><p>Gửi đề xuất điều chỉnh lương, theo dõi kết quả duyệt.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-slate" th:href="@{/proposal}">
+                        <span class="ic"><i class="fa-solid fa-file-pen"></i></span>
+                        <span class="tx"><h3>Đơn từ &amp; đề xuất khác <span class="badge">Sắp có</span></h3><p>Tạm ứng, công tác, cấp thiết bị và các đề nghị khác.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- ═════════ QUẢN LÝ ═════════ -->
+            <section class="sec" th:if="${mgr or adm or acc or hr}">
+                <div class="sec-h"><h2>Quản lý</h2>
+                    <span th:text="${adm ? 'Quyền quản trị' : (mgr ? 'Quyền trưởng phòng' : (acc ? 'Phòng Kế toán' : 'Phòng Hành chính – Nhân sự'))}">Quyền quản trị</span></div>
+                <div class="grid">
+                    <a class="tile c-indigo" th:if="${mgr or adm}" th:href="@{/attendance/manager/attendance-confirms}">
+                        <span class="ic"><i class="fa-solid fa-clipboard-check"></i></span>
+                        <span class="tx"><h3>Phê duyệt giải trình</h3><p>Xét duyệt đơn giải trình công của nhân viên trong phòng.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-amber" th:if="${mgr or adm}" th:href="@{/proposal/manage}">
+                        <span class="ic"><i class="fa-solid fa-list-check"></i></span>
+                        <span class="tx"><h3>Duyệt đề xuất <span class="badge">Sắp có</span></h3><p>Duyệt đề xuất tăng lương, tạm ứng và các đơn từ khác.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-rose" th:if="${adm}" th:href="@{/attendance/report}">
+                        <span class="ic"><i class="fa-solid fa-table-cells"></i></span>
+                        <span class="tx"><h3>Bảng công tổng</h3><p>Bảng công toàn đại lý, xuất file Excel.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-violet" th:if="${acc}" th:href="@{/payroll/import}">
+                        <span class="ic"><i class="fa-solid fa-file-import"></i></span>
+                        <span class="tx"><h3>Nhập bảng lương</h3><p>Tải file Excel bảng lương hằng tháng lên hệ thống.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-emerald" th:if="${adm}" th:href="@{/admin/users}">
+                        <span class="ic"><i class="fa-solid fa-users-gear"></i></span>
+                        <span class="tx"><h3>Quản lý nhân viên</h3><p>Phòng ban, loại công, chức danh và phép năm.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    <a class="tile c-teal" th:if="${hr or adm}" th:href="@{/holiday/config}">
+                        <span class="ic"><i class="fa-solid fa-calendar-days"></i></span>
+                        <span class="tx"><h3>Ngày nghỉ lễ</h3><p>Cấu hình lịch nghỉ lễ, Tết trong năm.</p></span>
+                        <span class="go"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <div class="wrap">
+            <span>© <span id="yr">2026</span> Thanh Hóa Ford · Hệ thống quản lý nhân sự</span>
+            <span>Chấm công Hikvision</span>
+        </div>
+    </footer>
+
+
+    <script>
+(function () {
+  var d = new Date(), h = d.getHours();
+  var WD = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  var p = function (n) { return (n < 10 ? '0' : '') + n; };
+  document.getElementById('today').textContent = WD[d.getDay()] + ', ' + p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear();
+  document.getElementById('greet').textContent = h < 11 ? 'Chào buổi sáng' : (h < 14 ? 'Chào buổi trưa' : (h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'));
+  document.getElementById('yr').textContent = d.getFullYear();
+
+})();
+</script>
+</div><!-- /sh-main -->
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

@@ -1,0 +1,1 @@
+Đặt logo-{MÃ ĐƠN VỊ}.png và sign-{MÃ ĐƠN VỊ}.png (VD logo-TH.png, sign-TH.png) vào thư mục này để in trên thẻ lương.

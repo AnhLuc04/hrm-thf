@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Nhập bảng lương')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('import', 'Nhập bảng lương')}"></th:block>
+<div class="sh-main">
+  <div class="wrap" style="max-width:760px">
+    <div class="ph">
+      <div>
+        <h1>Nhập bảng lương</h1>
+        <p>Kế toán chọn tháng và file Excel bảng lương. Mã nhân viên trong file chỉ ghi vào nhân viên đơn vị mình;
+          mã của đơn vị khác bị bỏ qua và báo trong kết quả. Nhập xong, nhân viên thấy phiếu "Chính thức" thay cho "Chờ chi".</p>
+      </div>
+    </div>
+
+    <!-- vẫn gửi tới POST /payroll/import cũ -->
+    <form class="card" id="importForm" th:action="@{/payroll/import}" method="post" enctype="multipart/form-data"
+          th:with="now=${#temporals.createToday()}">
+      <div class="grid">
+        <div class="f"><label for="month">Tháng</label>
+          <select id="month" name="month">
+            <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="'Tháng ' + ${m}"
+                    th:selected="${m == (#temporals.month(now) == 1 ? 12 : #temporals.month(now) - 1)}">Tháng 9</option>
+          </select></div>
+        <div class="f"><label for="year">Năm</label>
+          <input id="year" type="number" name="year" min="2020" max="2100"
+                 th:value="${#temporals.month(now) == 1 ? #temporals.year(now) - 1 : #temporals.year(now)}"></div>
+      </div>
+      <div class="f"><label for="file">File Excel bảng lương (.xlsx, .xls)</label>
+        <input id="file" type="file" name="file" accept=".xlsx,.xls" required style="padding:7px 10px;height:auto"></div>
+      <div><button class="btn btn-brand" type="submit" id="importBtn"><i class="fa-solid fa-file-import"></i>Nhập bảng lương</button></div>
+    </form>
+
+    <section class="card" id="resultCard" hidden>
+      <h2>Kết quả nhập</h2>
+      <div id="result" style="font:13px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere"></div>
+      <div><a class="btn" th:href="@{/payroll/my}"><i class="fa-solid fa-wallet"></i>Xem phiếu lương</a></div>
+    </section>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+<script>
+(function () {
+  // Gửi file ngay trên trang (giữ menu); máy chủ trả kết quả như bản cũ
+  var form = document.getElementById('importForm'), btn = document.getElementById('importBtn');
+  var card = document.getElementById('resultCard'), out = document.getElementById('result');
+  if (!window.fetch || !window.FormData) return;   // trình duyệt cũ: gửi form bình thường
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Đang nhập...';
+    fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin' })
+      .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, s: r.status, t: t }; }); })
+      .then(function (res) {
+        var text = new DOMParser().parseFromString(res.t, 'text/html').body.textContent;   // không chạy mã trong kết quả
+        out.textContent = res.ok ? (text || 'Đã nhập xong') : 'Không nhập được (lỗi ' + res.s + '). Kiểm tra quyền Kế toán và file Excel.';
+        card.hidden = false;
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      })
+      .catch(function () { out.textContent = 'Lỗi kết nối, thử lại.'; card.hidden = false; })
+      .finally(function () { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-file-import"></i>Nhập bảng lương'; });
+  });
+})();
+</script>
+</body>
+</html>

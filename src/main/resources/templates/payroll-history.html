@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Lịch sử lương')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('payroll', 'Lịch sử lương')}"></th:block>
+<div class="sh-main">
+  <div class="wrap" style="max-width:900px">
+    <div class="ph">
+      <div>
+        <a th:href="@{/payroll/my}" style="color:var(--muted);text-decoration:none;font-size:13px"><i class="fa-solid fa-chevron-left"></i> Phiếu lương</a>
+        <h1>Lịch sử lương <span th:text="${salaryCode}">SAL-001</span></h1>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Tháng</th><th style="text-align:right">Tổng thu nhập</th><th style="text-align:right">Thực nhận</th><th></th></tr></thead>
+        <tbody>
+        <tr th:each="p : ${payrolls}">
+          <td><b th:text="${p.month} + '/' + ${p.year}">9/2026</b></td>
+          <td style="text-align:right" th:text="${p.netSalary != null ? #numbers.formatDecimal(p.netSalary, 1, 'POINT', 0, 'COMMA') : '—'}">0</td>
+          <td style="text-align:right"><b th:text="${p.thucNhan != null ? #numbers.formatDecimal(p.thucNhan, 1, 'POINT', 0, 'COMMA') : '—'}">0</b></td>
+          <td style="text-align:right"><a class="btn btn-sm" th:href="@{/payroll/detail/{id}(id=${p.id})}">Xem phiếu</a></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(payrolls)}"><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Chưa có phiếu lương</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

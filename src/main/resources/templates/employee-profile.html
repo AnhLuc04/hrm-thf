@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Hồ sơ nhân viên')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav(${self} ? 'myprofile' : 'employees', ${self} ? 'Hồ sơ của tôi' : 'Hồ sơ nhân viên')}"></th:block>
+<div class="sh-main">
+  <div class="wrap" style="max-width:1080px">
+    <a th:unless="${self}" th:href="@{/hr/employees}" style="color:var(--muted);text-decoration:none;font-size:13px"><i class="fa-solid fa-chevron-left"></i> Hồ sơ nhân viên</a>
+
+    <!-- ĐẦU HỒ SƠ -->
+    <section class="card ep-head">
+      <div class="ep-photo">
+        <img th:if="${photo != null}" th:src="@{/hr/employees/files/{id}(id=${photo.id})}" alt="Ảnh thẻ">
+        <span th:if="${photo == null}" th:text="${#strings.isEmpty(emp.fullName)} ? '?' : ${#strings.toUpperCase(#strings.substring(emp.fullName, emp.fullName.lastIndexOf(' ') + 1, emp.fullName.lastIndexOf(' ') + 2))}">A</span>
+      </div>
+      <div class="ep-id">
+        <h1 th:text="${emp.fullName}">Nguyễn Văn A</h1>
+        <div class="ep-tags">
+          <span class="pill info" th:text="${emp.employeeNo}">TH70</span>
+          <span class="pill gray" th:if="${emp.department != null}" th:text="${emp.department}">Kinh Doanh 1</span>
+          <span class="pill gray" th:if="${emp.departmentManager == true}">Trưởng phòng</span>
+          <span class="pill gray" th:if="${p.jobTitle != null}" th:text="${p.jobTitle}">Tư vấn bán hàng</span>
+          <span class="pill gray" th:if="${unitLabel != ''}" th:text="${unitLabel}">TH · Thanh Hóa Ford</span>
+          <span class="pill err" th:if="${p.leaveDate != null}" th:text="'Đã nghỉ ' + ${#temporals.format(p.leaveDate, 'dd/MM/yyyy')}">Đã nghỉ</span>
+        </div>
+        <small th:if="${p.updatedAt != null}" th:text="'Cập nhật ' + ${#temporals.format(p.updatedAt, 'HH:mm dd/MM/yyyy')} + ' bởi ' + ${p.updatedBy}" style="color:var(--muted)"></small>
+      </div>
+      <div class="ep-pct">
+        <b th:text="${pct} + '%'">60%</b>
+        <span>hồ sơ đầy đủ</span>
+        <div class="bar"><i th:style="'width:' + ${pct} + '%'"></i></div>
+      </div>
+    </section>
+
+    <div class="flash ok" th:if="${message != null}" th:text="${message}"></div>
+    <div class="flash err" th:if="${error != null}" th:text="${error}"></div>
+    <div class="flash warn" th:if="${self and !hr}">Hồ sơ do <b>HCNS</b> nhập và quản lý. Thông tin nào sai hoặc thiếu, bạn báo HCNS để cập nhật.</div>
+
+    <nav class="ep-tabs" aria-label="Mục hồ sơ">
+      <a th:each="g : ${groups}" th:href="'#g-' + ${g.key}"><i th:class="${g.icon}"></i><span th:text="${g.title}">Mục</span></a>
+      <a href="#files"><i class="fa-regular fa-folder-open"></i><span>Giấy tờ đính kèm</span></a>
+    </nav>
+
+    <!-- THÔNG TIN (vẽ theo danh sách ô ở EmployeeProfileController.FIELDS) -->
+    <form th:action="@{/hr/employees/{id}(id=${emp.id})}" method="post" style="display:grid;gap:14px" autocomplete="off">
+      <section class="card" th:each="g : ${groups}" th:id="'g-' + ${g.key}">
+        <h2><i th:class="${g.icon}" style="color:var(--brand);margin-right:6px"></i><span th:text="${g.title}">Mục</span>
+          <span th:if="${g.sensitive}" class="pill gray" style="margin-left:6px;font-size:11px">Chỉ HCNS và chính bạn xem</span></h2>
+        <div class="grid">
+          <th:block th:each="f : ${fields}" th:if="${f.group == g.key}"
+                    th:with="v=${values[f.key]}, editable=${canEdit}">
+            <div class="f" th:style="${f.wide} ? 'grid-column:1 / -1' : ''">
+              <label th:for="${f.key}" th:text="${f.label}">Ô</label>
+              <th:block th:if="${editable}">
+                <input th:if="${f.type == 'text' or f.type == 'tel' or f.type == 'email' or f.type == 'number' or f.type == 'date'}"
+                       th:id="${f.key}" th:name="${f.key}" th:type="${f.type}" th:value="${v}" th:placeholder="${f.hint}"
+                       th:attr="min=${f.type == 'number'} ? 1950 : null, max=${f.type == 'number'} ? 2100 : null">
+                <select th:if="${f.type == 'select'}" th:id="${f.key}" th:name="${f.key}">
+                  <option value="">— Chọn —</option>
+                  <option th:each="o : ${f.options}" th:value="${o}" th:text="${o}" th:selected="${v == o}">o</option>
+                </select>
+                <textarea th:if="${f.type == 'textarea'}" th:id="${f.key}" th:name="${f.key}" rows="4" th:placeholder="${f.hint}" th:text="${v}"></textarea>
+              </th:block>
+              <div th:unless="${editable}" class="ro" th:id="${f.key}"
+                   th:text="${v == null or v == ''} ? '—' : (${f.type == 'date'} ? ${#temporals.format(v, 'dd/MM/yyyy')} : ${v})">—</div>
+              <small th:if="${editable and f.hint != null and f.type != 'textarea' and f.type != 'text'}" th:text="${f.hint}"></small>
+            </div>
+          </th:block>
+        </div>
+      </section>
+
+      <div class="ep-save" th:if="${canEdit}">
+        <span style="color:var(--muted);font-size:13px">Lưu xong có thể tải CV, ảnh thẻ, CCCD ở mục Giấy tờ đính kèm bên dưới.</span>
+        <span style="flex:1"></span>
+        <button class="btn btn-brand" type="submit"><i class="fa-solid fa-check"></i>Lưu hồ sơ</button>
+      </div>
+    </form>
+
+    <!-- MÁY CHẤM CÔNG (HCNS) -->
+    <section class="card" id="device" th:if="${hr and hasDevice}">
+      <h2><i class="fa-solid fa-fingerprint" style="color:var(--brand);margin-right:6px"></i>Máy chấm công
+        <span class="pill info" style="margin-left:6px" th:text="'Mã trên máy: ' + ${deviceNo}">Mã 41</span></h2>
+      <div class="dv-grid">
+        <form th:action="@{/hr/employees/{id}/device/push(id=${emp.id})}" method="post" class="dv">
+          <b>Thêm / cập nhật tên lên máy</b>
+          <small>Chưa có trên máy thì tạo mới, có rồi thì sửa tên theo phần mềm.</small>
+          <button class="btn btn-sm" type="submit"><i class="fa-solid fa-upload"></i>Đẩy lên máy</button>
+        </form>
+        <form th:action="@{/hr/employees/{id}/device/face(id=${emp.id})}" method="post" enctype="multipart/form-data" class="dv">
+          <b>Ảnh khuôn mặt</b>
+          <input class="in sm" type="file" name="face" accept="image/jpeg,image/png" style="height:auto;padding:4px 8px">
+          <label class="chk" th:if="${hasPhoto}" style="font-size:12.5px"><input type="checkbox" name="usePhoto"> Dùng ảnh thẻ trong hồ sơ</label>
+          <button class="btn btn-sm" type="submit"><i class="fa-regular fa-face-smile"></i>Tải lên máy</button>
+        </form>
+        <form th:action="@{/hr/employees/{id}/device/card(id=${emp.id})}" method="post" class="dv">
+          <b>Thẻ từ</b>
+          <input class="in sm" name="cardNo" inputmode="numeric" pattern="[0-9]{4,20}" maxlength="20" required placeholder="Số thẻ">
+          <button class="btn btn-sm" type="submit"><i class="fa-regular fa-id-card"></i>Gán thẻ</button>
+        </form>
+        <form th:action="@{/hr/employees/{id}/device/remove(id=${emp.id})}" method="post" class="dv"
+              onsubmit="return confirm('Xoá người này khỏi máy chấm công? (vân tay, khuôn mặt, thẻ trên máy cũng bị xoá; tài khoản và công trên phần mềm vẫn giữ)')">
+          <b>Xoá khỏi máy</b>
+          <small>Dùng khi nhân viên nghỉ việc. Không xoá tài khoản, dữ liệu công.</small>
+          <button class="btn btn-sm" type="submit" style="color:#b42318"><i class="fa-solid fa-user-xmark"></i>Xoá khỏi máy</button>
+        </form>
+      </div>
+      <p class="hint" style="margin:0"><i class="fa-solid fa-circle-info"></i> Vân tay phải quẹt trực tiếp trên máy (chọn người theo mã ở menu quản lý người dùng của máy).</p>
+    </section>
+
+    <!-- GIẤY TỜ ĐÍNH KÈM -->
+    <section class="card" id="files">
+      <h2><i class="fa-regular fa-folder-open" style="color:var(--brand);margin-right:6px"></i>Giấy tờ đính kèm (CV, ảnh thẻ, CCCD, bằng cấp, hợp đồng)</h2>
+      <form th:if="${canEdit}" th:action="@{/hr/employees/{id}/files(id=${emp.id})}" method="post" enctype="multipart/form-data"
+            style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <select class="in" name="category" aria-label="Loại giấy tờ">
+          <option th:each="c : ${categories}" th:value="${c.key}" th:text="${c.value}">CV</option>
+        </select>
+        <input class="in" type="file" name="files" multiple th:attr="accept=${fileAccept}" required style="flex:1;min-width:220px;padding:6px 10px;height:auto">
+        <button class="btn btn-brand" type="submit"><i class="fa-solid fa-upload"></i>Tải lên</button>
+      </form>
+      <small th:if="${canEdit}" style="color:var(--muted)">Ảnh, PDF, Word, Excel; tối đa 20 MB / file, 10 file / lần. File lưu riêng, chỉ người có quyền xem hồ sơ mới mở được.</small>
+
+      <div class="docs" th:unless="${#lists.isEmpty(docs)}">
+        <div class="doc" th:each="d : ${docs}">
+          <a class="doc-ic" th:href="@{/hr/employees/files/{id}(id=${d.id})}" target="_blank" rel="noopener">
+            <img th:if="${d.picture}" th:src="@{/hr/employees/files/{id}(id=${d.id})}" alt="">
+            <span th:unless="${d.picture}" th:text="${d.ext}">PDF</span>
+          </a>
+          <div class="doc-tx">
+            <a th:href="@{/hr/employees/files/{id}(id=${d.id})}" target="_blank" rel="noopener"><b th:text="${d.originalName}">cv.pdf</b></a>
+            <small th:text="${d.categoryLabel} + ' · ' + ${d.sizeLabel} + ' · ' + ${#temporals.format(d.uploadedAt, 'dd/MM/yyyy')} + ' · ' + ${d.uploadedBy}">CV</small>
+          </div>
+          <a class="btn btn-sm" th:href="@{/hr/employees/files/{id}(id=${d.id}, download=1)}" title="Tải về"><i class="fa-solid fa-download"></i></a>
+          <form th:if="${hr}" th:action="@{/hr/employees/files/{id}/delete(id=${d.id})}" method="post"
+                onsubmit="return confirm('Xoá file này?')">
+            <button class="btn btn-sm" type="submit" title="Xoá" style="color:#b42318"><i class="fa-regular fa-trash-can"></i></button>
+          </form>
+        </div>
+      </div>
+      <p th:if="${#lists.isEmpty(docs)}" class="msg">Chưa có giấy tờ nào.</p>
+    </section>
+  </div>
+</div>
+<style>
+  .ep-head { grid-template-columns: 84px minmax(0, 1fr) 160px; align-items: center; }
+  .ep-photo { width: 84px; height: 84px; border-radius: 18px; overflow: hidden; background: var(--brand-50); color: var(--brand-600);
+              display: grid; place-items: center; font-size: 32px; font-weight: 800; }
+  .ep-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .ep-id h1 { margin: 0 0 6px; font-size: 22px; color: var(--ink); }
+  .ep-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .ep-pct { text-align: right; display: grid; gap: 2px; }
+  .ep-pct b { font-size: 26px; color: var(--ink); }
+  .ep-pct span { font-size: 12px; color: var(--muted); }
+  .ep-pct .bar { height: 6px; border-radius: 99px; background: #f2f4f7; overflow: hidden; }
+  .ep-pct .bar i { display: block; height: 100%; background: var(--brand); }
+  .ep-tabs { display: flex; gap: 6px; overflow-x: auto; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 4px 0; }
+  .ep-tabs a { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none; font-size: 13px; font-weight: 600;
+               color: var(--ink2); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+  .ep-tabs a:hover { border-color: #a5b4fc; color: var(--brand-600); }
+  .ep-tabs i { color: var(--faint); }
+  .f select, .f textarea { border: 1px solid #d0d5dd; border-radius: 9px; padding: 8px 10px; font: inherit; color: var(--ink); background: #fff; min-width: 0; }
+  .f select { height: 38px; padding: 0 10px; }
+  .f textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+  .ro { min-height: 38px; padding: 8px 10px; border-radius: 9px; background: #f9fafb; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .ep-save { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line);
+             border-radius: 12px; padding: 10px 14px; box-shadow: 0 -4px 16px rgba(16, 24, 40, .06); }
+  .dv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .dv { display: grid; gap: 6px; align-content: start; border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 0; }
+  .dv b { color: var(--ink); font-size: 13.5px; }
+  .dv small { color: var(--muted); font-size: 12px; }
+  .dv .btn { justify-self: start; }
+  .docs { display: grid; gap: 8px; }
+  .doc { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 12px; }
+  .doc form { margin: 0; }
+  .doc-ic { width: 48px; height: 48px; border-radius: 10px; overflow: hidden; background: #f2f4f7; display: grid; place-items: center;
+            font-size: 11px; font-weight: 800; color: var(--muted); text-decoration: none; }
+  .doc-ic img { width: 100%; height: 100%; object-fit: cover; }
+  .doc-tx { min-width: 0; display: grid; }
+  .doc-tx a { text-decoration: none; }
+  .doc-tx b { color: var(--ink); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .doc-tx small { color: var(--muted); font-size: 12px; }
+  @media (max-width: 720px) {
+    .ep-head { grid-template-columns: 64px minmax(0, 1fr); }
+    .ep-photo { width: 64px; height: 64px; font-size: 24px; border-radius: 14px; }
+    .ep-pct { grid-column: 1 / -1; text-align: left; }
+  }
+</style>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

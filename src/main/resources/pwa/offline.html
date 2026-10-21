@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#6d0a2c">
+  <title>Mất kết nối | SunClub</title>
+  <style>
+    :root { --bg: #eef1f5; --card: #fff; --ink: #17202c; --muted: #5d6b7c; --accent: #6d0a2c; color-scheme: light; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0f141b; --card: #18202a; --ink: #e8edf3; --muted: #93a1b2; --accent: #7fb0ff; color-scheme: dark; } }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+           background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .card { background: var(--card); border-radius: 18px; padding: 28px 22px; max-width: 360px; text-align: center; }
+    img { width: 64px; height: 64px; border-radius: 14px; }
+    h1 { font-size: 20px; margin: 14px 0 6px; }
+    p { color: var(--muted); margin: 0 0 18px; }
+    button { border: 0; border-radius: 12px; padding: 12px 22px; font: inherit; font-weight: 600; background: var(--accent); color: var(--card); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="/pwa/sunclub-192.png" alt="SunClub">
+    <h1>Không có kết nối mạng</h1>
+    <p>Điện thoại đang mất mạng. Bật Wi-Fi hoặc 4G rồi bấm Thử lại. Phiếu lương không lưu trên máy nên cần có mạng để xem.</p>
+    <button type="button" onclick="location.reload()">Thử lại</button>
+    <p style="margin:16px 0 0;font-size:13px">Có mạng mà vẫn hiện trang này: gỡ biểu tượng SunClub, vào Cài đặt → Safari → Nâng cao → Dữ liệu trang web, xoá <b>thfgroup.ddns.net</b> rồi mở lại link.</p>
+  </div>
+</body>
+</html>

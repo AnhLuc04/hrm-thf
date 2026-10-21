@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{salary/fragments :: head('Cấu hình lương nhân viên')}"></head>
+<body>
+<nav th:replace="~{salary/fragments :: nav('config')}"></nav>
+
+<div class="container pb-5" style="max-width: 1240px">
+    <div th:replace="~{salary/fragments :: flash}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <!-- ---------- TIÊU ĐỀ + LỌC ---------- -->
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h4 class="mb-0 me-2">Cấu hình lương nhân viên</h4>
+        <form th:action="@{/salary-config}" method="get">
+            <select name="department" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">Tất cả phòng ban</option>
+                <option th:each="d : ${departments}" th:value="${d}" th:text="${d}"
+                        th:selected="${department != null and #strings.equalsIgnoreCase(d, department)}"></option>
+            </select>
+        </form>
+        <input id="search" class="form-control form-control-sm" style="width:220px" placeholder="Tìm mã NV / họ tên...">
+    </div>
+
+    <div th:if="${#lists.isEmpty(templates)}" class="alert alert-warning py-2">
+        Chưa có mẫu công thức nào. <a th:href="@{/salary-formula}">Tạo mẫu trước</a> rồi quay lại gán cho nhân viên.
+    </div>
+
+    <!-- ---------- THẺ THỐNG KÊ = BỘ LỌC NHANH ---------- -->
+    <div class="d-flex flex-wrap gap-2 mb-3" th:if="${!#lists.isEmpty(rows)}"
+         th:with="noTpl=${#lists.size(rows.?[effectiveFormulaId == null])},
+                  noSal=${#lists.size(rows.?[!hasBaseSalary])}">
+        <button type="button" class="chip active" data-filter="all">
+            Tất cả <b th:text="${#lists.size(rows)}"></b></button>
+        <button type="button" class="chip chip-danger" data-filter="notpl" th:disabled="${noTpl == 0}">
+            Chưa có mẫu công thức <b th:text="${noTpl}"></b></button>
+        <button type="button" class="chip chip-warn" data-filter="nosal" th:disabled="${noSal == 0}">
+            Chưa có lương cơ bản <b th:text="${noSal}"></b></button>
+    </div>
+
+    <form th:action="@{/salary-config/bulk-save}" method="post" id="gridForm">
+        <input type="hidden" name="department" th:value="${department}">
+
+        <!-- ---------- THANH GÁN MẪU (hiện khi tick chọn) ---------- -->
+        <div id="bulkBar" class="bulk-bar">
+            <span><b id="selCount">0</b> nhân viên đã chọn</span>
+            <select id="bulkTpl" class="form-select form-select-sm" style="width:auto">
+                <option value="">-- Chọn mẫu công thức --</option>
+                <option value="__dept">Theo phòng ban</option>
+                <option th:each="t : ${templates}" th:value="${t.id}"
+                        th:text="${T(com.example.hrm.service.SalaryFormulaService).templateName(t)}"></option>
+            </select>
+            <button type="button" id="bulkApply" class="btn btn-sm btn-light">Gán mẫu</button>
+            <button type="button" id="bulkClear" class="btn btn-sm btn-link text-white">Bỏ chọn</button>
+        </div>
+
+        <div class="card">
+            <div class="table-wrap">
+                <table class="table table-hover mb-0 align-middle" id="grid">
+                    <thead>
+                    <tr>
+                        <th style="width:34px"><input type="checkbox" class="form-check-input" id="checkAll" title="Chọn tất cả đang hiện"></th>
+                        <th>Nhân viên</th>
+                        <th class="text-end" style="width:150px">Lương cơ bản</th>
+                        <th class="text-end" style="width:140px">Lương đóng BHXH</th>
+                        <th class="text-center" style="width:70px" title="Người phụ thuộc">NPT</th>
+                        <th class="text-end" style="width:120px">Phụ cấp</th>
+                        <th style="width:220px">Mẫu công thức</th>
+                        <th style="width:130px">Tỉ lệ thưởng</th>
+                        <th style="width:110px"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${rows}" th:with="id=${r.user.id}"
+                        th:attr="data-search=${#strings.toLowerCase((r.user.employeeNo ?: '') + ' ' + (r.user.fullName ?: ''))},
+                                 data-notpl=${r.effectiveFormulaId == null},
+                                 data-nosal=${!r.hasBaseSalary}">
+                        <td>
+                            <input type="checkbox" class="form-check-input sel">
+                            <input type="hidden" th:name="'row_' + ${id}" value="1">
+                            <input type="hidden" th:name="'label_' + ${id}" th:value="${r.user.employeeNo} + ' ' + ${r.user.fullName}">
+                        </td>
+                        <td>
+                            <div class="fw-semibold" th:text="${r.user.fullName}"></div>
+                            <div class="small text-muted"
+                                 th:text="${(r.user.employeeNo ?: '') + (r.user.department != null ? ' · ' + r.user.department : '')}"></div>
+                        </td>
+                        <td><input class="form-control form-control-sm money"
+                                   th:name="'luongCoBan_' + ${id}" th:value="${r.cell('luongCoBan')}"
+                                   th:classappend="${!r.hasBaseSalary} ? 'need'"
+                                   th:placeholder="${!r.hasBaseSalary} ? 'chưa có' : ''"
+                                   th:title="${r.config == null and r.user.salary != null} ? 'Đang lấy lương trong hồ sơ nhân viên' : ''"></td>
+                        <td><input class="form-control form-control-sm money" placeholder="= lương CB"
+                                   th:name="'luongDongBhxh_' + ${id}" th:value="${r.cell('luongDongBhxh')}"></td>
+                        <td><input class="form-control form-control-sm cnt text-center" placeholder="0"
+                                   th:name="'soNguoiPhuThuoc_' + ${id}" th:value="${r.cell('soNguoiPhuThuoc')}"></td>
+                        <td class="text-end small">
+                            <span th:if="${r.tongPhuCap != ''}" th:text="${r.tongPhuCap}"></span>
+                            <span th:if="${r.tongPhuCap == ''}" class="text-muted">—</span>
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm tpl"
+                                    th:name="'formula_' + ${id}" th:attr="data-dept-tpl=${r.deptTemplate?.id}"
+                                    th:classappend="${r.effectiveFormulaId == null} ? 'no-tpl'">
+                                <option value="" th:text="${r.deptTemplate != null} ? 'Theo phòng: ' + ${r.deptTemplateName} : '⚠ Chưa chọn mẫu'"></option>
+                                <option th:each="t : ${allTemplates}"
+                                        th:if="${t.activeOrDefault() or t.id == r.formulaId}"
+                                        th:value="${t.id}" th:selected="${t.id == r.formulaId}"
+                                        th:text="${T(com.example.hrm.service.SalaryFormulaService).templateName(t)} + (${t.activeOrDefault()} ? '' : ' (đang tắt)')"></option>
+                            </select>
+                        </td>
+                        <td>
+                            <span th:if="${#lists.isEmpty(r.customBonusRates)}" class="text-muted small">100% (mặc định)</span>
+                            <span th:unless="${#lists.isEmpty(r.customBonusRates)}" class="badge text-bg-warning"
+                                  th:text="${#lists.size(r.customBonusRates)} + ' tỉ lệ riêng'"
+                                  th:title="${#strings.listJoin(r.customBonusRates, '&#10;')}"></span>
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-primary" th:href="@{/salary-config/edit(userId=${id})}"
+                               title="Phụ cấp, tỉ lệ thưởng, giảm trừ, ghi chú">Sửa</a>
+                            <a class="btn btn-sm btn-outline-secondary" target="_blank"
+                               th:href="@{/salary-forecast/slip(userId=${id})}" title="Xem phiếu lương dự kiến">Phiếu</a>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(rows)}">
+                        <td colspan="9" class="text-muted p-4 text-center">Không có nhân viên.</td>
+                    </tr>
+                    <tr id="noMatch" style="display:none">
+                        <td colspan="9" class="text-muted p-4 text-center">Không có nhân viên phù hợp bộ lọc.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ---------- THANH LƯU (dính đáy màn hình khi có thay đổi) ---------- -->
+        <div class="save-bar" id="saveBar" th:if="${!#lists.isEmpty(rows)}">
+            <span id="dirtyInfo" class="small">Chưa có thay đổi</span>
+            <button class="btn btn-primary btn-sm px-4" id="saveBtn" disabled>Lưu thay đổi</button>
+        </div>
+        <div class="small text-muted mt-2">
+            Tiền nhập theo <b>ĐỒNG</b> (VD <code>5.610.000</code>). Phụ cấp, tỉ lệ thưởng, các khoản giảm trừ: bấm <b>Sửa</b>.
+            Thưởng, phạt, tạm ứng từng tháng: <a th:href="@{/salary-monthly(department=${department})}">Khoản theo tháng</a>.
+        </div>
+    </form>
+</div>
+
+<th:block th:replace="~{salary/fragments :: scripts}"></th:block>
+<style>
+    .table-wrap { overflow: auto; max-height: calc(100vh - 290px); }
+    #grid { font-size: .875rem; }
+    #grid thead th { position: sticky; top: 0; z-index: 2; background: #f8f9fa; font-weight: 600;
+                     font-size: .8rem; color: #495057; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
+    #grid td { padding-top: .45rem; padding-bottom: .45rem; }
+    #grid input.money, #grid input.cnt { font-variant-numeric: tabular-nums; }
+    #grid input.money { text-align: right; }
+    #grid input.need { border-color: #f0ad4e; background: #fffaf0; }
+    #grid input.dirty, #grid select.dirty { background-color: #fff3cd !important; }
+    #grid input.invalid { background: #f8d7da !important; border-color: #dc3545; }
+    #grid select.no-tpl { border-color: #dc3545; color: #dc3545; }
+    #grid tr.hidden-row { display: none; }
+    #grid tr.selected td { background: #eef4ff; }
+
+    .chip { border: 1px solid #dee2e6; background: #fff; border-radius: 999px; padding: .3rem .85rem; font-size: .85rem; }
+    .chip b { margin-left: .3rem; }
+    .chip.active { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+    .chip-danger b { color: #dc3545; }
+    .chip-warn b { color: #b8860b; }
+    .chip.active b { color: #fff; }
+    .chip:disabled { opacity: .5; }
+
+    .bulk-bar { display: none; align-items: center; gap: .6rem; flex-wrap: wrap; background: #0d6efd; color: #fff;
+                padding: .5rem .9rem; border-radius: .5rem; margin-bottom: .5rem; }
+    .bulk-bar.show { display: flex; }
+
+    .save-bar { position: sticky; bottom: 0; z-index: 5; display: flex; justify-content: flex-end; align-items: center;
+                gap: 1rem; padding: .6rem .9rem; margin-top: .5rem; background: #fff; border: 1px solid #dee2e6;
+                border-radius: .5rem; box-shadow: 0 -2px 8px rgba(0,0,0,.05); }
+    .save-bar.has-changes { border-color: #ffc107; background: #fffdf3; }
+</style>
+<script>
+    // ---------- số kiểu VN ----------
+    function parseVN(s) {
+        s = (s || '').trim().replace(/\s/g, '');
+        if (!s) return null;
+        if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+        else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, '');
+        else s = s.replace(',', '.');
+        const n = Number(s);
+        return isNaN(n) || n < 0 ? NaN : n;
+    }
+    const fmtVN = n => n.toLocaleString('vi-VN', {maximumFractionDigits: 2});
+    const rows = () => [...document.querySelectorAll('#grid tbody tr[data-search]')];
+
+    // ---------- đếm thay đổi ----------
+    let dirty = 0;
+    function countDirty() {
+        dirty = document.querySelectorAll('#grid .dirty').length;
+        const info = document.getElementById('dirtyInfo'), bar = document.getElementById('saveBar'),
+              btn = document.getElementById('saveBtn');
+        if (!info) return;
+        const n = document.querySelectorAll('#grid tr.row-dirty').length;
+        info.textContent = dirty ? dirty + ' ô đã sửa ở ' + n + ' nhân viên, chưa lưu' : 'Chưa có thay đổi';
+        bar.classList.toggle('has-changes', dirty > 0);
+        btn.disabled = dirty === 0;
+    }
+    function track(el) {
+        el.classList.toggle('dirty', el.value !== el.dataset.orig);
+        const tr = el.closest('tr');
+        tr.classList.toggle('row-dirty', !!tr.querySelector('.dirty'));
+        countDirty();
+    }
+
+    // ---------- ô số ----------
+    document.querySelectorAll('#grid input.money, #grid input.cnt').forEach(i => {
+        i.dataset.orig = i.value;
+        const check = () => {
+            const n = parseVN(i.value);
+            let bad = Number.isNaN(n);
+            i.title = bad ? 'Không phải số hợp lệ' : '';
+            if (!bad && i.classList.contains('money') && n !== null && n > 0 && n < 1000) {
+                bad = true;
+                i.title = 'Nhập theo ĐỒNG: có phải ' + fmtVN(n * 1000) + '?';
+            }
+            i.classList.toggle('invalid', bad);
+        };
+        i.addEventListener('input', () => { check(); track(i); });
+        i.addEventListener('blur', () => {
+            const n = parseVN(i.value);
+            if (n !== null && !Number.isNaN(n) && i.classList.contains('money')) i.value = fmtVN(n);
+            check(); track(i);
+        });
+        i.addEventListener('keydown', e => {            // Enter = xuống dòng dưới cùng cột
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const td = i.closest('td');
+            let tr = td.parentElement.nextElementSibling;
+            while (tr && tr.classList.contains('hidden-row')) tr = tr.nextElementSibling;
+            tr?.children[td.cellIndex]?.querySelector('input:not([type=hidden])')?.focus();
+        });
+        check();
+    });
+
+    // ---------- mẫu công thức ----------
+    document.querySelectorAll('#grid select.tpl').forEach(sel => {
+        sel.dataset.orig = sel.value;
+        sel.addEventListener('change', () => {
+            sel.classList.toggle('no-tpl', !sel.value && !sel.dataset.deptTpl);
+            track(sel);
+        });
+    });
+
+    // ---------- lọc: tìm kiếm + thẻ thống kê ----------
+    let filter = 'all';
+    function applyFilter() {
+        const q = document.getElementById('search').value.trim().toLowerCase();
+        let shown = 0;
+        rows().forEach(tr => {
+            const ok = (!q || tr.dataset.search.includes(q))
+                && (filter === 'all' || tr.dataset[filter] === 'true');
+            tr.classList.toggle('hidden-row', !ok);
+            if (ok) shown++;
+        });
+        const nm = document.getElementById('noMatch');
+        if (nm) nm.style.display = shown || !rows().length ? 'none' : '';
+    }
+    document.getElementById('search').addEventListener('input', applyFilter);
+    document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        filter = c.dataset.filter;
+        applyFilter();
+    }));
+
+    // ---------- chọn nhiều + gán mẫu ----------
+    function updateSel() {
+        const sel = document.querySelectorAll('#grid input.sel:checked');
+        document.getElementById('selCount').textContent = sel.length;
+        document.getElementById('bulkBar').classList.toggle('show', sel.length > 0);
+        rows().forEach(tr => tr.classList.toggle('selected', tr.querySelector('input.sel').checked));
+    }
+    document.querySelectorAll('#grid input.sel').forEach(c => c.addEventListener('change', updateSel));
+    document.getElementById('checkAll')?.addEventListener('change', e => {
+        rows().forEach(tr => { if (!tr.classList.contains('hidden-row')) tr.querySelector('input.sel').checked = e.target.checked; });
+        updateSel();
+    });
+    document.getElementById('bulkClear').addEventListener('click', () => {
+        document.querySelectorAll('#grid input.sel, #checkAll').forEach(c => c.checked = false);
+        updateSel();
+    });
+    document.getElementById('bulkApply').addEventListener('click', () => {
+        const v = document.getElementById('bulkTpl').value;
+        if (!v) { alert('Chọn mẫu công thức cần gán.'); return; }
+        const nv = v === '__dept' ? '' : v;
+        rows().forEach(tr => {
+            if (!tr.querySelector('input.sel').checked) return;
+            const sel = tr.querySelector('select.tpl');
+            if (sel.value !== nv) { sel.value = nv; sel.dispatchEvent(new Event('change')); }
+        });
+        document.getElementById('bulkClear').click();
+    });
+
+    // ---------- lưu: chỉ gửi các dòng đã sửa ----------
+    document.getElementById('gridForm')?.addEventListener('submit', e => {
+        const bad = document.querySelector('#grid input.invalid');
+        if (bad && !confirm('Có ô tô đỏ: ' + (bad.title || 'số không hợp lệ') + '\nVẫn lưu?')) {
+            e.preventDefault(); bad.focus(); return;
+        }
+        if (!document.querySelector('#grid tr.row-dirty')) {
+            e.preventDefault(); return;
+        }
+        rows().forEach(tr => {
+            if (!tr.classList.contains('row-dirty')) tr.querySelectorAll('input, select').forEach(x => x.disabled = true);
+        });
+        dirty = 0;
+    });
+    window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+</script>
+</body>
+</html>

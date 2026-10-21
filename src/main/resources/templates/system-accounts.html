@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Tài khoản & chia đơn vị')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('accounts', 'Tài khoản & chia đơn vị')}"></th:block>
+<div class="sh-main">
+  <div class="wrap">
+    <div class="ph">
+      <div>
+        <h1>Tài khoản &amp; chia đơn vị</h1>
+        <p>Quản trị hệ thống tạo tài khoản và chia người vào đơn vị. Giám đốc, trưởng phòng, phòng ban do <b>HCNS từng đơn vị</b> chia ở trang Chức vụ &amp; phòng ban.</p>
+      </div>
+      <span class="sp"></span>
+      <button class="btn btn-brand" type="button" onclick="document.getElementById('newAcc').toggleAttribute('open')"><i class="fa-solid fa-user-plus"></i>Thêm tài khoản</button>
+    </div>
+
+    <div class="flash warn" th:if="${param.denied != null}">Trang đó do HCNS / Kế toán đơn vị quản lý. Tài khoản quản trị hệ thống chỉ nhập đơn vị, máy chấm công và tài khoản.</div>
+    <div class="flash ok" th:if="${message != null}" th:text="${message}"></div>
+    <div class="flash err" th:if="${error != null}" th:text="${error}"></div>
+
+    <!-- THÊM TÀI KHOẢN -->
+    <details id="newAcc" class="card" th:attr="open=${error != null and draft != null} ? 'open' : null">
+      <summary style="list-style:none;cursor:pointer"><h2 style="display:inline">Thêm tài khoản</h2></summary>
+      <form th:action="@{/system/accounts/create}" method="post" autocomplete="off" style="display:grid;gap:12px;margin-top:12px">
+        <input type="hidden" name="backUnit" th:value="${unitFilter}">
+        <div class="grid">
+          <div class="f"><label for="nu">Tên đăng nhập</label>
+            <input id="nu" name="username" required maxlength="50" pattern="[A-Za-z0-9._@\-]{3,50}" th:value="${draft != null} ? ${draft['username']} : ''" placeholder="VD: hcns.ss"></div>
+          <div class="f"><label for="nf">Họ tên</label>
+            <input id="nf" name="fullName" maxlength="150" th:value="${draft != null} ? ${draft['fullName']} : ''" placeholder="VD: Nguyễn Thị Hoa"></div>
+          <div class="f"><label for="ne">Mã nhân viên</label>
+            <input id="ne" name="employeeNo" maxlength="50" th:value="${draft != null} ? ${draft['employeeNo']} : ''" placeholder="VD: SS41 (trống được)">
+            <small>Người có trên máy chấm công: dùng đúng mã máy (mã đơn vị + mã máy)</small></div>
+          <div class="f"><label for="np">Mật khẩu</label>
+            <input id="np" name="password" type="password" required minlength="6" autocomplete="new-password"></div>
+          <div class="f"><label for="nt">Loại tài khoản</label>
+            <select id="nt" name="type">
+              <option th:each="t : ${types}" th:value="${t.key}" th:text="${t.value}" th:selected="${t.key == 'USER'}">Người dùng</option>
+            </select>
+            <small>Quản trị đơn vị: làm việc như HCNS của đơn vị đó</small></div>
+          <div class="f"><label for="nd">Phòng</label>
+            <input id="nd" name="department" maxlength="100" list="deptPreset" th:value="${draft != null} ? ${draft['department']} : ''" placeholder="VD: HCNS">
+            <datalist id="deptPreset"><option value="HCNS"></option><option value="Kế Toán"></option></datalist>
+            <small>Ghi <b>HCNS</b> = Hành chính nhân sự của đơn vị: tự tạo phòng, chia Giám đốc / trưởng phòng / nhân viên</small></div>
+          <div class="f"><label for="nun">Đơn vị</label>
+            <select id="nun" name="unitId">
+              <option value="">— Toàn hệ thống (chỉ quản trị hệ thống) —</option>
+              <option th:each="u : ${units}" th:value="${u.id}" th:text="${u.label}" th:selected="${unitFilter == '' + u.id}">TH · Thanh Hóa Ford</option>
+            </select></div>
+        </div>
+        <div><button class="btn btn-brand" type="submit"><i class="fa-solid fa-check"></i>Tạo tài khoản</button></div>
+      </form>
+    </details>
+
+    <!-- LỌC THEO ĐƠN VỊ -->
+    <div class="chips" aria-label="Lọc theo đơn vị">
+      <a th:href="@{/system/accounts(q=${q})}" th:classappend="${unitFilter == ''} ? 'on'">Tất cả<small th:text="${total}">0</small></a>
+      <a th:each="u : ${units}" th:href="@{/system/accounts(unit=${u.id}, q=${q})}" th:classappend="${unitFilter == '' + u.id} ? 'on'">
+        <span th:text="${u.code}">TH</span><small th:text="${counts[u.id] ?: 0}">0</small></a>
+      <a th:if="${unassigned > 0}" th:href="@{/system/accounts(unit='none', q=${q})}" th:classappend="${unitFilter == 'none'} ? 'on'">
+        Chưa chia<small th:text="${unassigned}">0</small></a>
+    </div>
+    <p class="msg" th:if="${unassigned > 0}">"Chưa chia" là dữ liệu cũ, hệ thống coi là người của đơn vị gốc cho tới khi chuyển.</p>
+
+    <form th:action="@{/system/accounts}" method="get" style="display:flex;gap:8px;flex-wrap:wrap">
+      <input type="hidden" name="unit" th:value="${unitFilter}" th:if="${unitFilter != ''}">
+      <input class="in" name="q" th:value="${q}" placeholder="Tìm tên, mã NV, tên đăng nhập, phòng" style="flex:1;min-width:200px">
+      <button class="btn" type="submit"><i class="fa-solid fa-magnifying-glass"></i>Tìm</button>
+    </form>
+
+    <!-- Mỗi dòng có form riêng (form="f-ID") để sửa loại tài khoản + đơn vị; ô chọn bên trái thuộc form chuyển hàng loạt -->
+    <form id="moveForm" th:action="@{/system/accounts/move}" method="post"></form>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+        <tr>
+          <th style="width:34px"><input type="checkbox" id="checkAll" aria-label="Chọn tất cả"></th>
+          <th>Người</th>
+          <th>Đăng nhập</th>
+          <th>Phòng (HCNS chia)</th>
+          <th>Loại tài khoản</th>
+          <th>Đơn vị</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="u : ${rows}">
+          <td><input type="checkbox" name="ids" form="moveForm" th:value="${u.id}" class="pick" th:attr="aria-label='Chọn ' + ${u.username}"></td>
+          <td><b th:text="${u.fullName}">Nguyễn Văn A</b><small th:text="${u.employeeNo} ?: 'Không mã NV'">TH70</small></td>
+          <td th:text="${u.username}">nva</td>
+          <td><span th:text="${u.department} ?: '—'">Kinh Doanh 1</span><small th:if="${u.departmentManager}">Trưởng phòng</small></td>
+          <td>
+            <form th:id="'f-' + ${u.id}" th:action="@{/system/accounts/{id}/update(id=${u.id})}" method="post">
+              <input type="hidden" name="backUnit" th:value="${unitFilter}"><input type="hidden" name="backQ" th:value="${q}">
+            </form>
+            <select class="in sm" name="type" th:attr="form='f-' + ${u.id}">
+              <option th:each="t : ${types}" th:value="${t.key}" th:text="${t.value}" th:selected="${typeOf[u.id] == t.key}">Người dùng</option>
+            </select>
+          </td>
+          <td>
+            <select class="in sm" name="unitId" th:attr="form='f-' + ${u.id}">
+              <option value="">— Toàn hệ thống —</option>
+              <option th:each="un : ${units}" th:value="${un.id}" th:text="${un.code}"
+                      th:selected="${u.unit != null and u.unit.id == un.id}">TH</option>
+            </select>
+          </td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-sm" type="submit" th:attr="form='f-' + ${u.id}"><i class="fa-solid fa-check"></i>Lưu</button>
+            <details class="pw" style="margin-top:4px">
+              <summary>Đặt lại mật khẩu</summary>
+              <form th:action="@{/system/accounts/{id}/password(id=${u.id})}" method="post" style="display:flex;gap:6px">
+                <input type="hidden" name="backUnit" th:value="${unitFilter}"><input type="hidden" name="backQ" th:value="${q}">
+                <input class="in sm" type="password" name="newPassword" minlength="6" required placeholder="Mật khẩu mới" autocomplete="new-password">
+                <button class="btn btn-sm" type="submit">Đặt</button>
+              </form>
+            </details>
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(rows)}"><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Không có tài khoản phù hợp</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="msg" th:if="${truncated}">Chỉ hiện 500 dòng đầu, dùng ô tìm hoặc lọc đơn vị để thu hẹp.</p>
+
+    <div class="bar" id="moveBar" hidden>
+      <b id="pickCount">0 người</b>
+      <span class="sp"></span>
+      <label for="toUnit" style="font-size:13px;color:var(--muted)">Chuyển sang</label>
+      <select class="in sm" id="toUnit" name="toUnit" form="moveForm" required>
+        <option value="">Chọn đơn vị</option>
+        <option th:each="un : ${units}" th:value="${un.id}" th:text="${un.label}">TH</option>
+      </select>
+      <input type="hidden" name="backUnit" form="moveForm" th:value="${unitFilter}">
+      <input type="hidden" name="backQ" form="moveForm" th:value="${q}">
+      <button class="btn btn-brand btn-sm" type="submit" form="moveForm"><i class="fa-solid fa-right-left"></i>Chuyển đơn vị</button>
+    </div>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+<script>
+(function () {
+  var picks = Array.prototype.slice.call(document.querySelectorAll('.pick'));
+  var all = document.getElementById('checkAll'), bar = document.getElementById('moveBar'), cnt = document.getElementById('pickCount');
+  function upd() {
+    var n = picks.filter(function (p) { return p.checked; }).length;
+    bar.hidden = n === 0;
+    cnt.textContent = n + ' người';
+    if (all) all.checked = n > 0 && n === picks.length;
+  }
+  picks.forEach(function (p) { p.addEventListener('change', upd); });
+  if (all) all.addEventListener('change', function () { picks.forEach(function (p) { p.checked = all.checked; }); upd(); });
+})();
+</script>
+</body>
+</html>

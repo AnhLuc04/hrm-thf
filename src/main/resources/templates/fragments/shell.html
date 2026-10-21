@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<!--
+  ═══════════════════════════════════════════════════════════════════════
+  KHUNG ỨNG DỤNG DÙNG CHUNG (menu trái + thanh trên điện thoại)
+  Cách dùng trong 1 trang:
+    <head> … <th:block th:replace="~{fragments/shell :: styles}"></th:block> </head>
+    <body>
+      <th:block th:replace="~{fragments/shell :: nav('home', 'Trang chủ')}"></th:block>
+      <div class="sh-main"> … nội dung trang … </div>
+      <th:block th:replace="~{fragments/shell :: script}"></th:block>
+    </body>
+  Tham số 1 (active): home | confirm | mycal | payroll | approve | report | users | holiday | profile
+  Tham số 2 (title) : tiêu đề hiện trên thanh trên cùng khi xem bằng điện thoại
+  Dữ liệu người dùng (navEmpNo, navName, navIsManager, navIsAdmin) do NavModelAdvice.java cung cấp.
+  ═══════════════════════════════════════════════════════════════════════
+-->
+<head>
+  <th:block th:fragment="styles">
+    <!-- APP CÀI TRÊN ĐIỆN THOẠI (PWA) -->
+    <link rel="manifest" th:href="@{/manifest.webmanifest}">
+    <meta name="theme-color" content="#6d0a2c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/pwa/sunclub-32.png}">
+    <link rel="icon" type="image/png" sizes="192x192" th:href="@{/pwa/sunclub-192.png}">
+    <meta name="apple-mobile-web-app-title" content="SunClub">
+    <meta name="application-name" content="SunClub">
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/pwa/sunclub-apple-180.png}">
+    <style>
+    :root { --sh-side: 240px; }
+    .sh-side, .sh-side *, .sh-top, .sh-top * { box-sizing: border-box; }
+    .sh-side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: var(--sh-side); background: #fff; border-right: 1px solid #eaecf0;
+               display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
+               padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+               font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #344054; }
+    .sh-side a { color: inherit; text-decoration: none; }
+    .sh-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; }
+    .sh-mark { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; letter-spacing: -.02em;
+               background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 6px 14px -6px rgba(79,70,229,.6); }
+    .sh-brand b { display: block; font-size: 14.5px; font-weight: 700; color: #0b1220; line-height: 1.2; }
+    .sh-brand small { display: block; font-size: 11.5px; color: #98a2b3; }
+    .sh-t { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #98a2b3; padding: 14px 10px 6px; }
+    .sh-nav a, .sh-nav button { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; margin: 1px 0; padding: 0 10px; border: 0; border-radius: 8px; background: none;
+                                font-family: inherit; font-size: 13.5px; font-weight: 500; line-height: 1; color: #344054; cursor: pointer; text-align: left; transition: background .12s, color .12s; }
+    .sh-nav i { width: 18px; text-align: center; color: #98a2b3; font-size: 14px; transition: color .12s; }
+    .sh-nav a.on { background: #eef2ff; color: #4338ca; font-weight: 600; }
+    .sh-nav a.on i { color: #4f46e5; }
+    .sh-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid #eaecf0; }
+    .sh-foot form { margin: 0; }
+    .sh-me { display: flex; align-items: center; gap: 10px; padding: 8px 10px 10px; }
+    .sh-av { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #eef2ff; color: #4338ca; font-weight: 700; font-size: 13px; border: 1px solid #e0e7ff; }
+    .sh-me div { min-width: 0; line-height: 1.25; }
+    .sh-me b { display: block; font-size: 13px; font-weight: 600; color: #0b1220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sh-me small { font-size: 11.5px; color: #98a2b3; }
+    /* 🔔 thông báo */
+    .sh-badge { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #f04438; color: #fff;
+                font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; line-height: 1; }
+    .sh-badge[hidden] { display: none; }
+    .sh-bell { position: relative; width: 38px; height: 38px; flex: none; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff;
+               display: none; place-items: center; color: #344054; margin-left: auto; text-decoration: none; }
+    .sh-bell .sh-badge { position: absolute; top: -6px; right: -6px; margin: 0; min-width: 18px; height: 18px; font-size: 10.5px; border: 2px solid #fff; }
+    .sh-out { color: #b42318 !important; } .sh-out i { color: #f97066 !important; }
+    /* Đơn vị đang làm việc / đang xem */
+    .sh-unit { margin: 0 4px 6px; padding: 8px 10px; border-radius: 10px; background: #f5f7ff; border: 1px solid #e0e7ff; display: grid; gap: 4px; }
+    .sh-unit small { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6172f3; }
+    .sh-unit b { font-size: 13px; color: #1e1b4b; font-weight: 600; line-height: 1.3; }
+    .sh-unit select { width: 100%; height: 32px; border: 1px solid #c7d2fe; border-radius: 8px; background: #fff; font: inherit; font-size: 13px; color: #1e1b4b; padding: 0 6px; }
+
+    .sh-main { margin-left: var(--sh-side); min-height: 100vh; }
+    .sh-top, .sh-scrim { display: none; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .sh-nav a:not(.on):hover, .sh-nav button:hover { background: #f9fafb; color: #0b1220; }
+      .sh-nav a:not(.on):hover i { color: #667085; }
+    }
+
+    /* Dưới 1180px (máy tính bảng, điện thoại): menu thành ngăn kéo, có thanh trên cùng */
+    @media (max-width: 1179px) {
+      .sh-side { transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); }
+      body.sh-open .sh-side { transform: none; box-shadow: 0 20px 50px rgba(16,24,40,.25); }
+      .sh-scrim { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 59; background: rgba(16,24,40,.4); opacity: 0; pointer-events: none; transition: opacity .2s; }
+      body.sh-open .sh-scrim { opacity: 1; pointer-events: auto; }
+      body.sh-open { overflow: hidden; }
+      .sh-main { margin-left: 0; }
+      .sh-top { display: flex; position: sticky; top: 0; z-index: 40; align-items: center; gap: 10px; height: calc(56px + env(safe-area-inset-top, 0px));
+                padding: env(safe-area-inset-top, 0px) calc(12px + env(safe-area-inset-right, 0px)) 0 calc(12px + env(safe-area-inset-left, 0px));
+                background: rgba(255,255,255,.92); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid #eaecf0;
+                font: 14px/1.4 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+      .sh-burger { width: 38px; height: 38px; flex: none; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff; display: grid; place-items: center; color: #344054; cursor: pointer; }
+      .sh-top b { font-size: 15px; font-weight: 600; color: #0b1220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sh-top .sh-mark { width: 30px; height: 30px; font-size: 11px; margin-left: 8px; }
+      .sh-top .sh-bell { display: grid; }
+    }
+    @media print { .sh-side, .sh-top, .sh-scrim { display: none !important; } .sh-main { margin-left: 0 !important; } }
+    /* ĐIỆN THOẠI DẠNG APP: không tự phóng to khi bấm vào ô nhập (iOS phóng khi chữ < 16px), không phóng khi chạm 2 lần,
+       không tràn ngang làm trang bị thu nhỏ như web */
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    @media (max-width: 1179px) and (pointer: coarse) {
+      input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea { font-size: 16px !important; }
+      /* clip (không phải hidden) để không làm hỏng thanh dính position: sticky */
+      html, body { overflow-x: clip; max-width: 100%; }
+      img, video, canvas { max-width: 100%; height: auto; }
+    }
+    @media (display-mode: standalone) {
+      body { overscroll-behavior-y: none; -webkit-user-select: none; user-select: none; }
+      input, textarea, select, [contenteditable], .nt-tx, td, p { -webkit-user-select: text; user-select: text; }
+    }
+    @media (prefers-reduced-motion: reduce) { .sh-side, .sh-scrim { transition: none !important; } }
+  </style>
+  </th:block>
+</head>
+<body>
+
+<th:block th:fragment="nav(active, title)">
+  <aside class="sh-side" id="shSide" aria-label="Menu chính">
+    <a class="sh-brand" th:href="@{/}">
+      <span class="sh-mark">THF</span>
+      <span><b>Thanh Hóa Ford</b><small>Nhân sự &amp; Chấm công</small></span>
+    </a>
+
+    <!-- ĐƠN VỊ: nhân viên thấy đơn vị của mình; quản trị hệ thống chọn đơn vị đang xem -->
+    <div class="sh-unit" th:if="${navUnitLabel != null}">
+      <small th:text="${navIsGlobalAdmin == true} ? 'Đang xem đơn vị' : 'Đơn vị'">Đơn vị</small>
+      <b th:unless="${navIsGlobalAdmin == true}" th:text="${navUnitLabel}">TH · Thanh Hóa Ford</b>
+      <form th:if="${navIsGlobalAdmin == true}" th:action="@{/units/view}" method="get">
+        <select name="unitId" aria-label="Chọn đơn vị đang xem" onchange="this.form.submit()">
+          <option value="" th:selected="${navViewUnitId == null}">Tất cả đơn vị</option>
+          <option th:each="un : ${navUnits}" th:value="${un.id}" th:text="${un.code} + ' · ' + ${un.name}"
+                  th:selected="${navViewUnitId != null and navViewUnitId == un.id}">TH</option>
+        </select>
+        <noscript><button type="submit">Xem</button></noscript>
+      </form>
+    </div>
+
+    <!-- QUẢN TRỊ HỆ THỐNG: chỉ nhập đơn vị / API máy chấm công, tài khoản admin-user, chia đơn vị -->
+    <nav class="sh-nav" th:if="${navSystemOnly == true}">
+      <div class="sh-t">Hệ thống</div>
+      <a th:href="@{/notifications}" th:classappend="${active == 'notifications'} ? 'on'"><i class="fa-regular fa-bell"></i>Thông báo
+        <span class="sh-badge" data-unread th:hidden="${navUnread == null or navUnread == 0}" th:text="${navUnread != null and navUnread > 99 ? '99+' : navUnread}">0</span></a>
+      <a th:href="@{/units}" th:classappend="${active == 'units'} ? 'on'"><i class="fa-solid fa-building"></i>Đơn vị &amp; máy chấm công</a>
+      <a th:href="@{/system/accounts}" th:classappend="${active == 'accounts'} ? 'on'"><i class="fa-solid fa-users-gear"></i>Tài khoản &amp; chia đơn vị</a>
+      <a th:href="@{/news}" th:classappend="${active == 'news'} ? 'on'"><i class="fa-regular fa-newspaper"></i>Bảng tin</a>
+    </nav>
+
+    <nav class="sh-nav" th:unless="${navSystemOnly == true}">
+      <div class="sh-t">Cá nhân</div>
+      <a th:href="@{/}" th:classappend="${active == 'home'} ? 'on'"><i class="fa-solid fa-house"></i>Trang chủ</a>
+      <a th:href="@{/notifications}" th:classappend="${active == 'notifications'} ? 'on'"><i class="fa-regular fa-bell"></i>Thông báo
+        <span class="sh-badge" data-unread th:hidden="${navUnread == null or navUnread == 0}" th:text="${navUnread != null and navUnread > 99 ? '99+' : navUnread}">0</span></a>
+      <a th:href="@{/news}" th:classappend="${active == 'news'} ? 'on'"><i class="fa-regular fa-newspaper"></i>Bảng tin</a>
+      <a th:if="${navEmpNo != null}" th:href="@{/attendance/confirm/{no}(no=${navEmpNo})}" th:classappend="${active == 'confirm'} ? 'on'"><i class="fa-solid fa-user-check"></i>Xác nhận công</a>
+      <!-- Trưởng phòng mở /attendance/report sẽ thấy bảng tổng, nên chỉ nhân viên thường có mục này -->
+      <a th:if="${navIsManager != true and navIsHr != true and navIsAdmin != true}" th:href="@{/attendance/report}" th:classappend="${active == 'mycal'} ? 'on'"><i class="fa-regular fa-calendar-check"></i>Lịch công của tôi</a>
+      <a th:href="@{/my-profile}" th:classappend="${active == 'myprofile'} ? 'on'"><i class="fa-regular fa-address-card"></i>Hồ sơ của tôi</a>
+      <a th:href="@{/leave/my}" th:classappend="${active == 'leave'} ? 'on'"><i class="fa-solid fa-umbrella-beach"></i>Đơn nghỉ phép</a>
+      <a th:href="@{/proposal/salary}" th:classappend="${active == 'proposal'} ? 'on'"><i class="fa-solid fa-arrow-trend-up"></i>Đề xuất tăng lương</a>
+      <a th:href="@{/contract/my}" th:classappend="${active == 'contract'} ? 'on'"><i class="fa-solid fa-file-signature"></i>Hợp đồng lao động</a>
+      <a th:href="@{/payroll/my}" th:classappend="${active == 'payroll'} ? 'on'"><i class="fa-solid fa-wallet"></i>Phiếu lương</a>
+
+      <th:block th:if="${navIsManager == true or navIsAdmin == true}">
+        <div class="sh-t">Quản lý</div>
+        <a th:href="@{/attendance/manager/attendance-confirms}" th:classappend="${active == 'approve'} ? 'on'"><i class="fa-solid fa-clipboard-check"></i>Phê duyệt giải trình</a>
+        <a th:href="@{/proposal/manage}" th:classappend="${active == 'proposalmgr'} ? 'on'"><i class="fa-solid fa-list-check"></i>Duyệt đề xuất</a>
+        <a th:if="${navIsManager == true}" th:href="@{/attendance/report}" th:classappend="${active == 'report'} ? 'on'"><i class="fa-solid fa-table-cells"></i>Bảng công tổng</a>
+      </th:block>
+
+      <!-- LƯƠNG: Kế toán, HCNS, quản trị đơn vị (PayrollAccessInterceptor vẫn kiểm tra quyền từng trang) -->
+      <th:block th:if="${navIsAccountant == true or navIsHr == true or navIsAdmin == true}">
+        <div class="sh-t" th:text="${navIsAccountant == true} ? 'Kế toán' : 'Lương'">Kế toán</div>
+        <a th:href="@{/payroll/auto-calculate}" th:classappend="${active == 'calc'} ? 'on'"><i class="fa-solid fa-calculator"></i>Tính lương tháng</a>
+        <a th:href="@{/salary-config}" th:classappend="${active == 'config' or active == 'formula' or active == 'monthly' or active == 'erp' or active == 'audit'} ? 'on'"><i class="fa-solid fa-sliders"></i>Cấu hình lương</a>
+        <a th:if="${navIsAccountant == true}" th:href="@{/payroll/import}" th:classappend="${active == 'import'} ? 'on'"><i class="fa-solid fa-file-import"></i>Nhập bảng lương</a>
+      </th:block>
+
+      <th:block th:if="${navIsAdmin == true or navIsHr == true}">
+        <div class="sh-t">Quản trị</div>
+        <a th:if="${(navIsAdmin == true or navIsHr == true) and navIsManager != true}" th:href="@{/attendance/report}" th:classappend="${active == 'report'} ? 'on'"><i class="fa-solid fa-table-cells"></i>Bảng công tổng</a>
+        <a th:if="${navIsAdmin == true or navIsHr == true}" th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'on'"><i class="fa-solid fa-users"></i>Nhân viên</a>
+        <a th:href="@{/hr/employees}" th:classappend="${active == 'employees'} ? 'on'"><i class="fa-solid fa-id-card-clip"></i>Hồ sơ nhân viên</a>
+        <a th:href="@{/hr/roles}" th:classappend="${active == 'roles'} ? 'on'"><i class="fa-solid fa-sitemap"></i>Chức vụ &amp; phòng ban</a>
+        <a th:href="@{/holiday/config}" th:classappend="${active == 'holiday'} ? 'on'"><i class="fa-solid fa-calendar-days"></i>Ngày nghỉ lễ</a>
+        <a th:href="@{/attendance/schedule}" th:classappend="${active == 'schedule'} ? 'on'"><i class="fa-regular fa-clock"></i>Lịch làm việc &amp; giờ chấm</a>
+        <a th:href="@{/attendance/deadline}" th:classappend="${active == 'deadline'} ? 'on'"><i class="fa-solid fa-hourglass-half"></i>Hạn xác nhận công</a>
+        <a th:if="${navIsGlobalAdmin == true}" th:href="@{/units}" th:classappend="${active == 'units'} ? 'on'"><i class="fa-solid fa-building"></i>Đơn vị &amp; máy chấm công</a>
+      </th:block>
+    </nav>
+
+    <div class="sh-foot">
+      <div class="sh-me" th:if="${navEmpNo != null}">
+        <span class="sh-av" id="shAv">?</span>
+        <div>
+          <b id="shName" th:text="${navName != null and !#strings.isEmpty(navName) ? navName : navEmpNo}">Nguyễn Văn A</b>
+          <small th:text="${navRoleLabel} + ' · ' + ${navEmpNo}">Nhân viên · 000070</small>
+        </div>
+      </div>
+      <nav class="sh-nav">
+        <a th:href="@{/profile}" th:classappend="${active == 'profile'} ? 'on'"><i class="fa-regular fa-circle-user"></i>Hồ sơ &amp; mật khẩu</a>
+        <form th:action="@{/logout}" method="post"><button type="submit" class="sh-out"><i class="fa-solid fa-arrow-right-from-bracket"></i>Đăng xuất</button></form>
+      </nav>
+    </div>
+  </aside>
+  <div class="sh-scrim" id="shScrim"></div>
+
+  <header class="sh-top">
+    <button type="button" class="sh-burger" id="shBurger" aria-label="Mở menu" aria-controls="shSide" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+    <b th:text="${title}">Trang</b>
+    <a class="sh-bell" th:href="@{/notifications}" aria-label="Thông báo"><i class="fa-regular fa-bell"></i>
+      <span class="sh-badge" data-unread th:hidden="${navUnread == null or navUnread == 0}" th:text="${navUnread != null and navUnread > 99 ? '99+' : navUnread}">0</span></a>
+    <a class="sh-mark" th:href="@{/}" aria-label="Trang chủ">THF</a>
+  </header>
+</th:block>
+
+<!-- 📱 iPhone / iPad: nhắc "Thêm vào MH chính" khi đang mở bằng Safari (chưa cài app) -->
+<th:block th:fragment="iosInstall">
+<div id="ios-install" style="display:none;position:fixed;left:12px;right:12px;bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:9999;
+     background:#2a0624;color:#fff;border-radius:14px;padding:16px 40px 14px 16px;
+     box-shadow:0 8px 30px rgba(0,0,0,.4);font-family:system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.45">
+  <b>Cài app SunClub lên iPhone</b><br>
+  Bấm nút dưới → <b>Cho phép</b> → vào <b>Cài đặt</b> → <b>Đã tải về hồ sơ</b> → <b>Cài đặt</b>.
+  Xong bật <b>SunClub CA</b> trong Cài đặt chung → Giới thiệu → Cài đặt tin cậy chứng nhận.
+  <a href="/sunclub.mobileconfig" style="display:block;margin-top:10px;text-align:center;background:#d4a017;color:#2a0624;
+     font-weight:700;border-radius:10px;padding:10px;text-decoration:none">Cài app SunClub</a>
+  <div style="font-size:12px;color:#c49aab;margin-top:6px">Không dùng “Thêm vào MH chính” để tránh 2 biểu tượng.</div>
+  <button type="button" aria-label="Đóng"
+          onclick="document.getElementById('ios-install').style.display='none';try{localStorage.setItem('iosInstallHidden','1')}catch(e){}"
+          style="position:absolute;top:6px;right:10px;background:none;border:0;color:#c49aab;font-size:22px;line-height:1;padding:4px">×</button>
+</div>
+<script>
+(function () {
+  var el = document.getElementById('ios-install');
+  if (!el) return;
+  var ua = navigator.userAgent;
+  // iPadOS 13+ tự xưng là Macintosh: nhận qua màn hình cảm ứng
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  var isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|Zalo|FBAN|FBAV|Instagram|Line\//.test(ua);
+  var isStandalone = window.navigator.standalone === true ||
+                     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var hidden = false;
+  try { hidden = localStorage.getItem('iosInstallHidden') === '1'; } catch (e) {}
+  if (isIOS && isSafari && !isStandalone && !hidden) {
+    el.style.display = 'block';
+  }
+})();
+</script>
+</th:block>
+
+<th:block th:fragment="script">
+  <th:block th:replace="~{fragments/shell :: iosInstall}"></th:block>
+  <script>
+(function () {
+  var b = document.body, burger = document.getElementById('shBurger'), scrim = document.getElementById('shScrim');
+  function open(v) { b.classList.toggle('sh-open', v); if (burger) burger.setAttribute('aria-expanded', v ? 'true' : 'false'); }
+  if (burger) burger.addEventListener('click', function () { open(!b.classList.contains('sh-open')); });
+  if (scrim) scrim.addEventListener('click', function () { open(false); });
+  document.addEventListener('keydown', function (e) { if ((e.key === 'Escape' || e.key === 'Esc') && b.classList.contains('sh-open')) open(false); });
+  // Chữ cái đầu của tên cho ảnh đại diện
+  var nm = document.getElementById('shName'), av = document.getElementById('shAv');
+  if (nm && av) { var w = nm.textContent.trim().split(/\s+/).pop() || '?'; av.textContent = w.charAt(0).toUpperCase(); }
+  // 📱 điện thoại / app cài: khoá phóng to bằng 2 ngón (giao diện đã co theo màn hình, không cần phóng như web)
+  var touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 1180;
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone;
+  if (touch || standalone) {
+    var vp = document.querySelector('meta[name=viewport]');
+    if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    // iOS Safari bỏ qua user-scalable=no: chặn cử chỉ phóng
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
+    var lastTouch = 0;
+    document.addEventListener('touchend', function (e) {
+      var now = Date.now();
+      if (now - lastTouch < 300 && !e.target.closest('input,textarea,select,a,button,label')) e.preventDefault();
+      lastTouch = now;
+    }, { passive: false });
+  }
+  // 📱 app cài trên điện thoại: đăng ký service worker (nhận thông báo đẩy, trang mất mạng)
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
+      .then(function (r) { r.update(); }).catch(function () {});   // luôn hỏi máy chủ bản mới, thay ngay bản cũ
+  }
+  // 🔔 cập nhật số thông báo chưa đọc mỗi phút (không cần tải lại trang)
+  var bellLink = document.querySelector('.sh-side a[href$="/notifications"]');
+  if (bellLink && window.fetch) {
+    var url = bellLink.getAttribute('href') + '/count';
+    var tick = function () {
+      if (document.hidden) return;
+      fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d) return;
+          document.querySelectorAll('[data-unread]').forEach(function (el) {
+            el.textContent = d.unread > 99 ? '99+' : d.unread;
+            el.hidden = !d.unread;
+          });
+        })
+        .catch(function () {});
+    };
+    setInterval(tick, 60000);
+  }
+})();
+</script>
+</th:block>
+
+</body>
+</html>

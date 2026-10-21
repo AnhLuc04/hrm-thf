@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="theme-color" content="#ffffff">
+  <!-- Nếu bật CSRF (Spring Security) thì nút Lưu từng dòng tự gửi kèm token -->
+  <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+  <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+  <title>Nhân viên · Thanh Hóa Ford HRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #f7f8fa; --panel: #fff; --ink: #0b1220; --ink2: #344054; --muted: #667085; --faint: #98a2b3;
+      --line: #eaecf0; --line2: #f2f4f7; --hover: #f9fafb;
+      --brand: #4f46e5; --brand-600: #4338ca; --brand-50: #eef2ff; --brand-100: #e0e7ff; --brand-200: #c7d2fe;
+      --ok: #059669; --warn: #d97706; --err: #dc2626;
+      --r: 12px; --shadow-xs: 0 1px 2px rgba(16,24,40,.05); --shadow-sm: 0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.04);
+      --side: 240px;
+      --sa-t: env(safe-area-inset-top, 0px); --sa-b: env(safe-area-inset-bottom, 0px);
+      --sa-l: env(safe-area-inset-left, 0px); --sa-r: env(safe-area-inset-right, 0px);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink2); font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+           font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; text-decoration: none; }
+    button, input, select { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+    /* ═════════ KHUNG ỨNG DỤNG: SIDEBAR + NỘI DUNG ═════════ */
+    .side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 50; width: var(--side); background: var(--panel); border-right: 1px solid var(--line);
+            display: flex; flex-direction: column; padding: calc(16px + var(--sa-t)) 12px calc(12px + var(--sa-b)) calc(12px + var(--sa-l)); }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+    .mark { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; letter-spacing: -.02em;
+            background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 6px 14px -6px rgba(79,70,229,.6); }
+    .brand b { display: block; font-size: 14.5px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+    .brand small { display: block; font-size: 11.5px; color: var(--faint); }
+    .nav-t { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); padding: 14px 10px 6px; }
+    .nav a, .nav button { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; padding: 0 10px; border: 0; border-radius: 8px; background: none;
+                          font-size: 13.5px; font-weight: 500; color: var(--ink2); cursor: pointer; text-align: left; transition: background .12s, color .12s; }
+    .nav a i, .nav button i { width: 18px; text-align: center; color: var(--faint); font-size: 14px; transition: color .12s; }
+    .nav a.on { background: var(--brand-50); color: var(--brand-600); font-weight: 600; }
+    .nav a.on i { color: var(--brand); }
+    .side .foot { margin-top: auto; border-top: 1px solid var(--line); padding-top: 10px; }
+    .side .foot form { margin: 0; }
+    .side .foot .out { color: #b42318; } .side .foot .out i { color: #f97066; }
+
+    .main { min-height: 100vh; }
+    .mtop { display: none; }
+    .scrim { display: none; }
+
+    .content { max-width: 1280px; margin: 0 auto; padding: 28px 28px 40px; }
+    body.has-bar .content { padding-bottom: calc(120px + var(--sa-b)); }
+
+    /* ═════════ TIÊU ĐỀ ═════════ */
+    .crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--faint); margin-bottom: 10px; }
+    .crumbs a:hover { color: var(--ink2); }
+    .crumbs i { font-size: 9px; }
+    .ph { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .ph h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; color: var(--ink); letter-spacing: -.025em; display: flex; align-items: center; gap: 10px; }
+    .ph h1 .count { font-size: 13px; font-weight: 600; color: var(--brand-600); background: var(--brand-50); border: 1px solid var(--brand-100); padding: 2px 10px; border-radius: 999px; letter-spacing: 0; }
+    .ph p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+    .btn { height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #d0d5dd; background: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+           font-size: 13.5px; font-weight: 600; color: var(--ink2); cursor: pointer; white-space: nowrap; box-shadow: var(--shadow-xs); transition: background .12s, border-color .12s; touch-action: manipulation; }
+    .btn i { color: var(--muted); font-size: 13px; }
+    .btn-brand { background: var(--brand); border-color: var(--brand); color: #fff; } .btn-brand i { color: #c7d2fe; }
+    .btn-ok { background: var(--ok); border-color: var(--ok); color: #fff; } .btn-ok i { color: #d1fae5; }
+    .btn-sm { height: 30px; padding: 0 10px; font-size: 12.5px; border-radius: 7px; }
+    .btn-icon { width: 36px; padding: 0; } .btn-sm.btn-icon { width: 30px; }
+    .btn:disabled { opacity: .55; cursor: default; }
+
+    /* ═════════ KHỐI BẢNG ═════════ */
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-sm); overflow: hidden; }
+
+    /* Tab loại công */
+    .tabs { display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tabs a { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 10px; font-size: 13.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .tabs a .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .tabs a.on { color: var(--brand-600); }
+    .tabs a.on::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--brand); }
+
+    /* Thanh công cụ */
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .search { position: relative; flex: 1 1 280px; max-width: 420px; }
+    .search > i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--faint); font-size: 13px; pointer-events: none; }
+    .search kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font: 500 11px/1 "Inter", sans-serif; color: var(--faint); border: 1px solid var(--line);
+                  border-radius: 5px; padding: 3px 6px; background: #fff; }
+    .inp { height: 36px; width: 100%; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; padding: 0 12px; outline: none; font-size: 13.5px; box-shadow: var(--shadow-xs);
+           transition: border-color .12s, box-shadow .12s; }
+    .inp:focus { border-color: #a5b4fc; box-shadow: 0 0 0 4px var(--brand-50); }
+    .search .inp { padding-left: 34px; padding-right: 34px; }
+    select.inp { width: auto; min-width: 0; font-weight: 500; cursor: pointer; }
+    .toolbar .sp { flex: 1; }
+    .fchips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; margin-top: -2px; border-bottom: 1px solid var(--line); }
+    .fchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 10px; border-radius: 999px; background: #fff; border: 1px solid #d0d5dd; font-size: 12px; font-weight: 500; color: var(--ink2); }
+    .fchip a { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: var(--faint); font-size: 10px; }
+
+    /* Thanh thông báo */
+    .notice { display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 16px; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--line); }
+    .notice.on { display: flex; }
+    .notice .acts { display: flex; gap: 14px; align-items: center; }
+    .notice button:not(.btn) { border: 0; background: none; cursor: pointer; font-weight: 600; padding: 4px 0; }
+    .n-sel { background: var(--brand-50); color: var(--brand-600); }
+    .n-dirty { background: #fffaeb; color: #93370d; }
+    .n-dirty .btn { box-shadow: none; }
+
+    /* Bảng */
+    .tbl-wrap { overflow-x: auto; }
+    table.t { width: 100%; min-width: 1060px; border-collapse: collapse; table-layout: fixed; }
+    .t th { position: sticky; top: 0; z-index: 1; text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); background: #f9fafb; padding: 11px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    .t td { padding: 10px 12px; border-bottom: 1px solid var(--line2); vertical-align: middle; }
+    .t tbody tr:last-child td { border-bottom: 0; }
+    .t tr.row { transition: background .12s; }
+    .t tr.row.sel { background: #f8f9ff; }
+    .t tr.row.dirty { background: #fffcf5; box-shadow: inset 3px 0 0 var(--warn); }
+    .t tr.row.saved { background: #f0fdf4; box-shadow: inset 3px 0 0 var(--ok); }
+    .c-cb { width: 48px; padding-left: 20px !important; }
+    .c-sal { width: 132px; } .c-dept { width: 192px; } .c-type { width: 132px; } .c-leave { width: 108px; } .c-mgr { width: 152px; } .c-act { width: 104px; text-align: right; padding-right: 16px !important; white-space: nowrap; }
+    .t td { overflow: hidden; }
+    .cb { width: 16px; height: 16px; accent-color: var(--brand); cursor: pointer; vertical-align: middle; margin: 0; }
+
+    .emp { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .av { width: 38px; height: 38px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 600; font-size: 14px; color: var(--avc, #4338ca); background: var(--avb, #eef2ff); }
+    .emp .info { min-width: 0; flex: 1; }
+    .meta { display: flex; flex-wrap: wrap; gap: 4px 10px; padding-left: 8px; font-size: 12px; color: var(--muted); }
+    .meta span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .meta i { font-size: 10px; color: var(--faint); margin-right: 3px; }
+
+    /* Ô sửa trực tiếp — nhìn như chữ / nhãn, bấm vào là sửa */
+    .ed { width: 100%; height: 32px; border: 1px solid transparent; border-radius: 7px; background: transparent; padding: 0 8px; font-size: 13.5px; font-weight: 500; color: var(--ink2);
+          outline: none; transition: border-color .12s, background .12s, box-shadow .12s; }
+    .ed:focus { background: #fff; border-color: #a5b4fc; box-shadow: 0 0 0 4px var(--brand-50); }
+    .ed.name { font-weight: 600; color: var(--ink); font-size: 14px; height: 28px; }
+    .ed.mono { font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; font-weight: 500; }
+    .ed.mono::placeholder { font-family: "Inter", sans-serif; color: #c0c6d0; }
+    .num-wrap { position: relative; display: inline-flex; align-items: center; }
+    .ed.num { width: 64px; text-align: right; padding-right: 8px; border-color: var(--line); background: #fff; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .num-wrap span { margin-left: 6px; font-size: 12px; color: var(--faint); }
+
+    /* Select dạng nhãn màu */
+    select.pill { -webkit-appearance: none; appearance: none; width: auto; max-width: 100%; min-width: 0; height: 26px; padding: 0 24px 0 10px; border-radius: 999px; border: 1px solid var(--pbd, var(--line));
+                  background: var(--pb, #f9fafb) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2398a2b3' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 8px center;
+                  color: var(--pc, var(--ink2)); font-size: 12.5px; font-weight: 600; cursor: pointer; text-overflow: ellipsis; }
+    select.pill:focus { box-shadow: 0 0 0 4px var(--brand-50); border-color: #a5b4fc; }
+    select.pill option { color: var(--ink); background: #fff; }
+    select.pill[data-v="CHINH_THUC"] { --pb: #ecfdf3; --pc: #067647; --pbd: #abefc6; }
+    select.pill[data-v="THU_VIEC"]   { --pb: #fffaeb; --pc: #b54708; --pbd: #fedf89; }
+    select.pill[data-v="HOC_VIEC"]   { --pb: #eff8ff; --pc: #175cd3; --pbd: #b2ddff; }
+    select.pill[data-v="true"]       { --pb: #f4f3ff; --pc: #5925dc; --pbd: #d9d6fe; }
+    select.pill[data-v="false"]      { --pb: #f9fafb; --pc: #475467; --pbd: #eaecf0; }
+    select.pill.dept                 { --pb: #fff; --pc: #344054; --pbd: #d0d5dd; border-radius: 7px; }
+    select.pill.dept[data-v="Chưa xếp phòng"] { --pc: #98a2b3; border-style: dashed; }
+
+    .ed.changed, select.pill.changed { background-color: #fef0c7 !important; border-color: #fdb022 !important; }
+    .ed.invalid { border-color: #fda29b !important; background: #fef3f2 !important; }
+
+    .act { display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end; }
+    .act .save, .act .undo { display: none; }
+    .row.dirty .act .save, .row.dirty .act .undo { display: inline-flex; }
+    .act .st { font-size: 12px; font-weight: 600; color: var(--ok); display: none; align-items: center; gap: 5px; }
+    .row.saved .act .st { display: inline-flex; }
+
+    .empty { padding: 56px 16px; text-align: center; color: var(--muted); }
+    .empty .ei { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 12px; display: grid; place-items: center; background: var(--line2); color: var(--faint); font-size: 20px; }
+    .empty b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+
+    /* Phân trang */
+    .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+    .pager b { color: var(--ink); font-weight: 600; }
+    .pager .right { display: flex; align-items: center; gap: 12px; }
+    .pages { display: flex; gap: 2px; }
+    .pages a { min-width: 34px; height: 34px; padding: 0 8px; border-radius: 8px; display: grid; place-items: center; font-weight: 500; color: var(--muted); }
+    .pages a.cur { background: var(--brand-50); color: var(--brand-600); font-weight: 600; }
+    .pages a.off { opacity: .35; pointer-events: none; }
+
+    /* ═════════ THANH SỬA HÀNG LOẠT (nổi) ═════════ */
+    .bulk { position: fixed; z-index: 45; left: calc(var(--side) + (100vw - var(--side)) / 2); bottom: calc(20px + var(--sa-b)); transform: translate(-50%, 140%);
+            width: min(1180px, calc(100vw - var(--side) - 32px)); background: #101828; color: #e4e7ec; border-radius: 14px; padding: 10px 10px 10px 14px;
+            box-shadow: 0 20px 40px -12px rgba(16,24,40,.5); visibility: hidden; transition: transform .22s cubic-bezier(.2,.8,.2,1), visibility 0s linear .22s; }
+    .bulk.on { transform: translate(-50%, 0); visibility: visible; transition: transform .22s cubic-bezier(.2,.8,.2,1), visibility 0s; }
+    .bulk .in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .bulk .cnt { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: #d0d5dd; margin-right: auto; white-space: nowrap; }
+    .bulk .cnt b { min-width: 26px; height: 26px; padding: 0 8px; border-radius: 999px; background: var(--brand); color: #fff; display: grid; place-items: center; font-size: 12.5px; }
+    .bulk .cnt button { border: 0; background: none; color: #98a2b3; cursor: pointer; font-weight: 600; font-size: 12.5px; }
+    .bf { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border-radius: 9px; background: #1d2939; border: 1px solid #344054; }
+    .bf label { font-size: 12px; font-weight: 500; color: #98a2b3; white-space: nowrap; }
+    .bf input, .bf select { height: 100%; border: 0; background: transparent; color: #fff; font-size: 13px; font-weight: 600; outline: none; min-width: 0; }
+    .bf > i { font-size: 12px; color: #667085; }
+    .bf input { width: 86px; }
+    .bf select.is-empty, .bf input::placeholder { color: #98a2b3; font-weight: 500; }
+    .bf.set { border-color: #6366f1; background: #1e2552; }
+    .bf.set > i { color: #a5b4fc; }
+    .bf select { max-width: 132px; text-overflow: ellipsis; }
+    .bf input::placeholder { color: #667085; }
+    .bf select { color-scheme: dark; }   /* danh sách thả xuống tối, chữ luôn đọc được */
+    .bf:focus-within { border-color: #6366f1; }
+    .bulk .apply { height: 36px; }
+
+    /* Toast */
+    .toasts { position: fixed; z-index: 70; right: calc(20px + var(--sa-r)); top: calc(20px + var(--sa-t)); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { pointer-events: auto; min-width: 260px; max-width: 380px; padding: 12px 14px; border-radius: 10px; background: #fff; border: 1px solid var(--line); color: var(--ink2);
+             font-size: 13px; font-weight: 500; box-shadow: 0 12px 24px -6px rgba(16,24,40,.16); display: flex; gap: 10px; align-items: flex-start; animation: tin .18s ease; }
+    .toast i { margin-top: 2px; }
+    .toast.ok i { color: var(--ok); } .toast.err { border-color: #fecdca; } .toast.err i { color: var(--err); }
+    @keyframes tin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+    @media (hover: hover) and (pointer: fine) {
+      .nav a:not(.on):hover, .nav button:hover { background: var(--hover); color: var(--ink); }
+      .nav a:not(.on):hover i { color: var(--muted); }
+      .btn:hover { background: var(--hover); }
+      .btn-brand:hover { background: var(--brand-600); }
+      .btn-ok:hover { background: #047857; }
+      .tabs a:not(.on):hover { color: var(--ink2); }
+      .t tr.row:not(.dirty):not(.saved):not(.sel):hover { background: var(--hover); }
+      .ed:not(.num):not(:focus):hover { background: #f2f4f7; }
+      select.pill:hover { filter: brightness(.97); }
+      .pages a:not(.cur):hover { background: var(--hover); color: var(--ink2); }
+      .fchip a:hover { background: var(--line2); color: var(--ink2); }
+    }
+
+    /* ═════════ Màn hình vừa (laptop 13–14"): cột gọn hơn, không cuộn ngang ═════════ */
+    @media (max-width: 1320px) {
+      table.t { min-width: 940px; }
+      .c-sal { width: 104px; } .c-dept { width: 150px; } .c-type { width: 132px; } .c-leave { width: 78px; } .c-mgr { width: 160px; } .c-act { width: 84px; }
+      .t td, .t th { padding-left: 10px; padding-right: 10px; }
+      .num-wrap span { display: none; }
+    }
+
+    /* ═════════ < 1180px (tablet, laptop nhỏ): sidebar thành ngăn kéo ═════════ */
+    @media (max-width: 1179px) {
+      .side { transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); box-shadow: none; }
+      body.nav-open .side { transform: none; box-shadow: 0 20px 50px rgba(16,24,40,.25); }
+      .scrim { display: block; position: fixed; inset: 0; z-index: 49; background: rgba(16,24,40,.4); opacity: 0; pointer-events: none; transition: opacity .2s; }
+      body.nav-open .scrim { opacity: 1; pointer-events: auto; }
+      .main { margin-left: 0; }
+      .mtop { display: flex; position: sticky; top: 0; z-index: 30; align-items: center; gap: 10px; height: calc(56px + var(--sa-t)); padding: var(--sa-t) calc(12px + var(--sa-r)) 0 calc(12px + var(--sa-l));
+              background: rgba(255,255,255,.9); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid var(--line); }
+      .mtop b { font-size: 15px; font-weight: 600; color: var(--ink); }
+      .content { padding: 20px calc(16px + var(--sa-r)) 32px calc(16px + var(--sa-l)); }
+      .bulk { left: 50%; width: calc(100vw - 24px); }
+    }
+
+    /* ═════════ < 820px: bảng thành thẻ ═════════ */
+    @media (max-width: 819px) {
+      .ph h1 { font-size: 22px; }
+      .toolbar { padding: 12px; }
+      .search { flex-basis: 100%; max-width: none; }
+      .toolbar select.inp { flex: 1; }
+      .toolbar .sp { display: none; }
+      .tabs { padding: 0 8px; }
+      table.t { min-width: 0; table-layout: auto; }
+      .t td { overflow: visible; }
+      .bf select { max-width: none; }
+      .t thead { display: none; }
+      .t, .t tbody { display: block; }
+      .t tr.row { display: grid; grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px 10px; align-items: center; padding: 14px 14px; border-bottom: 1px solid var(--line2); }
+      .t tr.row td { display: block; padding: 0 !important; border: 0; width: auto; min-width: 0; text-align: left; }
+      .t td.c-cb { grid-column: 1; grid-row: 1; }
+      .t td.c-emp { grid-column: 2 / 4; grid-row: 1; }
+      .t td.c-act { grid-column: 4; grid-row: 1; }
+      .t td.c-sal  { grid-column: 1 / 3; }
+      .t td.c-dept { grid-column: 3 / 5; }
+      .t td.c-type { grid-column: 1 / 3; }
+      .t td.c-leave{ grid-column: 3 / 5; }
+      .t td.c-mgr  { grid-column: 1 / 5; }
+      .t td[data-label]::before { content: attr(data-label); display: block; font-size: 11.5px; font-weight: 500; color: var(--faint); margin: 0 0 4px 2px; }
+      .t td[data-label] .ed:not(.num) { border-color: var(--line); background: #fff; }
+      .t td[data-label] select.pill { height: 30px; }
+      .act .save span { display: none; }
+      .pager { justify-content: center; }
+      .pager .right { flex-direction: column; }
+      body.has-bar .content { padding-bottom: calc(190px + var(--sa-b)); }
+      .bulk { bottom: calc(12px + var(--sa-b)); padding: 10px; }
+      .bulk .cnt { width: 100%; }
+      .bf { flex: 1 1 calc(50% - 4px); }
+      .bf select, .bf input { flex: 1; width: auto; }
+      .bulk .apply { flex: 1 1 100%; height: 40px; }
+      .toasts { left: calc(12px + var(--sa-l)); right: calc(12px + var(--sa-r)); top: calc(64px + var(--sa-t)); }
+      .toast { max-width: none; }
+    }
+    @media (max-width: 380px) { .bf { padding: 0 8px; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+    /* ═════════ FIX: nút Lưu / Hoàn tác không bị cắt mất ═════════
+       Cột thao tác trước đây quá hẹp (104px / 84px) + td overflow:hidden → nút Lưu bị cắt ở mép phải.
+       Khối này phải nằm CUỐI <style> để đè lên các quy tắc phía trên. */
+    .c-act { width: 132px; }
+    .t td.c-act { overflow: visible; }
+    @media (max-width: 1320px) {
+      .c-act { width: 96px; }
+      .act .save span { display: none; }   /* màn hình hẹp: nút Lưu chỉ còn dấu ✓ */
+    }
+    @media (max-width: 819px) {
+      .c-act { width: auto; }
+    }
+    /* Dòng đang sửa: ghim cột Lưu / Hoàn tác vào mép phải, không phải cuộn ngang mới thấy */
+    @media (min-width: 820px) {
+      .t tr.row.dirty td.c-act, .t tr.row.saved td.c-act { position: sticky; right: 0; z-index: 2; box-shadow: -10px 0 10px -8px rgba(16,24,40,.18); }
+      .t tr.row.dirty td.c-act { background: #fffcf5; }
+      .t tr.row.saved td.c-act { background: #f0fdf4; }
+    }
+  </style>
+</head>
+
+<!-- Danh sách phòng ban khai báo 1 lần, dùng chung cho bộ lọc / từng dòng / sửa hàng loạt -->
+<body th:with="depts=${ {'Dịch Vụ','Kế Toán','IT-MKT','HCNS','CSKH','Kinh Doanh 1','Kinh Doanh 2','Kinh Doanh 3','Kinh Doanh 4','Kinh Doanh 5','Kinh Doanh 6','ADMIN','Trưởng phòng kinh doanh'} },
+                   pageSize=${size != null ? size : 20},
+                   total=${userPageTotalElements != null ? userPageTotalElements : #lists.size(users)},
+                   hasQ=${search != null and !#strings.isEmpty(search)},
+                   hasDept=${deptFilter != null and !#strings.isEmpty(deptFilter)},
+                   tf=${typeFilter != null ? typeFilter : ''}">
+
+<!-- ═════════ SIDEBAR ═════════ -->
+<th:block th:replace="~{fragments/shell :: styles}"></th:block>
+
+<!-- FIX: đặt SAU fragment shell để CSS của shell không ẩn được nút Lưu / Hoàn tác của dòng đang sửa -->
+<style>
+    .t tr.row.dirty .act .save,
+    .t tr.row.dirty .act .undo { display: inline-flex !important; visibility: visible !important; opacity: 1 !important; }
+</style>
+
+<!-- MENU CHUNG (fragments/shell.html) -->
+<th:block th:replace="~{fragments/shell :: nav('users', 'Nhân viên')}"></th:block>
+
+<div class="main sh-main">
+
+  <div class="content">
+    <div class="crumbs"><a th:href="@{/}">Trang chủ</a><i class="fa-solid fa-chevron-right"></i><span>Quản trị</span><i class="fa-solid fa-chevron-right"></i><span style="color:var(--ink2)">Nhân viên</span></div>
+
+    <!-- ═════════ TIÊU ĐỀ ═════════ -->
+    <div class="ph">
+      <div>
+        <h1>Nhân viên <span class="count" th:text="${total}">0</span></h1>
+        <p>Quản lý phòng ban, loại công, chức danh và phép năm. Bấm trực tiếp vào ô để sửa, hoặc chọn nhiều người để sửa hàng loạt.</p>
+      </div>
+    </div>
+
+    <form id="mainUsersForm" th:action="@{/admin/users/bulk-update}" method="post" onsubmit="return validateBulkSubmit(event)">
+      <input type="hidden" name="search" th:value="${search}">
+      <input type="hidden" name="deptFilter" th:value="${deptFilter}">
+      <input type="hidden" name="typeFilter" th:value="${typeFilter}">
+      <input type="hidden" name="page" th:value="${currentPage}">
+      <input type="hidden" id="selectAllFiltered" name="selectAllFiltered" value="false">
+    </form>
+
+    <section class="panel" id="usersCard"
+             th:data-page-count="${#lists.size(users)}" th:data-total="${total}"
+             th:data-page="${currentPage != null ? currentPage : 0}" th:data-size="${pageSize}">
+
+      <!-- Tab loại công -->
+      <nav class="tabs" aria-label="Loại công">
+        <a th:href="@{/admin/users(search=${search}, deptFilter=${deptFilter}, size=${pageSize})}" th:classappend="${tf == ''} ? 'on'">Tất cả</a>
+        <a th:href="@{/admin/users(typeFilter='CHINH_THUC', search=${search}, deptFilter=${deptFilter}, size=${pageSize})}" th:classappend="${tf == 'CHINH_THUC'} ? 'on'"><span class="dot" style="background:#12b76a"></span>Chính thức</a>
+        <a th:href="@{/admin/users(typeFilter='THU_VIEC', search=${search}, deptFilter=${deptFilter}, size=${pageSize})}" th:classappend="${tf == 'THU_VIEC'} ? 'on'"><span class="dot" style="background:#f79009"></span>Thử việc</a>
+        <a th:href="@{/admin/users(typeFilter='HOC_VIEC', search=${search}, deptFilter=${deptFilter}, size=${pageSize})}" th:classappend="${tf == 'HOC_VIEC'} ? 'on'"><span class="dot" style="background:#2e90fa"></span>Học việc</a>
+      </nav>
+
+      <!-- Thanh công cụ: tìm kiếm + lọc (form GET riêng) -->
+      <form class="toolbar" th:action="@{/admin/users}" method="get" id="filterForm">
+        <input type="hidden" name="typeFilter" th:value="${typeFilter}">
+        <input type="hidden" name="page" value="0">
+        <label class="search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="inp" id="q" type="search" name="search" th:value="${search}" placeholder="Tìm tên, mã NV, mã chấm công…" autocomplete="off">
+          <kbd>/</kbd>
+        </label>
+        <select class="inp" name="deptFilter" aria-label="Phòng ban" onchange="this.form.submit()">
+          <option value="">Tất cả phòng ban</option>
+          <option th:each="d : ${depts}" th:value="${d}" th:text="${d}" th:selected="${deptFilter == d}">Dịch Vụ</option>
+        </select>
+        <span class="sp"></span>
+        <select class="inp" name="size" aria-label="Số dòng mỗi trang" onchange="this.form.submit()">
+          <option th:each="s : ${ {10, 20, 50, 100} }" th:value="${s}" th:text="${s} + ' dòng'" th:selected="${pageSize == s}">20 dòng</option>
+        </select>
+        <a class="btn btn-icon" th:href="@{/admin/users}" title="Xóa toàn bộ bộ lọc" aria-label="Xóa bộ lọc"><i class="fa-solid fa-rotate-left"></i></a>
+      </form>
+
+      <div class="fchips" th:if="${hasQ or hasDept}">
+        <span class="fchip" th:if="${hasQ}"><i class="fa-solid fa-magnifying-glass" style="font-size:10px;color:var(--faint)"></i><span th:text="${search}">từ khóa</span>
+          <a th:href="@{/admin/users(deptFilter=${deptFilter}, typeFilter=${typeFilter}, size=${pageSize})}" aria-label="Bỏ lọc từ khóa"><i class="fa-solid fa-xmark"></i></a></span>
+        <span class="fchip" th:if="${hasDept}"><i class="fa-regular fa-building" style="font-size:10px;color:var(--faint)"></i><span th:text="${deptFilter}">Phòng</span>
+          <a th:href="@{/admin/users(search=${search}, typeFilter=${typeFilter}, size=${pageSize})}" aria-label="Bỏ lọc phòng ban"><i class="fa-solid fa-xmark"></i></a></span>
+      </div>
+
+      <!-- Thông báo phạm vi chọn -->
+      <div class="notice n-sel" id="selBanner">
+        <span id="selText">Đã chọn tất cả nhân viên trên trang này.</span>
+        <span class="acts">
+          <button type="button" id="expandBtn"></button>
+          <button type="button" id="shrinkBtn" hidden>Chỉ chọn trang này</button>
+          <button type="button" id="clearTop">Bỏ chọn</button>
+        </span>
+      </div>
+
+      <!-- Thông báo có dòng chưa lưu -->
+      <div class="notice n-dirty" id="dirtyBanner">
+        <span><i class="fa-solid fa-circle-exclamation" style="margin-right:6px"></i><b id="dirtyN">0</b> nhân viên có thay đổi chưa lưu</span>
+        <span class="acts">
+          <button type="button" id="undoAll">Hoàn tác</button>
+          <button type="button" class="btn btn-sm btn-ok" id="saveAll"><i class="fa-solid fa-check"></i>Lưu tất cả</button>
+        </span>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="t">
+          <thead>
+          <tr>
+            <th class="c-cb"><input type="checkbox" class="cb" id="selectAll" form="mainUsersForm" title="Chọn tất cả trên trang này" aria-label="Chọn tất cả trên trang này"></th>
+            <th class="c-emp">Nhân viên</th>
+            <th class="c-sal">Mã lương</th>
+            <th class="c-dept">Phòng ban</th>
+            <th class="c-type">Loại công</th>
+            <th class="c-leave">Phép năm</th>
+            <th class="c-mgr">Chức danh</th>
+            <th class="c-act"></th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr class="row" th:each="u : ${users}" th:id="'row-' + ${u.id}" th:data-id="${u.id}">
+            <td class="c-cb">
+              <!-- form="mainUsersForm": ô chọn thuộc form sửa hàng loạt dù nằm ngoài thẻ form -->
+              <input type="checkbox" class="cb user-cb" name="userIds" form="mainUsersForm" th:value="${u.id}" th:aria-label="'Chọn ' + ${u.fullName}">
+            </td>
+
+            <td class="c-emp">
+              <div class="emp">
+                <span class="av" aria-hidden="true">?</span>
+                <div class="info">
+                  <input class="ed name f-fullName" type="text" th:value="${u.fullName}" maxlength="120" aria-label="Họ và tên" required>
+                  <div class="meta">
+                    <span title="Mã nhân viên"><i class="fa-regular fa-id-badge"></i><span th:text="${u.employeeNo}">THF-001</span></span>
+                    <span title="Mã chấm công" th:if="${u.attendanceCode != null and !#strings.isEmpty(u.attendanceCode)}"><i class="fa-solid fa-fingerprint"></i><span th:text="${u.attendanceCode}">001</span></span>
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <td class="c-sal" data-label="Mã lương">
+              <input class="ed mono f-salaryCode" type="text" th:value="${u.salaryCode}" placeholder="Chưa có" maxlength="50" aria-label="Mã lương">
+            </td>
+
+            <td class="c-dept" data-label="Phòng ban">
+              <select class="pill dept f-department" aria-label="Phòng ban">
+                <option value="Chưa xếp phòng" th:selected="${u.department == null or #strings.isEmpty(u.department) or u.department == 'Chưa xếp phòng'}">Chưa xếp phòng</option>
+                <option th:each="d : ${depts}" th:value="${d}" th:text="${d}" th:selected="${u.department == d}">Dịch Vụ</option>
+                <!-- Phòng ban không có trong danh sách vẫn được giữ nguyên, không bị ghi đè khi lưu -->
+                <option th:if="${u.department != null and !#strings.isEmpty(u.department) and u.department != 'Chưa xếp phòng' and !#lists.contains(depts, u.department)}"
+                        th:value="${u.department}" th:text="${u.department}" selected>Khác</option>
+              </select>
+            </td>
+
+            <td class="c-type" data-label="Loại công">
+              <select class="pill f-employeeType" aria-label="Loại công">
+                <option value="CHINH_THUC" th:selected="${u.employeeType == null or #strings.isEmpty(u.employeeType) or u.employeeType == 'CHINH_THUC'}">Chính thức</option>
+                <option value="THU_VIEC" th:selected="${u.employeeType == 'THU_VIEC'}">Thử việc</option>
+                <option value="HOC_VIEC" th:selected="${u.employeeType == 'HOC_VIEC'}">Học việc</option>
+              </select>
+            </td>
+
+            <td class="c-leave" data-label="Phép năm">
+              <span class="num-wrap"><input class="ed num f-annualLeaveDays" type="number" inputmode="decimal" step="0.5" min="0" max="40" th:value="${u.annualLeaveDays}" aria-label="Phép năm"><span>ngày</span></span>
+            </td>
+
+            <td class="c-mgr" data-label="Chức danh">
+              <select class="pill f-departmentManager" aria-label="Chức danh">
+                <option value="false" th:selected="${u.departmentManager == null or !u.departmentManager}">Nhân viên</option>
+                <option value="true" th:selected="${u.departmentManager != null and u.departmentManager}">★ Trưởng phòng</option>
+              </select>
+            </td>
+
+            <td class="c-act">
+            <span class="act">
+              <span class="st"><i class="fa-solid fa-circle-check"></i>Đã lưu</span>
+              <button type="button" class="btn btn-sm btn-icon undo" title="Hoàn tác (Esc)" aria-label="Hoàn tác"><i class="fa-solid fa-rotate-left"></i></button>
+              <button type="button" class="btn btn-sm btn-ok save" title="Lưu (Enter)" aria-label="Lưu"><i class="fa-solid fa-check"></i><span>Lưu</span></button>
+            </span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty" th:if="${#lists.isEmpty(users)}">
+        <div class="ei"><i class="fa-solid fa-user-slash"></i></div>
+        <b>Không tìm thấy nhân viên</b>
+        Thử đổi từ khóa hoặc bỏ bớt bộ lọc.
+      </div>
+
+      <!-- Phân trang -->
+      <div class="pager" th:if="${!#lists.isEmpty(users)}">
+        <span id="rangeText">Trang <b th:text="${currentPage + 1}">1</b> / <b th:text="${totalPages}">1</b></span>
+        <div class="right">
+          <nav class="pages" th:if="${totalPages > 1}" aria-label="Phân trang">
+            <a th:href="@{/admin/users(page=${currentPage - 1}, size=${pageSize}, search=${search}, deptFilter=${deptFilter}, typeFilter=${typeFilter})}"
+               th:classappend="${currentPage == 0} ? 'off'" aria-label="Trang trước"><i class="fa-solid fa-arrow-left"></i></a>
+            <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+              <a th:if="${i == 0 or i == totalPages - 1 or (i >= currentPage - 1 and i <= currentPage + 1)}"
+                 th:href="@{/admin/users(page=${i}, size=${pageSize}, search=${search}, deptFilter=${deptFilter}, typeFilter=${typeFilter})}"
+                 th:text="${i + 1}" th:classappend="${i == currentPage} ? 'cur'">1</a>
+              <a th:if="${(i == currentPage - 2 and i > 0) or (i == currentPage + 2 and i < totalPages - 1)}" class="off">…</a>
+            </th:block>
+            <a th:href="@{/admin/users(page=${currentPage + 1}, size=${pageSize}, search=${search}, deptFilter=${deptFilter}, typeFilter=${typeFilter})}"
+               th:classappend="${currentPage >= totalPages - 1} ? 'off'" aria-label="Trang sau"><i class="fa-solid fa-arrow-right"></i></a>
+          </nav>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ═════════ THANH SỬA HÀNG LOẠT (nổi dưới đáy) ═════════ -->
+<div class="bulk" id="bulkBar" aria-live="polite">
+  <div class="in">
+    <div class="cnt"><b id="selCount">0</b><span id="selLabel">đã chọn</span><button type="button" id="clearBar">Bỏ chọn</button></div>
+
+    <div class="bf" title="Đặt phép năm (để trống = giữ nguyên)"><i class="fa-solid fa-calendar-check"></i>
+      <input type="number" name="targetAnnualLeave" id="targetAnnualLeave" form="mainUsersForm" placeholder="Phép năm" step="0.5" min="0" max="40" inputmode="decimal" aria-label="Phép năm mới"></div>
+
+    <div class="bf" title="Đổi phòng ban"><i class="fa-regular fa-building"></i>
+      <select name="targetDepartment" id="targetDepartment" form="mainUsersForm" aria-label="Phòng ban mới">
+        <option value="">Phòng ban</option>
+        <option th:each="d : ${depts}" th:value="${d}" th:text="${d}">Dịch Vụ</option>
+      </select></div>
+
+    <div class="bf" title="Đổi loại công"><i class="fa-regular fa-user"></i>
+      <select name="targetEmployeeType" id="targetEmployeeType" form="mainUsersForm" aria-label="Loại công mới">
+        <option value="">Loại công</option>
+        <option value="CHINH_THUC">Chính thức</option>
+        <option value="THU_VIEC">Thử việc</option>
+        <option value="HOC_VIEC">Học việc</option>
+      </select></div>
+
+    <div class="bf" title="Đổi chức danh"><i class="fa-solid fa-user-shield"></i>
+      <select name="targetIsManager" id="targetIsManager" form="mainUsersForm" aria-label="Chức danh mới">
+        <option value="">Chức danh</option>
+        <option value="true">Trưởng phòng</option>
+        <option value="false">Nhân viên</option>
+      </select></div>
+
+    <button type="submit" form="mainUsersForm" class="btn btn-brand apply"><i class="fa-solid fa-check-double"></i>Áp dụng</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script th:inline="javascript">
+(function () {
+  var SINGLE_URL = /*[[@{/admin/users/single-update}]]*/ '/admin/users/single-update';
+  var FIELDS = ['fullName', 'salaryCode', 'department', 'employeeType', 'annualLeaveDays', 'departmentManager'];
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  var card = $('#usersCard');
+  var rows = $$('tr.row');
+  var PAGE_COUNT = card ? +card.getAttribute('data-page-count') || 0 : 0;
+  var TOTAL = card ? +card.getAttribute('data-total') || 0 : 0;
+
+  // ── Toast ─────────────────────────────────────────────
+  function toast(msg, type) {
+    var el = document.createElement('div');
+    el.className = 'toast ' + (type || 'ok');
+    el.innerHTML = '<i class="fa-solid ' + (type === 'err' ? 'fa-circle-exclamation' : 'fa-circle-check') + '"></i><span></span>';
+    el.lastChild.textContent = msg;
+    $('#toasts').appendChild(el);
+    setTimeout(function () { el.remove(); }, type === 'err' ? 6000 : 2600);
+  }
+
+  // ── Khoảng hiển thị "x–y / N" ─────────────────────────
+  if (card && $('#rangeText') && PAGE_COUNT) {
+    var pg = +card.getAttribute('data-page') || 0, sz = +card.getAttribute('data-size') || 20;
+    var from = pg * sz + 1, to = pg * sz + PAGE_COUNT;
+    $('#rangeText').innerHTML = 'Hiển thị <b>' + from + '–' + to + '</b> / <b>' + TOTAL + '</b> nhân viên';
+  }
+
+  // ═════════ SỬA TRỰC TIẾP TỪNG DÒNG ═════════
+  var f = function (row, name) { return $('.f-' + name, row); };
+  function snapshot(row) { var o = {}; FIELDS.forEach(function (n) { o[n] = f(row, n).value; }); return o; }
+
+  // Màu ảnh đại diện cố định theo tên (mỗi người 1 màu, không đổi giữa các lần tải)
+  // LƯU Ý: không viết hai dấu ngoặc vuông liền nhau trong script th:inline — Thymeleaf sẽ hiểu là biểu thức và báo lỗi 500
+  var AV = [
+    ['#eef2ff','#4338ca'], ['#ecfdf3','#067647'], ['#fff4ed','#c4320a'], ['#eff8ff','#175cd3'],
+    ['#fdf2fa','#c11574'], ['#f4f3ff','#5925dc'], ['#fefbe8','#a15c07'], ['#f0f9ff','#026aa2']
+  ];
+  function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  function paintPills(row) { $$('select.pill', row).forEach(function (s) { s.setAttribute('data-v', s.value); }); }
+
+  rows.forEach(function (row) {
+    row._orig = snapshot(row);
+    var full = f(row, 'fullName').value.trim();
+    var name = full.split(/\s+/).pop() || '?';
+    var av = $('.av', row), c = AV[hash(full) % AV.length];
+    av.textContent = name.charAt(0).toUpperCase();
+    av.style.setProperty('--avb', c[0]); av.style.setProperty('--avc', c[1]);
+    paintPills(row);
+
+    FIELDS.forEach(function (n) {
+      var el = f(row, n);
+      // FIX: nghe cả 'input' lẫn 'change' cho mọi ô — tự điền, dán, mũi tên tăng/giảm số… đều hiện nút Lưu
+      el.addEventListener('input', function () { refreshRow(row); });
+      el.addEventListener('change', function () { refreshRow(row); });
+      // Enter trong ô sửa = lưu dòng (không gửi nhầm form sửa hàng loạt)
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); if (row.classList.contains('dirty')) saveRow(row); }
+        if (e.key === 'Escape') { undoRow(row); el.blur(); }
+      });
+    });
+    $('.save', row).addEventListener('click', function () { saveRow(row); });
+    $('.undo', row).addEventListener('click', function () { undoRow(row); });
+  });
+
+  function refreshRow(row) {
+    paintPills(row);
+    var dirty = false;
+    FIELDS.forEach(function (n) {
+      var el = f(row, n), ch = el.value !== row._orig[n];
+      el.classList.toggle('changed', ch);
+      el.classList.remove('invalid');
+      if (ch) dirty = true;
+    });
+    row.classList.toggle('dirty', dirty);
+    if (dirty) row.classList.remove('saved');
+    refreshDirtyBanner();
+  }
+
+  function undoRow(row) {
+    FIELDS.forEach(function (n) { f(row, n).value = row._orig[n]; });
+    refreshRow(row);
+  }
+
+  function validate(row) {
+    var ok = true, nm = f(row, 'fullName'), lv = f(row, 'annualLeaveDays');
+    if (!nm.value.trim()) { nm.classList.add('invalid'); ok = false; toast('Họ tên không được để trống.', 'err'); }
+    var v = lv.value.trim();
+    if (v !== '') {
+      var x = Number(v);
+      if (!isFinite(x) || x < 0 || x > 40 || Math.round(x * 2) !== x * 2) { lv.classList.add('invalid'); ok = false; toast('Phép năm phải từ 0 đến 40, bước 0.5.', 'err'); }
+    }
+    return ok;
+  }
+
+  function csrfHeaders(h) {
+    var t = $('meta[name="_csrf"]'), n = $('meta[name="_csrf_header"]');
+    if (t && n && t.content) h[n.content] = t.content;
+    return h;
+  }
+
+  function saveRow(row) {
+    if (!row.classList.contains('dirty') || row._saving) return Promise.resolve(true);
+    if (!validate(row)) return Promise.resolve(false);
+    row._saving = true;
+    var btn = $('.save', row); btn.disabled = true;
+    var body = new URLSearchParams();
+    body.append('id', row.getAttribute('data-id'));
+    FIELDS.forEach(function (n) {
+      var v = f(row, n).value;
+      if (n === 'fullName') v = v.trim();
+      if (n === 'annualLeaveDays' && v === '') v = '0';
+      body.append(n, v);
+    });
+    return fetch(SINGLE_URL, { method: 'POST', credentials: 'same-origin',
+                               headers: csrfHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' }), body: body.toString() })
+      .then(function (res) {
+        if (!res.ok) return res.text().then(function (t) { throw new Error(t || ('Mã lỗi ' + res.status)); });
+        row._orig = snapshot(row);
+        refreshRow(row);
+        row.classList.add('saved');
+        setTimeout(function () { row.classList.remove('saved'); }, 2500);
+        return true;
+      })
+      .catch(function (err) {
+        toast('Không lưu được ' + f(row, 'fullName').value + ': ' + (err.message || 'lỗi kết nối').slice(0, 160), 'err');
+        return false;
+      })
+      .then(function (ok) { row._saving = false; btn.disabled = false; return ok; });
+  }
+
+  function dirtyRows() { return rows.filter(function (r) { return r.classList.contains('dirty'); }); }
+  function refreshDirtyBanner() {
+    var n = dirtyRows().length;
+    $('#dirtyN').textContent = n;
+    $('#dirtyBanner').classList.toggle('on', n > 0);
+  }
+
+  var saveAllBtn = $('#saveAll');
+  if (saveAllBtn) saveAllBtn.addEventListener('click', function () {
+    var list = dirtyRows(), okCount = 0, i = 0;
+    if (!list.length) return;
+    saveAllBtn.disabled = true;
+    (function next() {
+      if (i >= list.length) {
+        saveAllBtn.disabled = false;
+        if (okCount) toast('Đã lưu ' + okCount + ' nhân viên.');
+        return;
+      }
+      saveRow(list[i++]).then(function (ok) { if (ok) okCount++; next(); });
+    })();
+  });
+  var undoAllBtn = $('#undoAll');
+  if (undoAllBtn) undoAllBtn.addEventListener('click', function () { dirtyRows().forEach(undoRow); });
+
+  // Cảnh báo khi rời trang mà còn thay đổi chưa lưu
+  window.addEventListener('beforeunload', function (e) {
+    if (dirtyRows().length && !window.__submitting) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // ═════════ CHỌN NHIỀU & SỬA HÀNG LOẠT ═════════
+  var selectAll = $('#selectAll');
+  var allFilteredInput = $('#selectAllFiltered');
+  var isAllFiltered = function () { return allFilteredInput.value === 'true'; };
+  var setAllFiltered = function (v) { allFilteredInput.value = v ? 'true' : 'false'; };
+  var checkedBoxes = function () { return $$('.user-cb:checked'); };
+
+  function updateSel() {
+    var n = checkedBoxes().length, all = isAllFiltered();
+    rows.forEach(function (r) { r.classList.toggle('sel', $('.user-cb', r).checked); });
+    if (selectAll) {
+      selectAll.checked = n > 0 && n === PAGE_COUNT;
+      selectAll.indeterminate = n > 0 && n < PAGE_COUNT;
+    }
+
+    var bar = $('#bulkBar'), on = all || n > 0;
+    bar.classList.toggle('on', on);
+    document.body.classList.toggle('has-bar', on);
+    $('#selCount').textContent = all ? TOTAL : n;
+    $('#selLabel').textContent = all ? 'nhân viên (toàn bộ bộ lọc)' : 'nhân viên đã chọn';
+
+    var banner = $('#selBanner');
+    if (!banner) return;
+    if (all) {
+      banner.classList.add('on');
+      $('#selText').textContent = 'Đã chọn toàn bộ ' + TOTAL + ' nhân viên khớp bộ lọc (kể cả các trang khác).';
+      $('#expandBtn').hidden = true; $('#shrinkBtn').hidden = false;
+    } else if (n > 0 && n === PAGE_COUNT && TOTAL > PAGE_COUNT) {
+      banner.classList.add('on');
+      $('#selText').textContent = 'Đã chọn ' + PAGE_COUNT + ' nhân viên trên trang này.';
+      $('#expandBtn').hidden = false; $('#shrinkBtn').hidden = true;
+      $('#expandBtn').textContent = 'Chọn toàn bộ ' + TOTAL + ' nhân viên khớp bộ lọc';
+    } else {
+      banner.classList.remove('on');
+    }
+  }
+
+  function clearSel() {
+    checkedBoxes().forEach(function (c) { c.checked = false; });
+    setAllFiltered(false);
+    updateSel();
+  }
+
+  if (selectAll) selectAll.addEventListener('change', function () {
+    $$('.user-cb').forEach(function (c) { c.checked = selectAll.checked; });
+    if (!selectAll.checked) setAllFiltered(false);
+    updateSel();
+  });
+  $$('.user-cb').forEach(function (c) {
+    c.addEventListener('change', function () {
+      // Tự bỏ 1 dòng khi đang "chọn toàn bộ theo bộ lọc" → quay về chọn thủ công, tránh sửa nhầm người không nhìn thấy
+      if (isAllFiltered()) setAllFiltered(false);
+      updateSel();
+    });
+  });
+  var eb = $('#expandBtn'), sb = $('#shrinkBtn');
+  if (eb) eb.addEventListener('click', function () { setAllFiltered(true); updateSel(); });
+  if (sb) sb.addEventListener('click', function () { setAllFiltered(false); updateSel(); });
+  ['#clearTop', '#clearBar'].forEach(function (id) { var b = $(id); if (b) b.addEventListener('click', clearSel); });
+
+  window.validateBulkSubmit = function () {
+    var all = isAllFiltered(), n = checkedBoxes().length;
+    if (!all && n === 0) { toast('Vui lòng chọn ít nhất 1 nhân viên.', 'err'); return false; }
+
+    var lv = $('#targetAnnualLeave'), dp = $('#targetDepartment'), tp = $('#targetEmployeeType'), mg = $('#targetIsManager');
+    var lvV = lv.value.trim();
+    if (lvV === '' && !dp.value && !tp.value && !mg.value) {
+      toast('Hãy chọn ít nhất 1 thay đổi: phép, phòng ban, loại công hoặc chức danh.', 'err');
+      return false;
+    }
+    if (lvV !== '') {
+      var x = Number(lvV);
+      if (!isFinite(x) || x < 0 || x > 40) { toast('Số phép năm không hợp lệ (0–40).', 'err'); lv.focus(); return false; }
+    }
+    var ch = [];
+    if (lvV !== '') ch.push('Phép năm → ' + lvV);
+    if (dp.value) ch.push('Phòng ban → ' + dp.options[dp.selectedIndex].text);
+    if (tp.value) ch.push('Loại công → ' + tp.options[tp.selectedIndex].text);
+    if (mg.value) ch.push('Chức danh → ' + mg.options[mg.selectedIndex].text);
+
+    var msg = 'Áp dụng cho ' + (all ? TOTAL + ' nhân viên (toàn bộ theo bộ lọc)' : n + ' nhân viên') + ':\n\n- ' + ch.join('\n- ');
+    if (dirtyRows().length) msg += '\n\nLưu ý: ' + dirtyRows().length + ' dòng đang sửa dở sẽ bị bỏ qua (chưa lưu).';
+    if (!confirm(msg + '\n\nBạn có chắc chắn?')) return false;
+    window.__submitting = true;
+    return true;
+  };
+
+  // Ô nào trong thanh hàng loạt đã chọn giá trị → tô sáng để thấy rõ sẽ đổi gì
+  $$('.bf input, .bf select').forEach(function (el) {
+    var mark = function () { var v = el.value.trim() !== ''; el.parentNode.classList.toggle('set', v); el.classList.toggle('is-empty', !v); };
+    el.addEventListener('input', mark); el.addEventListener('change', mark); mark();
+  });
+
+  // ── Menu ngăn kéo (máy tính bảng / điện thoại)
+  var navBtn = $('#navBtn'), scrim = $('#scrim');
+  function nav(open) { document.body.classList.toggle('nav-open', open); }
+  if (navBtn) navBtn.addEventListener('click', function () { nav(true); });
+  if (scrim) scrim.addEventListener('click', function () { nav(false); });
+
+  // ── Phím tắt: "/" để tìm, Esc đóng menu
+  document.addEventListener('keydown', function (e) {
+    var tag = (document.activeElement && document.activeElement.tagName) || '';
+    if (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(tag)) { e.preventDefault(); var q = $('#q'); if (q) q.focus(); }
+    if (e.key === 'Escape') nav(false);
+  });
+
+  updateSel();
+  refreshDirtyBanner();
+})();
+</script>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

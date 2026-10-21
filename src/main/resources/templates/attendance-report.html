@@ -1,0 +1,353 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="vi" xmlns:th="http://www.thymeleaf.org">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">-->
+<!--    <title>Bảng Công Nhân Viên</title>-->
+<!--    <script src="https://cdn.tailwindcss.com"></script>-->
+<!--    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">-->
+<!--    <style>-->
+<!--    /* ── Bảng: header + 2 cột đầu cố định khi cuộn ── */-->
+<!--    .tbl-wrap { overflow: auto; max-height: calc(100vh - 290px); min-height: 360px; }-->
+<!--    .tbl-card { min-width: 0; max-width: 100%; }-->
+<!--    .tbl { border-collapse: separate; border-spacing: 0; }-->
+<!--    .tbl thead th { position: sticky; top: 0; z-index: 30; }-->
+<!--    .tbl .c-code { position: sticky; left: 0;    z-index: 20; width: 88px;  min-width: 88px; }-->
+<!--    .tbl .c-name { position: sticky; left: 88px; z-index: 20; width: 210px; min-width: 210px; box-shadow: 6px 0 8px -6px rgba(15,23,42,.15); }-->
+<!--    .tbl thead th.c-code, .tbl thead th.c-name { z-index: 40; }-->
+<!--    .tbl .c-day  { width: 58px; min-width: 58px; }-->
+<!--    .tbl .c-sum  { width: 92px; min-width: 92px; }-->
+<!--    .tbl tbody td { border-bottom: 1px solid #eef2f6; border-right: 1px solid #f1f5f9; }-->
+<!--    .tbl tbody tr.emp-row:hover td { background: #f8faff !important; }-->
+<!--    .tbl tbody tr.emp-row:hover td.c-code,-->
+<!--    .tbl tbody tr.emp-row:hover td.c-name { background: #eef2ff !important; }-->
+
+<!--    /* Chủ nhật & hôm nay */-->
+<!--    .is-sun  { background: #fff5f5 !important; }-->
+<!--    .is-today { background: #eef2ff !important; }-->
+<!--    th.is-today { box-shadow: inset 0 -3px 0 #6366f1; }-->
+
+<!--    /* Badge ký hiệu công */-->
+<!--    .cd { display: inline-block; min-width: 26px; padding: 1px 5px; border-radius: 5px; font-size: 10.5px; font-weight: 800; line-height: 1.35; letter-spacing: .02em; }-->
+<!--    .cd-x   { background: #e0f2fe; color: #0369a1; }-->
+<!--    .cd-xn  { background: #dcfce7; color: #15803d; }-->
+<!--    .cd-pn  { background: #ffedd5; color: #c2410c; }-->
+<!--    .cd-cp  { background: #f1f5f9; color: #475569; }-->
+<!--    .cd-le  { background: #f3e8ff; color: #7e22ce; }-->
+<!--    .cd-cdl { background: #ffe4e6; color: #be123c; }-->
+<!--    .cd-raw { background: transparent; color: #334155; font-weight: 700; }-->
+<!--    .cd-nil { color: #cbd5e1; font-weight: 400; }-->
+
+<!--    .chip.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }-->
+
+<!--    .tbl-wrap::-webkit-scrollbar { width: 8px; height: 8px; }-->
+<!--    .tbl-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }-->
+<!--    .tbl-wrap::-webkit-scrollbar-track { background: #f8fafc; }-->
+<!--  </style>-->
+<!--</head>-->
+
+<!--<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen"-->
+<!--      th:with="firstDow=${T(java.time.LocalDate).parse(month + '-01').getDayOfWeek().getValue()},-->
+<!--               isCurMonth=${month == #temporals.format(#temporals.createNow(), 'yyyy-MM')},-->
+<!--               todayDay=${#temporals.createNow().dayOfMonth},-->
+<!--               mm=${#strings.substring(month, 5, 7)},-->
+<!--               yyyy=${#strings.substring(month, 0, 4)},-->
+<!--               knownCodes=${ {'X','XN','PN','CP','LE','CDL'} }">-->
+
+<!--<div class="w-full max-w-[1800px] mx-auto px-3 md:px-6 py-5 md:py-6 space-y-4">-->
+
+<!--    &lt;!&ndash; ═════════════ HEADER ═════════════ &ndash;&gt;-->
+<!--    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">-->
+<!--        <div class="flex items-center gap-3.5">-->
+<!--            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white-->
+<!--                  flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">-->
+<!--                <i class="fa-solid fa-table-cells text-lg"></i>-->
+<!--            </div>-->
+<!--            <div>-->
+<!--                <p class="text-xs font-semibold text-indigo-500 uppercase tracking-widest">Chấm công Hikvision</p>-->
+<!--                <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">-->
+<!--                    Bảng công tháng <span th:text="${mm + '/' + yyyy}">09/2026</span>-->
+<!--                </h1>-->
+<!--            </div>-->
+<!--        </div>-->
+
+<!--        <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">-->
+<!--            <a href="javascript:history.back()"-->
+<!--               class="h-10 px-3.5 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm flex items-center gap-2">-->
+<!--                <i class="fa-solid fa-arrow-left text-slate-400"></i> Quay lại-->
+<!--            </a>-->
+<!--            <form method="get" th:action="@{/attendance/report}" class="flex items-center gap-2 flex-1 lg:flex-none">-->
+<!--                <div class="relative flex-1 lg:flex-none">-->
+<!--                    <i class="fa-regular fa-calendar absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>-->
+<!--                    <input type="month" name="month" th:value="${month}" onchange="this.form.submit()"-->
+<!--                           class="h-10 w-full lg:w-44 pl-8 pr-3 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 bg-white shadow-sm-->
+<!--                        focus:outline-none focus:ring-2 focus:ring-indigo-300 transition">-->
+<!--                </div>-->
+<!--                <button type="submit"-->
+<!--                        class="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-sm font-bold rounded-lg shadow-sm shadow-indigo-100 transition flex items-center gap-2">-->
+<!--                    <i class="fa-solid fa-magnifying-glass"></i><span class="hidden sm:inline">Xem công</span>-->
+<!--                </button>-->
+<!--            </form>-->
+<!--            <a th:href="@{/attendance/export(month=${month})}"-->
+<!--               class="h-10 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-sm font-bold rounded-lg shadow-sm shadow-emerald-100 transition flex items-center gap-2">-->
+<!--                <i class="fa-solid fa-file-excel"></i> Xuất Excel-->
+<!--            </a>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; ═════════════ KPI (tính theo các dòng đang hiển thị) ═════════════ &ndash;&gt;-->
+<!--    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">-->
+<!--        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center gap-3">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-users"></i></div>-->
+<!--            <div class="min-w-0">-->
+<!--                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nhân viên</div>-->
+<!--                <div class="text-xl font-black text-slate-800" id="kEmp">0</div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="bg-white rounded-2xl border border-indigo-200 p-4 shadow-sm flex items-center gap-3">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-sack-dollar"></i></div>-->
+<!--            <div class="min-w-0">-->
+<!--                <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-500">TB công hưởng lương</div>-->
+<!--                <div class="text-xl font-black text-indigo-600" id="kAvg">0</div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="bg-white rounded-2xl border border-orange-200 p-4 shadow-sm flex items-center gap-3">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-umbrella-beach"></i></div>-->
+<!--            <div class="min-w-0">-->
+<!--                <div class="text-[10px] font-bold uppercase tracking-wider text-orange-500">Tổng công phép</div>-->
+<!--                <div class="text-xl font-black text-orange-600" id="kLeave">0</div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="bg-white rounded-2xl border border-rose-200 p-4 shadow-sm flex items-center gap-3">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div>-->
+<!--            <div class="min-w-0">-->
+<!--                <div class="text-[10px] font-bold uppercase tracking-wider text-rose-500">Tổng buổi lỗi</div>-->
+<!--                <div class="text-xl font-black text-rose-600" id="kViol">0</div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="bg-white rounded-2xl border border-red-200 p-4 shadow-sm flex items-center gap-3 col-span-2 lg:col-span-1">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-money-bill-wave"></i></div>-->
+<!--            <div class="min-w-0">-->
+<!--                <div class="text-[10px] font-bold uppercase tracking-wider text-red-500">Tổng tiền phạt</div>-->
+<!--                <div class="text-xl font-black text-red-600 truncate" id="kFine">0 đ</div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; ═════════════ TOOLBAR ═════════════ &ndash;&gt;-->
+<!--    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-3 flex flex-col xl:flex-row xl:items-center gap-3">-->
+<!--        <div class="relative flex-1 min-w-[220px]">-->
+<!--            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>-->
+<!--            <input type="text" id="searchInput" placeholder="Tìm mã nhân viên hoặc họ tên..."-->
+<!--                   class="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 bg-slate-50/60 text-sm font-medium-->
+<!--                    focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:bg-white transition">-->
+<!--        </div>-->
+<!--        <select id="deptFilter"-->
+<!--                class="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/60 text-sm font-semibold text-slate-700-->
+<!--                   focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:bg-white transition xl:w-56">-->
+<!--            <option value="">Tất cả phòng ban</option>-->
+<!--        </select>-->
+<!--        <div class="flex flex-wrap gap-1.5 text-xs font-bold">-->
+<!--            <button type="button" data-f="ALL"  class="chip active h-10 px-3 rounded-lg border border-slate-200 bg-white text-slate-600 transition">Tất cả</button>-->
+<!--            <button type="button" data-f="VIOL" class="chip h-10 px-3 rounded-lg border border-slate-200 bg-white text-slate-600 transition"><i class="fa-solid fa-triangle-exclamation mr-1 text-rose-400"></i>Có lỗi</button>-->
+<!--            <button type="button" data-f="FINE" class="chip h-10 px-3 rounded-lg border border-slate-200 bg-white text-slate-600 transition"><i class="fa-solid fa-money-bill-wave mr-1 text-red-400"></i>Bị phạt</button>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; ═════════════ BẢNG CÔNG ═════════════ &ndash;&gt;-->
+<!--    <div class="tbl-card bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">-->
+<!--        <div class="tbl-wrap overflow-auto">-->
+<!--            <table class="tbl w-max min-w-full text-center">-->
+<!--                <thead>-->
+<!--                <tr class="text-[11px] font-extrabold uppercase tracking-wider">-->
+<!--                    <th class="c-code bg-slate-900 text-slate-300 px-3 py-3 text-left">Mã NV</th>-->
+<!--                    <th class="c-name bg-slate-900 text-slate-300 px-3 py-3 text-left">Họ tên</th>-->
+
+<!--                    <th th:each="i : ${#numbers.sequence(1, days)}"-->
+<!--                        th:with="dow=${(firstDow + i - 2) % 7 + 1}"-->
+<!--                        th:classappend="${isCurMonth and i == todayDay} ? 'is-today' : (${dow == 7} ? 'is-sun' : '')"-->
+<!--                        class="c-day bg-white border-b border-slate-200 border-r border-r-slate-100 py-2 normal-case tracking-normal"-->
+<!--                        th:data-day="${i}">-->
+<!--                        <div class="text-[15px] font-black leading-none"-->
+<!--                             th:classappend="${dow == 7} ? 'text-rose-600' : (${isCurMonth and i == todayDay} ? 'text-indigo-600' : 'text-slate-800')"-->
+<!--                             th:text="${i}">1</div>-->
+<!--                        <div class="text-[10px] font-bold mt-0.5"-->
+<!--                             th:classappend="${dow == 7} ? 'text-rose-400' : 'text-slate-400'"-->
+<!--                             th:text="${dow == 7 ? 'CN' : 'T' + (dow + 1)}">T2</div>-->
+<!--                    </th>-->
+
+<!--                    <th class="c-sum bg-slate-800 text-slate-300 px-2 py-3" title="Công đi làm thực tế">Đi làm</th>-->
+<!--                    <th class="c-sum bg-slate-800 text-emerald-300 px-2 py-3" title="Công được xác nhận qua giải trình">Xác nhận</th>-->
+<!--                    <th class="c-sum bg-slate-800 text-orange-300 px-2 py-3" title="Công nghỉ phép năm">Phép năm</th>-->
+<!--                    <th class="c-sum bg-slate-800 text-purple-300 px-2 py-3" title="Công ngày lễ">Ngày lễ</th>-->
+<!--                    <th class="c-sum bg-indigo-950 text-amber-300 px-2 py-3" title="Tổng công hưởng lương">Tổng công</th>-->
+<!--                    <th class="c-sum bg-rose-950 text-rose-300 px-2 py-3" title="Số buổi vi phạm">Lỗi</th>-->
+<!--                    <th class="bg-rose-950 text-rose-200 px-3 py-3 min-w-[120px]" title="Tiền phạt (VND)">Tiền phạt</th>-->
+<!--                </tr>-->
+<!--                </thead>-->
+
+<!--                <tbody id="attendanceTable" class="text-sm">-->
+<!--                <th:block th:each="row, it : ${report}">-->
+
+<!--                    &lt;!&ndash; Dòng phòng ban (report đã sort theo phòng ban trong controller) &ndash;&gt;-->
+<!--                    <tr class="dept-row" th:if="${it.index == 0 or row.department != report[it.index - 1].department}"-->
+<!--                        th:with="deptName=${row.department != null and !#strings.isEmpty(row.department) ? row.department : 'Chưa phân phòng ban'}"-->
+<!--                        th:data-dept="${deptName}">-->
+<!--                        <td th:colspan="${days + 9}" class="bg-slate-100 border-y border-slate-200 px-3 py-2 text-left">-->
+<!--              <span class="sticky left-3 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-600">-->
+<!--                <i class="fa-regular fa-building text-indigo-400"></i>-->
+<!--                <span th:text="${deptName}">Phòng ban</span>-->
+<!--                <span class="dept-count px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] text-slate-500 normal-case tracking-normal">0</span>-->
+<!--              </span>-->
+<!--                        </td>-->
+<!--                    </tr>-->
+
+<!--                    <tr class="emp-row"-->
+<!--                        th:data-dept="${row.department != null and !#strings.isEmpty(row.department) ? row.department : 'Chưa phân phòng ban'}"-->
+<!--                        th:data-work="${row.totalWorkDays != null ? row.totalWorkDays : 0}"-->
+<!--                        th:data-leave="${row.totalLeaveDays != null ? row.totalLeaveDays : 0}"-->
+<!--                        th:data-viol="${row.violationCount != null ? row.violationCount : 0}"-->
+<!--                        th:data-fine="${row.fineAmount != null ? row.fineAmount : 0}">-->
+
+<!--                        <td class="c-code bg-white px-3 py-2 text-left font-mono text-xs font-bold text-slate-500" th:text="${row.employeeNo}">NV001</td>-->
+<!--                        <td class="c-name bg-white px-3 py-2 text-left">-->
+<!--                            <div class="font-bold text-slate-800 truncate max-w-[190px]" th:text="${row.fullName}" th:title="${row.fullName}">Nguyễn Văn A</div>-->
+<!--                        </td>-->
+
+<!--                        <td th:each="i : ${#numbers.sequence(1, days)}"-->
+<!--                            th:with="cellData=${row.dailyData != null ? row.dailyData.get(i.toString()) : null},-->
+<!--                         dow=${(firstDow + i - 2) % 7 + 1},-->
+<!--                         mText=${cellData != null ? (cellData.get('confirmMorning') ?: cellData.get('morning')) : null},-->
+<!--                         aText=${cellData != null ? (cellData.get('confirmAfternoon') ?: cellData.get('afternoon')) : null},-->
+<!--                         mv=${mText != null ? #strings.trim(mText) : ''},-->
+<!--                         av=${aText != null ? #strings.trim(aText) : ''}"-->
+<!--                            th:classappend="${isCurMonth and i == todayDay} ? 'is-today' : (${dow == 7} ? 'is-sun' : '')"-->
+<!--                            class="c-day px-1 py-1.5">-->
+<!--                            <div class="flex flex-col items-center gap-1">-->
+<!--                <span class="cd" th:text="${mv == '' or mv == '-' ? '–' : mv}"-->
+<!--                      th:classappend="${mv == '' or mv == '-' ? 'cd-nil' : (#lists.contains(knownCodes, mv) ? 'cd-' + #strings.toLowerCase(mv) : 'cd-raw')}">X</span>-->
+<!--                                <span class="cd" th:text="${av == '' or av == '-' ? '–' : av}"-->
+<!--                                      th:classappend="${av == '' or av == '-' ? 'cd-nil' : (#lists.contains(knownCodes, av) ? 'cd-' + #strings.toLowerCase(av) : 'cd-raw')}">X</span>-->
+<!--                            </div>-->
+<!--                        </td>-->
+
+<!--                        <td class="c-sum font-bold text-slate-600" th:text="${row.totalActualWorkDays}">0.0</td>-->
+<!--                        <td class="c-sum font-bold text-emerald-600" th:text="${row.totalConfirmWorkDays}">0.0</td>-->
+<!--                        <td class="c-sum font-bold text-orange-600" th:text="${row.totalLeaveDays}">0.0</td>-->
+<!--                        <td class="c-sum font-bold text-purple-600" th:text="${row.totalHolidayDays}">0.0</td>-->
+<!--                        <td class="c-sum bg-indigo-50/60">-->
+<!--                            <span class="text-base font-black text-indigo-700" th:text="${row.totalWorkDays}">0.0</span>-->
+<!--                        </td>-->
+<!--                        <td class="c-sum">-->
+<!--              <span th:if="${row.violationCount != null and row.violationCount > 0}"-->
+<!--                    class="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 text-xs font-black"-->
+<!--                    th:text="${row.violationCount}">2</span>-->
+<!--                            <span th:unless="${row.violationCount != null and row.violationCount > 0}" class="text-slate-300">0</span>-->
+<!--                        </td>-->
+<!--                        <td class="px-3 text-right font-mono text-sm"-->
+<!--                            th:classappend="${row.fineAmount != null and row.fineAmount > 0} ? 'font-black text-red-600 bg-red-50/60' : 'text-slate-300'"-->
+<!--                            th:text="${row.fineAmount != null ? #numbers.formatDecimal(row.fineAmount, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">0 đ</td>-->
+<!--                    </tr>-->
+<!--                </th:block>-->
+<!--                </tbody>-->
+<!--            </table>-->
+
+<!--            <div id="emptyState" class="hidden py-16 text-center">-->
+<!--                <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">-->
+<!--                    <i class="fa-solid fa-user-slash text-xl text-slate-400"></i>-->
+<!--                </div>-->
+<!--                <p class="font-semibold text-slate-600">Không có nhân viên phù hợp</p>-->
+<!--                <p class="text-sm text-slate-400 mt-1">Thử đổi từ khóa hoặc bộ lọc.</p>-->
+<!--            </div>-->
+<!--            <div th:if="${#lists.isEmpty(report)}" class="py-16 text-center">-->
+<!--                <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">-->
+<!--                    <i class="fa-regular fa-calendar-xmark text-xl text-slate-400"></i>-->
+<!--                </div>-->
+<!--                <p class="font-semibold text-slate-600">Chưa có dữ liệu công cho tháng này</p>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; ═════════════ CHÚ THÍCH ═════════════ &ndash;&gt;-->
+<!--    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-slate-500">-->
+<!--        <span class="font-bold text-slate-700"><i class="fa-solid fa-circle-info text-indigo-400 mr-1"></i>Chú thích (trên: sáng · dưới: chiều)</span>-->
+<!--        <span class="flex items-center gap-1.5"><span class="cd cd-x">X</span> Đi làm</span>-->
+<!--        <span class="flex items-center gap-1.5"><span class="cd cd-xn">XN</span> Đã xác nhận</span>-->
+<!--        <span class="flex items-center gap-1.5"><span class="cd cd-pn">PN</span> Phép năm</span>-->
+<!--        <span class="flex items-center gap-1.5"><span class="cd cd-le">LE</span> Ngày lễ</span>-->
+<!--        <span class="flex items-center gap-1.5"><span class="cd cd-cdl">CDL</span> Nghỉ chế độ lương</span>-->
+<!--        <span class="flex items-center gap-1.5"><span class="cd cd-nil">–</span> Không có công</span>-->
+<!--        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-100 border border-rose-200"></span> Chủ nhật</span>-->
+<!--        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-indigo-100 border border-indigo-200"></span> Hôm nay</span>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<script>-->
+<!--  const rows = [...document.querySelectorAll('#attendanceTable tr.emp-row')];-->
+<!--  const deptRows = [...document.querySelectorAll('#attendanceTable tr.dept-row')];-->
+<!--  const searchInput = document.getElementById('searchInput');-->
+<!--  const deptFilter = document.getElementById('deptFilter');-->
+<!--  let quick = 'ALL';-->
+
+<!--  // Dropdown phòng ban lấy từ dữ liệu-->
+<!--  [...new Set(rows.map(r => r.dataset.dept))].forEach(d => deptFilter.add(new Option(d, d)));-->
+
+<!--  const num = v => parseFloat(v) || 0;-->
+<!--  const fmt1 = v => (Math.round(v * 10) / 10).toLocaleString('vi-VN');-->
+<!--  const fmtMoney = v => Math.round(v).toLocaleString('vi-VN') + ' đ';-->
+
+<!--  // Bỏ dấu tiếng Việt để tìm "nguyen van a" vẫn ra "Nguyễn Văn A"-->
+<!--  const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').trim();-->
+<!--  rows.forEach(r => r._key = norm(r.children[0].innerText + ' ' + r.children[1].innerText));-->
+
+<!--  function apply() {-->
+<!--    const kw = norm(searchInput.value);-->
+<!--    const dept = deptFilter.value;-->
+<!--    let n = 0, work = 0, leave = 0, viol = 0, fine = 0;-->
+<!--    const perDept = {};-->
+
+<!--    rows.forEach(r => {-->
+<!--      const show = (!kw || r._key.includes(kw))-->
+<!--        && (!dept || r.dataset.dept === dept)-->
+<!--        && (quick === 'ALL' || (quick === 'VIOL' && num(r.dataset.viol) > 0) || (quick === 'FINE' && num(r.dataset.fine) > 0));-->
+<!--      r.style.display = show ? '' : 'none';-->
+<!--      if (show) {-->
+<!--        n++; work += num(r.dataset.work); leave += num(r.dataset.leave);-->
+<!--        viol += num(r.dataset.viol); fine += num(r.dataset.fine);-->
+<!--        perDept[r.dataset.dept] = (perDept[r.dataset.dept] || 0) + 1;-->
+<!--      }-->
+<!--    });-->
+
+<!--    deptRows.forEach(d => {-->
+<!--      const c = perDept[d.dataset.dept] || 0;-->
+<!--      d.style.display = c ? '' : 'none';-->
+<!--      d.querySelector('.dept-count').textContent = c + ' người';-->
+<!--    });-->
+
+<!--    document.getElementById('kEmp').textContent = n;-->
+<!--    document.getElementById('kAvg').textContent = n ? fmt1(work / n) : '0';-->
+<!--    document.getElementById('kLeave').textContent = fmt1(leave);-->
+<!--    document.getElementById('kViol').textContent = viol.toLocaleString('vi-VN');-->
+<!--    document.getElementById('kFine').textContent = fmtMoney(fine);-->
+<!--    document.getElementById('emptyState').classList.toggle('hidden', n > 0 || rows.length === 0);-->
+<!--  }-->
+
+<!--  searchInput.addEventListener('input', apply);-->
+<!--  deptFilter.addEventListener('change', apply);-->
+<!--  document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {-->
+<!--    document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));-->
+<!--    b.classList.add('active');-->
+<!--    quick = b.dataset.f;-->
+<!--    apply();-->
+<!--  }));-->
+<!--  apply();-->
+
+<!--  // Tự cuộn tới cột hôm nay-->
+<!--  const todayTh = document.querySelector('thead th.is-today');-->
+<!--  if (todayTh) {-->
+<!--    const wrap = document.querySelector('.tbl-wrap');-->
+<!--    wrap.scrollLeft = Math.max(0, todayTh.offsetLeft - 298 - wrap.clientWidth / 3);-->
+<!--  }-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->

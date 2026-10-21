@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{salary/fragments :: head('Cấu hình lương')}"></head>
+<body>
+<nav th:replace="~{salary/fragments :: nav('config')}"></nav>
+
+<div class="container pb-5" style="max-width: 1100px">
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <a th:href="@{/salary-config(department=${user.department})}" class="btn btn-sm btn-outline-secondary">&larr; Danh sách</a>
+        <h4 class="mb-0">
+            <span th:text="${user.fullName}"></span>
+            <small class="text-muted fw-normal"
+                   th:text="${(user.employeeNo != null ? user.employeeNo : '') + (user.department != null ? ' · ' + user.department : '')}"></small>
+        </h4>
+        <a class="btn btn-sm btn-outline-success ms-auto" target="_blank"
+           th:href="@{/salary-forecast/slip(userId=${user.id})}">Xem phiếu dự kiến</a>
+    </div>
+
+    <div th:if="${!#lists.isEmpty(errors)}" class="alert alert-danger">
+        <b>Chưa lưu được, vui lòng sửa:</b>
+        <ul class="mb-0 mt-1"><li th:each="e : ${errors}" th:text="${e}"></li></ul>
+    </div>
+
+    <form th:action="@{/salary-config/save}" method="post" id="cfgForm">
+        <input type="hidden" name="userId" th:value="${user.id}">
+
+        <!-- ======================= 1. THÔNG TIN LƯƠNG ======================= -->
+        <h5 class="step-title"><span class="step">1</span> Thông tin lương
+            <small class="text-muted fw-normal">nhập theo ĐỒNG, VD 5.610.000</small></h5>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Lương cơ bản</label>
+                        <input name="luongCoBan_x" class="form-control money" th:value="${row.cell('luongCoBan')}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Lương đóng BHXH <span class="text-muted small">(trống = lương CB)</span></label>
+                        <input name="luongDongBhxh_x" class="form-control money" th:value="${row.cell('luongDongBhxh')}">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">Người phụ thuộc</label>
+                        <input type="number" min="0" name="soNguoiPhuThuoc_x" class="form-control" th:value="${row.cell('soNguoiPhuThuoc')}">
+                    </div>
+                    <div class="col-6 col-md-2 d-flex flex-column justify-content-end gap-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="thamGiaBhxh" id="bhxh"
+                                   th:checked="${cfg.thamGiaBhxh == null or cfg.thamGiaBhxh}">
+                            <label class="form-check-label" for="bhxh">Đóng BHXH</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="thamGiaCongDoan" id="cd"
+                                   th:checked="${cfg.thamGiaCongDoan == null or cfg.thamGiaCongDoan}">
+                            <label class="form-check-label" for="cd">Đóng công đoàn</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sub-title">Phụ cấp hằng tháng <span class="text-muted fw-normal">(trống = không có)</span></div>
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">Thâm niên hàng năm</label>
+                        <input name="phuCapThamNien_x" class="form-control money" th:value="${row.cell('phuCapThamNien')}">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">Thâm niên 10 năm</label>
+                        <input name="thamNien5Nam_x" class="form-control money" th:value="${row.cell('thamNien5Nam')}">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">Phụ cấp Level</label>
+                        <input name="phuCapLevel_x" class="form-control money" th:value="${row.cell('phuCapLevel')}">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">PC kiêm nhiệm</label>
+                        <input name="phuCapKiemNhiem_x" class="form-control money" th:value="${row.cell('phuCapKiemNhiem')}">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">Trách nhiệm (mức)</label>
+                        <input name="mucTrachNhiem_x" class="form-control money" th:value="${row.cell('mucTrachNhiem')}">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">HS trách nhiệm</label>
+                        <div class="input-group">
+                            <input name="heSoTrachNhiemPct_x" class="form-control" placeholder="100" th:value="${row.cell('heSoTrachNhiemPct')}">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">Ký quỹ (trừ hằng tháng)</label>
+                        <input name="kyQuy_x" class="form-control money" th:value="${row.cell('kyQuy')}">
+                    </div>
+                </div>
+
+                <details class="mt-3" th:open="${row.cell('trachNhiemCoDinh') != '' or row.cell('bhxhCoDinh') != '' or row.cell('congDoanCoDinh') != '' or row.cell('thueTncnCoDinh') != ''}">
+                    <summary class="small text-muted">Nhập số cố định thay cho công thức (ít dùng, để trống = tự tính)</summary>
+                    <div class="row g-3 mt-1">
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small">T.Nhiệm được nhận</label>
+                            <input name="trachNhiemCoDinh_x" class="form-control money" th:value="${row.cell('trachNhiemCoDinh')}" placeholder="tự tính">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small">Bảo hiểm xã hội</label>
+                            <input name="bhxhCoDinh_x" class="form-control money" th:value="${row.cell('bhxhCoDinh')}" placeholder="tự tính">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small">Công đoàn</label>
+                            <input name="congDoanCoDinh_x" class="form-control money" th:value="${row.cell('congDoanCoDinh')}" placeholder="tự tính">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small">Thuế TNCN</label>
+                            <input name="thueTncnCoDinh_x" class="form-control money" th:value="${row.cell('thueTncnCoDinh')}" placeholder="tự tính">
+                        </div>
+                    </div>
+                </details>
+                <div class="small text-muted mt-2">Thưởng, phạt, tạm ứng, rủi ro thay đổi từng tháng: nhập ở
+                    <a th:href="@{/salary-monthly(department=${user.department})}">Khoản theo tháng</a>.</div>
+            </div>
+        </div>
+
+        <!-- ======================= 2. MẪU CÔNG THỨC ======================= -->
+        <h5 class="step-title"><span class="step">2</span> Mẫu công thức</h5>
+
+        <div class="card border-primary">
+            <div class="card-body">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-6">
+                        <select name="formula_x" id="tpl" class="form-select" th:attr="data-dept-tpl=${row.deptTemplate?.id}">
+                            <option value="" th:text="${row.deptTemplate != null} ? '-- Theo phòng ban: ' + ${row.deptTemplateName} + ' --' : '-- Chưa chọn (không tính lương) --'"></option>
+                            <option th:each="t : ${allTemplates}"
+                                    th:if="${t.activeOrDefault() or t.id == row.formulaId}"
+                                    th:value="${t.id}" th:selected="${t.id == row.formulaId}"
+                                    th:text="${T(com.example.hrm.service.SalaryFormulaService).templateName(t)} + (${t.activeOrDefault()} ? '' : ' (đang tắt)')"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 small text-muted">
+                        Nhân viên kế thừa toàn bộ công thức của mẫu.
+                        <a th:if="${row.effectiveFormulaId != null}" th:href="@{/salary-formula/edit(id=${row.effectiveFormulaId})}">Mở mẫu</a>
+                    </div>
+                </div>
+                <div id="noTpl" class="text-danger small mt-2" style="display:none">Chưa có mẫu công thức: nhân viên sẽ KHÔNG được tính lương.</div>
+                <details class="mt-2" id="inheritedBox">
+                    <summary class="small">Xem các hạng mục kế thừa từ mẫu <span id="tplName" class="text-primary"></span></summary>
+                    <table class="table table-sm table-bordered mb-0 mt-2 inherited"><tbody id="inherited"></tbody></table>
+                </details>
+            </div>
+        </div>
+
+        <!-- ======================= 3. TỈ LỆ RIÊNG ======================= -->
+        <h5 class="step-title"><span class="step">3</span> Cách tính thưởng
+            <small class="text-muted fw-normal">số nhập hằng tháng ở Khoản theo tháng (doanh số, số thưởng...) đi qua cách tính dưới đây</small></h5>
+
+        <div class="card">
+            <div class="card-body">
+                <table class="table table-sm align-middle mb-2 bonus-table">
+                    <thead>
+                    <tr>
+                        <th style="width:26%">Khoản thưởng</th>
+                        <th style="width:24%">Cách tính</th>
+                        <th>Giá trị</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="b : ${bonusRates}" class="bonus-row"
+                        th:with="mode=${row.rate(b.modeKey)}"
+                        th:attr="data-mode=${mode == '1' or mode == '2'} ? ${mode} : '0'">
+                        <td class="fw-semibold" th:text="${b.label}"></td>
+                        <td>
+                            <select class="form-select form-select-sm bonus-mode" th:name="'tyle_x_' + ${b.modeKey}">
+                                <option value="" th:selected="${mode != '1' and mode != '2'}">Số nhập tháng × tỉ lệ</option>
+                                <option value="1" th:selected="${mode == '1'}">Số tiền cố định</option>
+                                <option value="2" th:selected="${mode == '2'}">Công thức riêng</option>
+                            </select>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <!-- tỉ lệ: dùng ở cách 0 và có thể dùng trong công thức (biến tyLe) -->
+                                <div class="input-group input-group-sm m m0 m2" style="width:150px">
+                                    <span class="input-group-text">tỉ lệ</span>
+                                    <input class="form-control rate bonus-rate"
+                                           th:name="'tyle_x_' + ${b.name}" th:value="${row.rate(b.name)}"
+                                           th:placeholder="${bonusDefaults.get(row.effectiveFormulaId)?.get(b.name) ?: '100%'}"
+                                           th:attr="data-param=${b.name}">
+                                </div>
+                                <div class="m m1 m2" style="width:170px">
+                                    <input class="form-control form-control-sm money"
+                                           th:name="'tyle_x_' + ${b.fixedKey}" th:value="${row.money(b.fixedKey)}"
+                                           placeholder="số tiền cố định">
+                                </div>
+                                <div class="m m2 flex-grow-1" style="min-width:220px">
+                                    <input class="form-control form-control-sm mono"
+                                           th:name="'tyle_x_' + ${b.formulaKey}" th:value="${row.rate(b.formulaKey)}"
+                                           placeholder="VD: nhap * tyLe + 500000">
+                                </div>
+                            </div>
+                            <div class="small text-muted mt-1 m m0">= số nhập tháng × tỉ lệ (trống = mặc định)</div>
+                            <div class="small text-muted mt-1 m m1">tháng nào nhập số ở Khoản theo tháng thì dùng số đó thay mức cố định</div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <details class="small">
+                    <summary>Cách viết công thức riêng</summary>
+                    <div class="mt-2">
+                        Dùng <code>+ - * / ( )</code> và <code>%</code> như Excel. Biến có sẵn:
+                        <code>nhap</code> (số nhập tháng ở Khoản theo tháng),
+                        <code>tyLe</code> (ô tỉ lệ bên cạnh),
+                        <code>coDinh</code> (ô số tiền cố định),
+                        <code>tyLeCong</code> (công HL / công chuẩn), <code>congHL</code>, <code>luongCoBan</code>.
+                        <div class="mt-1">Ví dụ:</div>
+                        <ul class="mb-0">
+                            <li><code>nhap * 2% + 500000</code>: 2% doanh số + 500.000</li>
+                            <li><code>nhap * tyLe - 200000</code>: theo tỉ lệ rồi trừ 200.000</li>
+                            <li><code>coDinh * tyLeCong</code>: số cố định nhưng chia theo ngày công</li>
+                            <li><code>nhap * 3% + coDinh</code>: 3% doanh số + phần cố định</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <div id="otherRates" class="mt-3">
+                    <div class="small fw-semibold mb-1">Tỉ lệ khác của mẫu <span class="text-muted fw-normal">(trống = mặc định)</span></div>
+                    <div id="rates">
+                        <th:block th:if="${row.effectiveFormulaId != null}">
+                            <span th:each="p : ${templateParams.get(row.effectiveFormulaId)}" class="rate-box">
+                                <label class="small text-muted" th:text="${p.display()}"></label>
+                                <input class="form-control form-control-sm rate" style="width:110px"
+                                       th:name="'tyle_x_' + ${p.name()}" th:value="${row.rate(p.name())}"
+                                       th:placeholder="${p.expression()}" th:attr="data-param=${p.name()}">
+                            </span>
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= GHI CHÚ + NÂNG CAO ================= -->
+        <div class="card">
+            <div class="card-body">
+                <label class="form-label small">Ghi chú</label>
+                <input name="ghiChu" class="form-control" th:value="${cfg.ghiChu}">
+                <details class="mt-2" th:open="${cfg.thamSoRieng != null and !#strings.isEmpty(cfg.thamSoRieng.trim())}">
+                    <summary class="small text-muted">Tham số riêng nâng cao (thường không cần)</summary>
+                    <div class="small text-muted mt-1">Mỗi dòng <code>ten = giá trị</code>, áp dụng sau tỉ lệ riêng.</div>
+                    <textarea name="thamSoRieng" class="form-control mono mt-1" rows="2" th:text="${cfg.thamSoRieng}"></textarea>
+                </details>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-primary">Lưu</button>
+            <a th:href="@{/salary-config(department=${user.department})}" class="btn btn-outline-secondary">Huỷ</a>
+        </div>
+    </form>
+</div>
+
+<th:block th:replace="~{salary/fragments :: scripts}"></th:block>
+<style>
+    input.money { text-align: right; font-variant-numeric: tabular-nums; }
+    .rate-box { display: inline-flex; flex-direction: column; margin: 0 .5rem .5rem 0; vertical-align: top; }
+    .slip-hint { font-size: .72rem; color: #6c757d; text-align: right; min-height: 1em; }
+    .slip-hint.warn { color: #b42318; font-weight: 600; }
+    input.money.warn { border-color: #dc3545; background: #fff5f5; }
+    .step-title { margin: 1.5rem 0 .6rem; display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+    .step { display: inline-flex; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: #0d6efd; color: #fff;
+            align-items: center; justify-content: center; font-size: .9rem; align-self: center; }
+    .sub-title { font-size: .85rem; font-weight: 600; margin: 1.25rem 0 .5rem; padding-top: .75rem; border-top: 1px solid #e9ecef; }
+    table.inherited td { font-size: .8rem; }
+    table.inherited td:first-child { width: 34%; }
+    details > summary { cursor: pointer; }
+</style>
+<script th:inline="javascript">
+    const TEMPLATES = /*[[${templateJson}]]*/ [];
+    const byId = {};
+    TEMPLATES.forEach(t => byId[t.id] = t);
+    function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    const tpl = document.getElementById('tpl');
+    const currentTpl = () => byId[tpl.value || tpl.dataset.deptTpl];
+
+    // ---- 2. hạng mục kế thừa từ mẫu (chỉ xem) ----
+    function renderInherited() {
+        const t = currentTpl();
+        document.getElementById('noTpl').style.display = t ? 'none' : '';
+        document.getElementById('inheritedBox').style.display = t ? '' : 'none';
+        document.getElementById('tplName').textContent = t ? t.name : '';
+        if (!t) return;
+        document.getElementById('inherited').innerHTML = t.items.map(it =>
+            '<tr><td>' + esc(it.label) + '</td>' +
+            '<td class="mono">' + (it.expr ? esc(it.expr) : '<span class="text-muted fst-italic">' + esc(it.fallback) + '</span>') + '</td></tr>'
+        ).join('');
+    }
+
+    // ---- 3. đổi mẫu -> đổi ô tỉ lệ khác + mặc định tỉ lệ thưởng ----
+    const keep = {};
+    function renderRates() {
+        const box = document.getElementById('rates');
+        box.querySelectorAll('input.rate').forEach(i => keep[i.dataset.param] = i.value);
+        const t = currentTpl();
+        document.querySelectorAll('input.bonus-rate').forEach(i =>
+            i.placeholder = (t && t.bonusDefaults[i.dataset.param]) || '100%');
+        const params = t ? t.params : [];
+        document.getElementById('otherRates').style.display = params.length ? '' : 'none';
+        box.innerHTML = params.map(p =>
+            '<span class="rate-box"><label class="small text-muted">' + esc(p.label) + '</label>' +
+            '<input class="form-control form-control-sm rate" style="width:110px" name="tyle_x_' + esc(p.name) +
+            '" data-param="' + esc(p.name) + '" placeholder="' + esc(p.def) + '" value="' + esc(keep[p.name] || '') + '"></span>'
+        ).join('');
+    }
+
+    // ---- 3. cách tính thưởng: chỉ hiện ô của cách đang chọn ----
+    function showMode(tr) {
+        const mode = tr.querySelector('select.bonus-mode').value || '0';
+        tr.querySelectorAll('.m').forEach(el => el.style.display = el.classList.contains('m' + mode) ? '' : 'none');
+    }
+    document.querySelectorAll('tr.bonus-row').forEach(tr => {
+        tr.querySelector('select.bonus-mode').addEventListener('change', () => showMode(tr));
+        showMode(tr);
+    });
+
+    tpl.addEventListener('change', () => { renderRates(); renderInherited(); });
+    renderInherited();
+    document.getElementById('otherRates').style.display =
+        document.querySelectorAll('#rates input.rate').length ? '' : 'none';
+
+    // ---- số tiền: định dạng + đối chiếu "→ thẻ lương" (nghìn đồng) + cảnh báo gõ nhầm đơn vị ----
+    function parseVN(s) {
+        s = (s || '').trim().replace(/\s/g, '');
+        if (!s) return null;
+        if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+        else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, '');
+        else s = s.replace(',', '.');
+        const n = Number(s);
+        return isNaN(n) ? NaN : n;
+    }
+    const fmt = (n, d) => n.toLocaleString('vi-VN', {maximumFractionDigits: d});
+
+    document.querySelectorAll('input.money').forEach(i => {
+        const hint = document.createElement('div');
+        hint.className = 'slip-hint';
+        (i.closest('.input-group') || i).insertAdjacentElement('afterend', hint);
+        const upd = () => {
+            const n = parseVN(i.value);
+            i.classList.remove('warn'); hint.classList.remove('warn');
+            if (n === null) { hint.textContent = ''; return; }
+            if (Number.isNaN(n) || n < 0) { hint.textContent = 'Không phải số hợp lệ'; hint.classList.add('warn'); i.classList.add('warn'); return; }
+            if (n > 0 && n < 1000) {
+                hint.textContent = 'Nhập theo ĐỒNG: có phải ' + fmt(n * 1000, 0) + '?';
+                hint.classList.add('warn'); i.classList.add('warn');
+                return;
+            }
+            hint.textContent = '';
+        };
+        i.addEventListener('input', upd);
+        i.addEventListener('blur', () => { const n = parseVN(i.value); if (n !== null && !Number.isNaN(n)) i.value = fmt(n, 2); upd(); });
+        upd();
+    });
+
+    document.getElementById('cfgForm').addEventListener('submit', e => {
+        if (document.querySelector('.slip-hint.warn') &&
+            !confirm('Có ô số tiền nhỏ bất thường (tô đỏ), có thể đang nhập theo nghìn đồng. Vẫn lưu?')) {
+            e.preventDefault();
+        }
+    });
+</script>
+</body>
+</html>

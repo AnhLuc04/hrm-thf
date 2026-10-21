@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head(${isNew} ? 'Thêm đơn vị' : 'Sửa đơn vị')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('units', ${isNew} ? 'Thêm đơn vị' : 'Sửa đơn vị')}"></th:block>
+<div class="sh-main">
+  <form class="wrap" th:action="@{/units/save}" method="post" autocomplete="off">
+    <input type="hidden" name="id" th:value="${unit.id}">
+    <div class="ph">
+      <div>
+        <a th:href="@{/units}" style="color:var(--muted);text-decoration:none;font-size:13px"><i class="fa-solid fa-chevron-left"></i> Đơn vị</a>
+        <h1 th:text="${isNew} ? 'Thêm đơn vị' : 'Sửa ' + ${unit.code} + ' · ' + ${unit.name}">Thêm đơn vị</h1>
+      </div>
+      <span class="sp"></span>
+      <button class="btn btn-brand" type="submit"><i class="fa-solid fa-check"></i>Lưu đơn vị</button>
+    </div>
+
+    <div class="flash err" th:if="${errors != null and !#lists.isEmpty(errors)}">
+      Chưa lưu được:
+      <ul><li th:each="e : ${errors}" th:text="${e}"></li></ul>
+    </div>
+
+    <section class="card">
+      <h2>1. Thông tin đơn vị</h2>
+      <div class="grid">
+        <div class="f"><label for="code">Mã đơn vị</label>
+          <input id="code" name="code" maxlength="10" required th:value="${unit.code}" placeholder="VD: SG" autocapitalize="characters">
+          <small th:text="${userCount > 0 and !unit.legacyUnit} ? 'Đã có ' + ${userCount} + ' nhân viên, không đổi mã được' : 'Là tiền tố mã nhân viên: SG + 41 = SG41'">Là tiền tố mã nhân viên</small></div>
+        <div class="f" style="grid-column: span 2"><label for="name">Tên công ty</label>
+          <input id="name" name="name" maxlength="150" required th:value="${unit.name}" placeholder="VD: Ford Sầm Sơn"></div>
+      </div>
+      <label class="chk"><input type="checkbox" name="active" th:checked="${unit.enabled}"> Đang dùng (tự kéo chấm công theo lịch)</label>
+      <label class="chk"><input type="checkbox" name="legacy" th:checked="${unit.legacyUnit}">
+        <span><b>Đơn vị gốc</b>: công ty đang dùng hệ thống từ trước. Nhân viên cũ giữ nguyên mã và tên đăng nhập. Chỉ 1 đơn vị.</span></label>
+    </section>
+
+    <section class="card">
+      <h2>2. Giờ làm &amp; người duyệt — HCNS đơn vị cấu hình</h2>
+      <p class="hint">Quản trị hệ thống chỉ nhập máy chấm công và chia người vào đơn vị.
+        Ngày làm trong tuần, giờ chấm công, hạn xác nhận do <b>HCNS đơn vị</b> sửa ở trang <i>Lịch làm việc &amp; giờ chấm</i>;
+        Giám đốc / trưởng phòng / nhân viên do HCNS chia ở trang <i>Chức vụ &amp; phòng ban</i>.</p>
+      <div class="rows" th:unless="${isNew}">
+        <div><span>Ngày làm</span><b th:text="${unit.workDaysLabel}">T2–T7 cả ngày · CN nghỉ</b></div>
+        <div><span>Báo đi muộn sau</span><b th:text="${#temporals.format(unit.lateAfterOrDefault(), 'HH:mm')}">07:35</b></div>
+        <div><span>Vi phạm sau</span><b th:text="${#temporals.format(unit.violationAfterOrDefault(), 'HH:mm')}">08:05</b></div>
+        <div><span>Chia ca</span><b th:text="${#temporals.format(unit.noonOrDefault(), 'HH:mm')}">12:00</b></div>
+        <div><span>Về sớm trước</span><b th:text="${#temporals.format(unit.earlyBeforeOrDefault(), 'HH:mm')}">17:00</b></div>
+        <div><span>Hạn xác nhận công</span><b th:text="${unit.confirmDaysOrDefault() == 0} ? 'Không giới hạn' : ${unit.confirmDaysOrDefault()} + ' ngày'">7 ngày</b></div>
+        <div><span>Giám đốc</span><b th:text="${unit.directorNo} ?: 'HCNS chưa chọn'">—</b></div>
+        <div><span>GĐ dịch vụ</span><b th:text="${unit.serviceDirectorNo} ?: 'Trống = Giám đốc duyệt'">—</b></div>
+        <div><span>Kế toán trưởng</span><b th:text="${unit.chiefAccountantNo} ?: 'Trống = Giám đốc duyệt'">—</b></div>
+      </div>
+      <p class="hint" th:if="${isNew}">Đơn vị mới dùng mặc định T2–T7 cả ngày, CN nghỉ, 07:35 / 08:05 / 12:00 / 17:00, hạn xác nhận 7 ngày cho tới khi HCNS sửa.</p>
+    </section>
+
+    <section class="card">
+      <h2>3. Thẻ lương</h2>
+      <p class="hint">In trên thẻ lương của nhân viên đơn vị này. Để trống thì dùng tên đơn vị.</p>
+      <div class="grid">
+        <div class="f" style="grid-column: span 2"><label for="slipCompany">Tên công ty trên đầu phiếu</label>
+          <input id="slipCompany" name="slipCompany" maxlength="200" th:value="${unit.slipCompany}"
+                 th:placeholder="${unit.slipCompanyOrDefault}"></div>
+        <div class="f"><label for="slipPreparer">Người lập phiếu (Kế toán)</label>
+          <input id="slipPreparer" name="slipPreparer" maxlength="100" th:value="${unit.slipPreparer}"
+                 th:placeholder="${unit.slipPreparerOrDefault != '' ? unit.slipPreparerOrDefault : 'VD: Nguyễn Thị Lan'}"></div>
+        <div class="f"><label for="slipPlace">Nơi ký</label>
+          <input id="slipPlace" name="slipPlace" maxlength="100" th:value="${unit.slipPlace}"
+                 th:placeholder="${unit.slipPlaceOrDefault}">
+          <small th:text="'In là: ' + ${unit.slipPlaceOrDefault} + ', Ngày...Tháng...Năm'">In là: Thanh Hóa, Ngày...Tháng...Năm</small></div>
+        <div class="f"><label for="payDay">Ngày chi lương hằng tháng</label>
+          <input id="payDay" name="payDay" type="number" min="1" max="28" th:value="${unit.payDay}" placeholder="15">
+          <small>Lương tháng trước chi ngày này. Từ ngày 1 đến ngày này nhân viên thấy 2 phiếu dự kiến (tháng trước + tháng này).</small></div>
+      </div>
+      <p class="hint" th:text="'Logo và chữ ký: đặt ảnh vào static/uploads/payslip/ tên logo-' + (${unit.code} ?: 'MÃ') + '.png và sign-' + (${unit.code} ?: 'MÃ') + '.png'"></p>
+    </section>
+
+    <section class="card">
+      <h2>4. Máy chấm công (API Hikvision)</h2>
+      <p class="hint">Máy chủ HRM phải gọi được tới địa chỉ này (cùng mạng hoặc qua VPN / mở cổng).</p>
+      <div class="grid">
+        <div class="f" style="grid-column: span 2"><label for="deviceUrl">Địa chỉ máy</label>
+          <input id="deviceUrl" name="deviceUrl" maxlength="200" th:value="${unit.deviceUrl}" placeholder="http://192.168.2.30"></div>
+        <div class="f"><label for="deviceUsername">Tài khoản máy</label>
+          <input id="deviceUsername" name="deviceUsername" maxlength="100" th:value="${unit.deviceUsername}" placeholder="admin"></div>
+        <div class="f"><label for="devicePassword">Mật khẩu máy</label>
+          <input id="devicePassword" type="password" name="devicePassword" maxlength="200" autocomplete="new-password"
+                 th:placeholder="${isNew} ? '' : 'Để trống = giữ mật khẩu cũ'"></div>
+        <div class="f"><label for="syncFromDate">Kéo chấm công từ ngày</label>
+          <input id="syncFromDate" type="date" name="syncFromDate" th:value="${unit.syncFromDate}">
+          <small>Lần sau chỉ kéo lùi 2 ngày trước lần kéo thành công</small></div>
+      </div>
+      <h2 style="margin-top:6px">Lịch tự kéo công</h2>
+      <div th:replace="~{units/fragments :: syncSchedule(${unit})}"></div>
+    </section>
+
+    <div><button class="btn btn-brand" type="submit"><i class="fa-solid fa-check"></i>Lưu đơn vị</button></div>
+  </form>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

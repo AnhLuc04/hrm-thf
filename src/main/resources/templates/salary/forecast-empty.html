@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{units/fragments :: head('Phiếu lương dự kiến')}"></head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav('payroll', 'Phiếu lương')}"></th:block>
+<div class="sh-main">
+  <div class="wrap" style="max-width:760px">
+    <div class="ph">
+      <div>
+        <a th:href="@{/payroll/my}" style="color:var(--muted);text-decoration:none;font-size:13px"><i class="fa-solid fa-chevron-left"></i> Phiếu lương</a>
+        <h1 th:text="'Phiếu lương dự kiến tháng ' + ${month} + '/' + ${year}">Phiếu lương dự kiến</h1>
+        <p th:text="${calc.user.employeeNo} + ' · ' + ${calc.user.fullName}"></p>
+      </div>
+    </div>
+
+    <div class="flash warn">
+      <b>Chưa tính được phiếu lương dự kiến.</b>
+      <div th:if="${forHr != true}" style="margin-top:4px;font-weight:400">
+        Hồ sơ lương của bạn chưa được thiết lập đầy đủ (mẫu công thức, lương cơ bản) hoặc tháng này chưa có dữ liệu chấm công.
+        Vui lòng liên hệ phòng Kế toán / Nhân sự.
+      </div>
+      <div th:if="${forHr == true}" style="margin-top:4px;font:12.5px/1.5 ui-monospace,Consolas,monospace" th:text="${calc.error}"></div>
+    </div>
+
+    <div class="acts">
+      <a class="btn" th:href="@{/payroll/my}"><i class="fa-solid fa-wallet"></i>Phiếu lương của tôi</a>
+      <a th:if="${forHr == true}" class="btn" th:href="@{/salary-config/edit(userId=${calc.user.id})}"><i class="fa-solid fa-sliders"></i>Cấu hình lương NV này</a>
+      <a th:if="${forHr == true}" class="btn btn-brand"
+         th:href="@{/payroll/auto-calculate/trace(userId=${calc.user.id}, month=${month}, year=${year})}"><i class="fa-solid fa-magnifying-glass-chart"></i>Giải trình</a>
+    </div>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

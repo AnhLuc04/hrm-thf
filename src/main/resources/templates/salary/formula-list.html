@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{salary/fragments :: head('Mẫu công thức lương')}"></head>
+<body>
+<nav th:replace="~{salary/fragments :: nav('formula')}"></nav>
+
+<div class="container-fluid pb-5">
+    <div th:replace="~{salary/fragments :: flash}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="d-flex flex-wrap align-items-baseline gap-3 mb-2">
+        <h4 class="mb-0">Mẫu công thức lương</h4>
+        <span class="text-muted small">
+            Mẫu gắn <b>phòng ban</b> = mặc định cho cả phòng. Muốn người nào khác mẫu thì chọn riêng ở
+            <a th:href="@{/salary-config}">Cấu hình lương NV</a>. Không có mẫu (chọn riêng hoặc theo phòng) thì không tính lương.
+        </span>
+    </div>
+
+    <!-- ================= BỘ MẪU SOẠN SẴN (hệ thống tự tạo công thức) ================= -->
+    <div class="card mb-3" th:if="${presets != null}">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+            <span><i class="fa-solid fa-wand-magic-sparkles me-1" style="color:#4f46e5"></i>Bộ mẫu công thức soạn sẵn</span>
+            <span class="badge text-bg-secondary" th:text="${presetMissing} + ' / ' + ${#lists.size(presets)} + ' chưa có'">5 / 5</span>
+            <form th:if="${presetMissing > 0}" th:action="@{/salary-formula/presets}" method="post" class="ms-auto"
+                  onsubmit="return confirm('Tạo các mẫu công thức soạn sẵn cho đơn vị đang xem? Mẫu đã có cùng tên được giữ nguyên.')">
+                <button class="btn btn-sm btn-primary"><i class="fa-solid fa-wand-magic-sparkles"></i>Tạo tất cả mẫu chưa có</button>
+            </form>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">Không cần tự viết công thức: bấm tạo, hệ thống điền đủ các hạng mục (lương ngày công, thêm giờ, phụ cấp theo tỷ lệ công,
+                thưởng, BHXH 10,5%, công đoàn 1%, thuế TNCN 5 bậc, thực nhận). Sau đó chọn mẫu cho nhân viên ở
+                <a th:href="@{/salary-config}">Cấu hình lương NV</a>; cần thì bấm Sửa để chỉnh.</p>
+            <div class="row g-2">
+                <div class="col-md-6 col-xxl" th:each="p : ${presets}">
+                    <div class="h-100 border rounded-3 p-3 d-flex flex-column gap-2" style="background:#fcfcfd">
+                        <div class="d-flex align-items-start gap-2">
+                            <b style="color:#0b1220" th:text="${p.name}">Chuẩn - Văn phòng</b>
+                        </div>
+                        <div class="small text-muted flex-grow-1" th:text="${p.note}">Mô tả</div>
+                        <form th:action="@{/salary-formula/presets}" method="post">
+                            <input type="hidden" name="key" th:value="${p.key}">
+                            <button class="btn btn-sm btn-outline-primary w-100"><i class="fa-solid fa-plus"></i>Tạo mẫu này</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- ================= DANH SÁCH MẪU ================= -->
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Tên mẫu</th>
+                            <th>Mặc định cho phòng</th>
+                            <th class="text-center">Số NV chọn riêng</th>
+                            <th>Tỉ lệ nhập theo nhân viên (mặc định)</th>
+                            <th>Cập nhật</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="r : ${rows}" th:classappend="${!r.formula.activeOrDefault()} ? 'text-muted'">
+                            <td>
+                                <a th:href="@{/salary-formula/edit(id=${r.formula.id})}" class="fw-semibold" th:text="${r.name}">Kinh doanh</a>
+                                <span th:unless="${r.formula.activeOrDefault()}" class="badge text-bg-secondary">Đang tắt</span>
+                                <span th:if="${r.formula.shared}" class="badge text-bg-light border" title="Mọi đơn vị chọn được; chỉ quản trị hệ thống sửa">Dùng chung</span>
+                                <span th:unless="${r.formula.shared}" class="badge text-bg-info" th:text="${r.formula.unit.code}">TH</span>
+                                <span th:if="${r.missingItems > 0}" class="badge text-bg-danger"
+                                      th:text="'Thiếu ' + ${r.missingItems} + ' hạng mục'"></span>
+                                <div th:if="${r.error}" class="small text-danger mono" th:text="${r.error}"></div>
+                                <div th:if="${r.formula.ghiChu}" class="small text-muted" th:text="${r.formula.ghiChu}"></div>
+                            </td>
+                            <td>
+                                <span th:if="${r.formula.department != null}">
+                                    <a th:href="@{/salary-config(department=${r.formula.department})}" th:text="${r.formula.department}">IT-MKT</a>
+                                    <span class="small text-muted" th:text="'(' + ${r.deptEmployeeCount} + ' NV)'"></span>
+                                </span>
+                                <span th:if="${r.formula.department == null}" class="text-muted small">—</span>
+                            </td>
+                            <td class="text-center">
+                                <a th:if="${r.employeeCount > 0}" th:href="@{/salary-config}" th:text="${r.employeeCount}">3</a>
+                                <span th:if="${r.employeeCount == 0}" class="text-muted">0</span>
+                            </td>
+                            <td class="small">
+                                <span th:each="p : ${r.params}" class="d-inline-block me-2">
+                                    <span th:text="${p.display()}"></span>
+                                    <code th:text="${p.expression()}"></code>
+                                </span>
+                                <span th:if="${#lists.isEmpty(r.params)}" class="text-muted">không có</span>
+                            </td>
+                            <td class="small text-nowrap"
+                                th:text="${r.formula.updatedAt != null} ? ${#temporals.format(r.formula.updatedAt, 'dd/MM/yyyy HH:mm')} : ''"></td>
+                            <td class="text-end text-nowrap">
+                                <a class="btn btn-outline-primary btn-sm" th:href="@{/salary-formula/edit(id=${r.formula.id})}"
+                                   th:text="${canEdit.test(r.formula)} ? 'Sửa' : 'Xem'">Sửa</a>
+                                <form th:action="@{/salary-formula/copy}" method="post" class="d-inline">
+                                    <input type="hidden" name="id" th:value="${r.formula.id}">
+                                    <button class="btn btn-outline-secondary btn-sm" title="Tạo mẫu mới chép từ mẫu này">Nhân bản</button>
+                                </form>
+                                <form th:if="${canEdit.test(r.formula)}" th:action="@{/salary-formula/delete}" method="post" class="d-inline"
+                                      onsubmit="return confirm('Xoá mẫu này?')">
+                                    <input type="hidden" name="id" th:value="${r.formula.id}">
+                                    <button class="btn btn-outline-danger btn-sm" th:disabled="${r.employeeCount > 0}"
+                                            th:title="${r.employeeCount > 0} ? 'Còn nhân viên đang dùng, không xoá được' : 'Xoá'">Xoá</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(rows)}">
+                            <td colspan="6" class="text-muted p-3">Chưa có mẫu nào. Tạo mẫu đầu tiên ở khung bên phải.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="small text-muted mt-2"
+                 th:text="${assignedCount} + ' / ' + ${configCount} + ' nhân viên có cấu hình lương đã chọn mẫu.'"></div>
+        </div>
+
+        <!-- ================= TẠO MẪU ================= -->
+        <div class="col-xl-4">
+            <div class="card">
+                <div class="card-header"><b>Tạo mẫu mới</b></div>
+                <div class="card-body">
+                    <form th:action="@{/salary-formula/edit}" method="get" class="mb-3">
+                        <label class="form-label small mb-1">Tên mẫu (VD: Kinh doanh, Dịch vụ, Văn phòng, Thử việc)</label>
+                        <input name="name" class="form-control form-control-sm mb-2" required>
+                        <label class="form-label small mb-1">Mẫu mặc định cho phòng (tuỳ chọn)</label>
+                        <div class="d-flex gap-2">
+                            <select name="department" class="form-select form-select-sm">
+                                <option value="">-- Không gắn phòng --</option>
+                                <option th:each="d : ${departments}" th:value="${d}" th:text="${d}"></option>
+                            </select>
+                            <button class="btn btn-sm btn-primary text-nowrap">Tạo mẫu</button>
+                        </div>
+                        <div class="form-text">Mẫu mới được điền sẵn công thức gợi ý (lương theo công, phụ cấp theo tỷ lệ công,
+                            BHXH, công đoàn, thuế 5 bậc) để sửa lại.</div>
+                    </form>
+
+                    <form th:if="${!#lists.isEmpty(templates)}" th:action="@{/salary-formula/copy}" method="post">
+                        <label class="form-label small mb-1">Hoặc chép từ mẫu có sẵn</label>
+                        <select name="id" class="form-select form-select-sm mb-2" required>
+                            <option th:each="t : ${templates}" th:value="${t.id}"
+                                    th:text="${T(com.example.hrm.service.SalaryFormulaService).templateName(t)}"></option>
+                        </select>
+                        <div class="d-flex gap-2">
+                            <input name="name" class="form-control form-control-sm" placeholder="Tên mẫu mới">
+                            <button class="btn btn-sm btn-outline-primary text-nowrap">Chép</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body small">
+                    <b>Tỉ lệ theo nhân viên là gì?</b>
+                    <p class="mb-1">Mỗi dòng trong ô <i>Tham số</i> của mẫu là một tỉ lệ nhập được cho từng nhân viên.
+                        Viết ghi chú sau dấu <code>#</code> để làm tên cột, ví dụ:</p>
+                    <pre class="mono bg-light p-2 mb-1">tyLeHoaHong = 1%     # Tỉ lệ hoa hồng
+heSoOtThuong = 1.5   # HS thêm giờ</pre>
+                    <p class="mb-0">Nhân viên dùng mẫu này sẽ có 2 ô "Tỉ lệ hoa hồng", "HS thêm giờ".
+                        Để trống thì dùng mặc định <code>1%</code>, <code>1.5</code>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{salary/fragments :: scripts}"></th:block>
+</body>
+</html>

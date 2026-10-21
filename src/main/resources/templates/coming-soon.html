@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title th:text="${pageTitle} + ' · Thanh Hóa Ford HRM'">Sắp ra mắt · Thanh Hóa Ford HRM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { background: #f5f6fa; color: #334155; font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    .cs { max-width: 720px; margin: 0 auto; padding: 48px 20px 60px; }
+    .card { background: #fff; border: 1px solid #e5e8ef; border-radius: 20px; box-shadow: 0 1px 3px rgba(15,23,42,.06); overflow: hidden; }
+    .hero { padding: 36px 32px 28px; text-align: center; background: radial-gradient(600px 220px at 50% -40%, #e0e7ff, transparent 70%); }
+    .ic { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 18px; display: grid; place-items: center; font-size: 26px; color: #fff;
+          background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 14px 28px -12px rgba(79,70,229,.7); }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border-radius: 999px; background: #fffaeb; color: #b54708; border: 1px solid #fedf89; font-size: 12px; font-weight: 700; }
+    h1 { margin: 12px 0 6px; font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: -.02em; }
+    .hero p { margin: 0 auto; max-width: 460px; color: #64748b; }
+    .feat { padding: 20px 32px 28px; border-top: 1px solid #eef1f5; }
+    .feat h2 { margin: 0 0 12px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
+    .feat ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .feat li { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; color: #334155; }
+    .feat li i { margin-top: 3px; color: #4f46e5; }
+    .acts { display: flex; gap: 10px; justify-content: center; padding: 0 32px 32px; flex-wrap: wrap; }
+    .btn { height: 40px; padding: 0 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; border: 1px solid #d0d5dd; background: #fff; }
+    .btn.pri { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    @media (hover: hover) { .btn:hover { background: #f5f6fa; } .btn.pri:hover { background: #4338ca; } }
+    @media (max-width: 560px) { .cs { padding: 20px 14px 40px; } .hero { padding: 28px 20px 22px; } .feat { padding: 18px 20px 22px; } .acts { padding: 0 20px 24px; } .btn { flex: 1; justify-content: center; } }
+  </style>
+</head>
+<body>
+<th:block th:replace="~{fragments/shell :: nav(${pageKey}, ${pageTitle})}"></th:block>
+<div class="sh-main">
+  <main class="cs">
+    <div class="card">
+      <div class="hero">
+        <div class="ic"><i th:class="${pageIcon}" class="fa-solid fa-rocket"></i></div>
+        <span class="pill"><i class="fa-solid fa-screwdriver-wrench"></i>Đang phát triển</span>
+        <h1 th:text="${pageTitle}">Chức năng mới</h1>
+        <p th:text="${pageDesc}">Chức năng này sẽ sớm được đưa vào sử dụng.</p>
+      </div>
+      <div class="feat" th:if="${pageFeatures != null and !#lists.isEmpty(pageFeatures)}">
+        <h2>Sẽ có</h2>
+        <ul>
+          <li th:each="f : ${pageFeatures}"><i class="fa-solid fa-circle-check"></i><span th:text="${f}">Tính năng</span></li>
+        </ul>
+      </div>
+      <div class="acts">
+        <a class="btn" href="javascript:history.back()"><i class="fa-solid fa-arrow-left"></i>Quay lại</a>
+        <a class="btn pri" th:href="@{/}"><i class="fa-solid fa-house"></i>Về trang chủ</a>
+      </div>
+    </div>
+  </main>
+</div>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<!-- Phần đầu + CSS dùng chung cho 2 trang Đơn vị (cùng phong cách trang Nhân viên / Ngày nghỉ lễ) -->
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title th:text="${title} + ' · Thanh Hóa Ford HRM'">Đơn vị</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+  <style>
+    :root { --bg: #f7f8fa; --panel: #fff; --ink: #0b1220; --ink2: #344054; --muted: #667085; --faint: #98a2b3; --line: #eaecf0;
+            --brand: #4f46e5; --brand-600: #4338ca; --brand-50: #eef2ff; --ok: #067647; --ok-50: #ecfdf3; --warn: #b54708; --warn-50: #fffaeb;
+            --err: #b42318; --err-50: #fef3f2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink2); font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 48px; display: grid; gap: 18px; }
+    .ph { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+    .ph h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+    .ph p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+    .ph .sp { flex: 1; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 9px; border: 1px solid #d0d5dd; background: #fff;
+           font: inherit; font-weight: 600; font-size: 13.5px; color: var(--ink2); cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .btn:hover { background: #f9fafb; }
+    .btn-brand { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .btn-brand:hover { background: var(--brand-600); }
+    .btn-sm { height: 32px; padding: 0 10px; font-size: 12.5px; }
+    .flash { border-radius: 10px; padding: 10px 14px; font-weight: 500; }
+    .flash.ok { background: var(--ok-50); color: var(--ok); border: 1px solid #abefc6; }
+    .flash.err { background: var(--err-50); color: var(--err); border: 1px solid #fecdca; }
+    .flash.warn { background: var(--warn-50); color: var(--warn); border: 1px solid #fedf89; }
+    .flash ul { margin: 4px 0 0; padding-left: 18px; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+    .stat b { display: block; font-size: 22px; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .stat span { font-size: 12.5px; color: var(--muted); }
+    .units { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+    .unit { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; align-content: start; }
+    .unit.off { opacity: .6; }
+    .u-top { display: flex; align-items: center; gap: 10px; }
+    .code { min-width: 42px; height: 42px; padding: 0 8px; border-radius: 11px; background: var(--brand-50); color: var(--brand-600); font-weight: 800; display: grid; place-items: center; }
+    .u-top .n { min-width: 0; flex: 1; }
+    .u-top .n b { display: block; color: var(--ink); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .u-top .n small { color: var(--muted); }
+    .pill { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+    .pill.ok { background: var(--ok-50); color: var(--ok); }
+    .pill.err { background: var(--err-50); color: var(--err); }
+    .pill.info { background: var(--brand-50); color: var(--brand-600); }
+    .pill.gray { background: #f2f4f7; color: var(--muted); }
+    .kv { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .kv div { background: #f9fafb; border-radius: 9px; padding: 6px 8px; min-width: 0; }
+    .kv span { display: block; font-size: 11px; color: var(--muted); }
+    .kv b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .rows { display: grid; gap: 3px; font-size: 13px; }
+    .rows div { display: flex; justify-content: space-between; gap: 12px; }
+    .rows span:first-child { color: var(--muted); flex: none; }
+    .rows span:last-child { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+    .msg { margin: 0; font-size: 12.5px; color: var(--muted); }
+    .msg.err { color: var(--err); }
+    .acts { display: flex; flex-wrap: wrap; gap: 6px; }
+    .acts form { margin: 0; }
+    /* form sửa */
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; }
+    .card h2 { margin: 0; font-size: 15px; color: var(--ink); }
+    .card .hint { margin: -8px 0 0; color: var(--muted); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .f { display: grid; gap: 4px; }
+    .f label { font-size: 12.5px; font-weight: 600; color: var(--ink2); }
+    .f input { height: 38px; border: 1px solid #d0d5dd; border-radius: 9px; padding: 0 10px; font: inherit; color: var(--ink); background: #fff; min-width: 0; }
+    .f small { color: var(--muted); font-size: 12px; }
+    .chk { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; }
+    .chk input { width: 17px; height: 17px; margin-top: 2px; accent-color: var(--brand); }
+    .f select, select.in, input.in { height: 38px; border: 1px solid #d0d5dd; border-radius: 9px; padding: 0 10px; font: inherit; color: var(--ink); background: #fff; min-width: 0; }
+    select.in.sm, input.in.sm { height: 32px; font-size: 13px; padding: 0 8px; }
+    /* bảng danh sách (Tài khoản, Chức vụ) */
+    .tbl-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .tbl th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); background: #f9fafb; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    .tbl td { padding: 8px 12px; border-bottom: 1px solid #f2f4f7; vertical-align: middle; }
+    .tbl tr:last-child td { border-bottom: 0; }
+    .tbl td b { color: var(--ink); }
+    .tbl td small { display: block; color: var(--muted); font-size: 12px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips a { text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid #d0d5dd; background: #fff; color: var(--ink2); }
+    .chips a.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .chips a small { opacity: .75; font-weight: 500; margin-left: 4px; }
+    .bar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line);
+           border-radius: 12px; padding: 10px 14px; box-shadow: 0 -4px 16px rgba(16, 24, 40, .06); }
+    .bar .sp { flex: 1; }
+    details.pw summary { cursor: pointer; color: var(--brand-600); font-size: 12.5px; font-weight: 600; list-style: none; }
+    details.pw[open] { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    @media (max-width: 720px) { .wrap { padding: 18px 16px 40px; } .tbl th, .tbl td { padding: 8px; } }
+    /* lịch kéo công */
+    .sync-box { display: grid; gap: 12px; }
+    .sync-days { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chk-day { position: relative; cursor: pointer; }
+    .chk-day input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .chk-day span { display: inline-grid; place-items: center; min-width: 44px; height: 34px; padding: 0 8px; border-radius: 9px;
+                    border: 1px solid #d0d5dd; font-size: 13px; font-weight: 600; color: var(--muted); background: #fff; }
+    .chk-day input:checked + span { background: var(--brand-50); color: var(--brand-600); border-color: #c7d2fe; }
+    .chk-day input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 1px; }
+    /* lịch làm việc trong tuần */
+    .wk { display: grid; gap: 6px; }
+    .wk-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; align-items: center; }
+    .wk-d { font-weight: 600; color: var(--ink); font-size: 13.5px; }
+    .seg { display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 360px; border: 1px solid #d0d5dd; border-radius: 9px; overflow: hidden; }
+    .seg label { position: relative; cursor: pointer; }
+    .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .seg span { display: block; text-align: center; padding: 7px 6px; font-size: 13px; font-weight: 600; color: var(--muted); border-left: 1px solid #eaecf0; }
+    .seg label:first-child span { border-left: 0; }
+    .seg input:checked + span { background: var(--brand-50); color: var(--brand-600); }
+    .seg label.off input:checked + span { background: #f2f4f7; color: var(--ink2); }
+    .seg label.half input:checked + span { background: var(--warn-50); color: var(--warn); }
+    .seg input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: -2px; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    @media (max-width: 640px) { .wrap { padding: 18px 16px 40px; } .stats { grid-template-columns: 1fr 1fr 1fr; } .kv { grid-template-columns: 1fr 1fr; } .units { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<!-- LỊCH KÉO CÔNG TỪ MÁY: 2 dạng (giờ cố định / khoảng giờ lặp lại) + ngày trong tuần -->
+<div th:fragment="syncSchedule(unit)" class="sync-box" th:with="interval=${unit.syncMode == 'INTERVAL'}, sd=${unit.syncDaysOrDefault()}">
+  <input type="hidden" name="syncForm" value="1">
+  <div class="seg" role="radiogroup" aria-label="Kiểu lịch kéo công" style="max-width:520px;grid-template-columns:1fr 1fr">
+    <label><input type="radio" name="syncMode" value="TIMES" th:checked="${!interval}" onchange="syncModeChanged(this)"><span>Giờ cố định trong ngày</span></label>
+    <label><input type="radio" name="syncMode" value="INTERVAL" th:checked="${interval}" onchange="syncModeChanged(this)"><span>Khoảng giờ, lặp lại</span></label>
+  </div>
+  <div class="grid sync-times" th:style="${interval} ? 'display:none' : ''">
+    <div class="f" style="grid-column: 1 / -1"><label for="syncTimes">Kéo lúc (VD 1 ngày 2 lần: 09:00, 20:00)</label>
+      <input id="syncTimes" name="syncTimes" maxlength="100" th:value="${unit.syncTimesLabel}" placeholder="09:00, 20:00">
+      <small>Cách nhau dấu phẩy, tối đa 12 giờ / ngày. Trống = 09:00 và 20:00 như cũ.</small></div>
+  </div>
+  <div class="grid sync-interval" th:style="${interval} ? '' : 'display:none'">
+    <div class="f"><label for="syncFrom">Từ giờ</label>
+      <input id="syncFrom" type="time" name="syncFrom" th:value="${unit.syncFrom != null ? #temporals.format(unit.syncFrom, 'HH:mm') : '07:00'}"></div>
+    <div class="f"><label for="syncTo">Đến giờ</label>
+      <input id="syncTo" type="time" name="syncTo" th:value="${unit.syncTo != null ? #temporals.format(unit.syncTo, 'HH:mm') : '18:00'}"></div>
+    <div class="f"><label for="syncEvery">Lặp lại mỗi</label>
+      <select id="syncEvery" name="syncEvery" class="in" th:with="e=${unit.syncEvery ?: 30}">
+        <option th:each="m : ${ {10, 15, 20, 30, 45, 60, 90, 120, 180, 240} }" th:value="${m}" th:selected="${m == e}"
+                th:text="${m % 60 == 0} ? ${m / 60} + ' giờ' : ${m} + ' phút'">30 phút</option>
+      </select></div>
+  </div>
+  <div>
+    <div style="font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:6px">Kéo vào các ngày</div>
+    <div class="sync-days">
+      <label th:each="i : ${#numbers.sequence(1, 7)}" class="chk-day">
+        <input type="checkbox" th:name="'sd' + ${i}" th:checked="${#strings.substring(sd, i - 1, i) == '1'}">
+        <span th:text="${i == 7 ? 'CN' : 'T' + (i + 1)}">T2</span>
+      </label>
+    </div>
+  </div>
+  <small style="color:var(--muted)" th:text="'Hiện tại: ' + ${unit.syncScheduleLabel}">Hiện tại</small>
+  <script>
+    function syncModeChanged(r) {
+      var box = r.closest('.sync-box');
+      box.querySelector('.sync-times').style.display = r.value === 'INTERVAL' ? 'none' : '';
+      box.querySelector('.sync-interval').style.display = r.value === 'INTERVAL' ? '' : 'none';
+    }
+  </script>
+</div>
+
+<!-- NGÀY LÀM TRONG TUẦN: wd1..wd7 = Thứ Hai..Chủ nhật, F = cả ngày / M = buổi sáng / O = nghỉ -->
+<div th:fragment="weekdays(unit)" class="wk" th:with="w=${unit.workDaysOrDefault()}">
+  <div class="wk-row" th:each="i : ${#numbers.sequence(1, 7)}"
+       th:with="m=${#strings.substring(w, i - 1, i)}, nm=${i == 7 ? 'Chủ nhật' : 'Thứ ' + (i + 1)}">
+    <span class="wk-d" th:text="${nm}">Thứ 2</span>
+    <div class="seg" role="radiogroup" th:attr="aria-label=${nm}">
+      <label><input type="radio" th:name="'wd' + ${i}" value="F" th:checked="${m == 'F'}"><span>Cả ngày</span></label>
+      <label class="half"><input type="radio" th:name="'wd' + ${i}" value="M" th:checked="${m == 'M'}"><span>Buổi sáng</span></label>
+      <label class="off"><input type="radio" th:name="'wd' + ${i}" value="O" th:checked="${m == 'O'}"><span>Nghỉ</span></label>
+    </div>
+  </div>
+</div>
+</body>
+</html>

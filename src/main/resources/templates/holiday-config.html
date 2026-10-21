@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="theme-color" content="#ffffff">
+  <title>Ngày nghỉ lễ · Thanh Hóa Ford HRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #f7f8fa; --panel: #fff; --ink: #0b1220; --ink2: #344054; --muted: #667085; --faint: #98a2b3;
+      --line: #eaecf0; --line2: #f2f4f7; --hover: #f9fafb;
+      --brand: #4f46e5; --brand-600: #4338ca; --brand-50: #eef2ff; --brand-100: #e0e7ff; --brand-200: #c7d2fe;
+      --ok: #059669; --warn: #d97706; --err: #dc2626;
+      --r: 12px; --shadow-xs: 0 1px 2px rgba(16,24,40,.05); --shadow-sm: 0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.04);
+      --side: 240px;
+      --sa-t: env(safe-area-inset-top, 0px); --sa-b: env(safe-area-inset-bottom, 0px);
+      --sa-l: env(safe-area-inset-left, 0px); --sa-r: env(safe-area-inset-right, 0px);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink2); font: 14px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+           font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; text-decoration: none; }
+    button, input, select { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    /* ═════════ KHUNG ỨNG DỤNG: SIDEBAR + NỘI DUNG (giống trang Nhân viên) ═════════ */
+    .side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 50; width: var(--side); background: var(--panel); border-right: 1px solid var(--line);
+            display: flex; flex-direction: column; padding: calc(16px + var(--sa-t)) 12px calc(12px + var(--sa-b)) calc(12px + var(--sa-l)); }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+    .mark { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; letter-spacing: -.02em;
+            background: linear-gradient(135deg, #312e81, #4f46e5); box-shadow: 0 6px 14px -6px rgba(79,70,229,.6); }
+    .brand b { display: block; font-size: 14.5px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+    .brand small { display: block; font-size: 11.5px; color: var(--faint); }
+    .nav-t { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); padding: 14px 10px 6px; }
+    .nav a, .nav button { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; padding: 0 10px; border: 0; border-radius: 8px; background: none;
+                          font-size: 13.5px; font-weight: 500; color: var(--ink2); cursor: pointer; text-align: left; transition: background .12s, color .12s; }
+    .nav a i, .nav button i { width: 18px; text-align: center; color: var(--faint); font-size: 14px; transition: color .12s; }
+    .nav a.on { background: var(--brand-50); color: var(--brand-600); font-weight: 600; }
+    .nav a.on i { color: var(--brand); }
+    .side .foot { margin-top: auto; border-top: 1px solid var(--line); padding-top: 10px; }
+    .side .foot form { margin: 0; }
+    .side .foot .out { color: #b42318; } .side .foot .out i { color: #f97066; }
+
+    .main { min-height: 100vh; }
+    .mtop { display: none; }
+    .scrim { display: none; }
+    .content { max-width: 1280px; margin: 0 auto; padding: 28px 28px 40px; }
+
+    /* ═════════ TIÊU ĐỀ ═════════ */
+    .crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--faint); margin-bottom: 10px; }
+    .crumbs a:hover { color: var(--ink2); }
+    .crumbs i { font-size: 9px; }
+    .ph { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .ph h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; color: var(--ink); letter-spacing: -.025em; display: flex; align-items: center; gap: 10px; }
+    .ph h1 .count { font-size: 13px; font-weight: 600; color: var(--brand-600); background: var(--brand-50); border: 1px solid var(--brand-100); padding: 2px 10px; border-radius: 999px; letter-spacing: 0; }
+    .ph p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+    .btn { height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #d0d5dd; background: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+           font-size: 13.5px; font-weight: 600; color: var(--ink2); cursor: pointer; white-space: nowrap; box-shadow: var(--shadow-xs); transition: background .12s, border-color .12s; touch-action: manipulation; }
+    .btn i { color: var(--muted); font-size: 13px; }
+    .btn-brand { background: var(--brand); border-color: var(--brand); color: #fff; } .btn-brand i { color: #c7d2fe; }
+    .btn-sm { height: 30px; padding: 0 10px; font-size: 12.5px; border-radius: 7px; }
+    .btn-icon { width: 36px; padding: 0; } .btn-sm.btn-icon { width: 30px; }
+    .btn-ghost { border-color: transparent; background: transparent; box-shadow: none; }
+    .btn-del i { color: #f97066; }
+    .btn:disabled { opacity: .55; cursor: default; }
+
+    /* Chọn năm */
+    .yearnav { display: inline-flex; align-items: center; background: #fff; border: 1px solid #d0d5dd; border-radius: 9px; box-shadow: var(--shadow-xs); overflow: hidden; }
+    .yearnav a { width: 36px; height: 36px; display: grid; place-items: center; color: var(--muted); }
+    .yearnav b { min-width: 72px; text-align: center; font-size: 14px; font-weight: 700; color: var(--ink); border-left: 1px solid var(--line); border-right: 1px solid var(--line); line-height: 36px; font-variant-numeric: tabular-nums; }
+    .yearnav .now { font-size: 12px; font-weight: 600; color: var(--brand-600); padding: 0 12px; width: auto; border-left: 1px solid var(--line); }
+
+    /* Thông báo */
+    .flash { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 500; margin-bottom: 16px; border: 1px solid; animation: tin .2s ease; }
+    .flash.ok { background: #ecfdf3; border-color: #abefc6; color: #067647; }
+    .flash.err { background: #fef3f2; border-color: #fecdca; color: #b42318; }
+    .flash i { margin-top: 2px; }
+    @keyframes tin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+    /* ═════════ THẺ THỐNG KÊ ═════════ */
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-sm); padding: 14px 16px; display: flex; gap: 12px; align-items: center; min-width: 0; }
+    .stat .si { width: 40px; height: 40px; border-radius: 10px; flex: none; display: grid; place-items: center; font-size: 16px; }
+    .stat .sl { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+    .stat .sv { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.25; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .stat .sv small { font-size: 12.5px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+    .stat .sx { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat > div:last-child { min-width: 0; }
+    .i-indigo { background: var(--brand-50); color: var(--brand); }
+    .i-green { background: #ecfdf3; color: #039855; }
+    .i-amber { background: #fffaeb; color: #dc6803; }
+    .i-rose { background: #fef3f2; color: #d92d20; }
+
+    /* ═════════ BỐ CỤC 2 CỘT ═════════ */
+    .grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .panel-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .panel-h h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+    .panel-h h2 i { color: var(--brand); font-size: 14px; }
+    .formcard { position: sticky; top: 20px; }
+    .formcard.editing { border-color: #fdb022; box-shadow: 0 0 0 4px #fef0c7; }
+    .formcard.editing .panel-h h2 i { color: var(--warn); }
+
+    /* Form */
+    .fbody { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .fl { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink2); margin-bottom: 6px; }
+    .fh { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 18px; }
+    .fh.warn { color: #b54708; font-weight: 500; }
+    .inp { height: 38px; width: 100%; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; padding: 0 12px; outline: none; font-size: 14px; box-shadow: var(--shadow-xs);
+           transition: border-color .12s, box-shadow .12s; }
+    .inp:focus { border-color: #a5b4fc; box-shadow: 0 0 0 4px var(--brand-50); }
+    .inp.bad { border-color: #fda29b; box-shadow: 0 0 0 4px #fef3f2; }
+    .search { position: relative; flex: 1 1 220px; max-width: 320px; }
+    .search > i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--faint); font-size: 13px; pointer-events: none; }
+    .search .inp { padding-left: 34px; height: 34px; font-size: 13.5px; }
+
+    /* Hệ số lương dạng nút */
+    .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label { height: 38px; display: grid; place-items: center; border: 1px solid #d0d5dd; border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; background: #fff; transition: all .12s; }
+    .seg input:checked + label { border-color: var(--brand); background: var(--brand-50); color: var(--brand-600); box-shadow: 0 0 0 1px var(--brand) inset; }
+    .seg input:focus-visible + label { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+    /* Gợi ý nhanh */
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px dashed #d0d5dd; background: #fff; font-size: 12px; font-weight: 500; color: var(--ink2); cursor: pointer; }
+    .chip i { font-size: 10px; color: var(--faint); }
+    .chip.done { border-style: solid; background: #ecfdf3; border-color: #abefc6; color: #067647; cursor: default; }
+    .chip.done i { color: #12b76a; }
+    .factions { display: flex; gap: 8px; }
+    .factions .btn { flex: 1; height: 40px; }
+
+    /* ═════════ DANH SÁCH ═════════ */
+    .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .tabs { display: inline-flex; gap: 2px; padding: 3px; background: var(--line2); border-radius: 9px; }
+    .tabs button { height: 28px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; }
+    .tabs button.on { background: #fff; color: var(--ink); box-shadow: var(--shadow-xs); }
+    .tabs button span { font-weight: 500; color: var(--faint); margin-left: 3px; }
+    .tools .sp { flex: 1; }
+
+    .month { border-bottom: 1px solid var(--line2); }
+    .month:last-child { border-bottom: 0; }
+    .mh { display: flex; align-items: center; gap: 8px; padding: 10px 16px 6px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+    .mh span { font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+    .hrow { display: flex; align-items: center; gap: 14px; padding: 10px 16px; transition: background .12s; }
+    .hrow.past { opacity: .62; }
+    .hrow.today { background: #f8f9ff; box-shadow: inset 3px 0 0 var(--brand); }
+    .hrow.flash-row { background: #fffaeb; }
+    .dbox { width: 52px; flex: none; border-radius: 10px; border: 1px solid var(--line); background: #fff; text-align: center; overflow: hidden; box-shadow: var(--shadow-xs); }
+    .dbox .dm { font-size: 10.5px; font-weight: 700; color: #fff; background: var(--brand); line-height: 18px; letter-spacing: .02em; }
+    .dbox .dd { font-size: 19px; font-weight: 700; color: var(--ink); line-height: 30px; font-variant-numeric: tabular-nums; }
+    .hrow.wkend .dbox .dm { background: #f04438; }
+    .hrow.past .dbox .dm { background: #98a2b3; }
+    .hinfo { flex: 1; min-width: 0; }
+    .hinfo b { display: block; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+    .tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+    .tag.mul { background: #f4f3ff; color: #5925dc; border-color: #d9d6fe; }
+    .tag.up { background: #eff8ff; color: #175cd3; border-color: #b2ddff; }
+    .tag.now { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .tag.past { background: #f9fafb; color: #667085; border-color: #eaecf0; }
+    .tag.we { background: #fef3f2; color: #b42318; border-color: #fecdca; }
+    .hact { display: flex; gap: 2px; flex: none; }
+
+    .empty { padding: 56px 16px; text-align: center; color: var(--muted); }
+    .empty .ei { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 12px; display: grid; place-items: center; background: var(--line2); color: var(--faint); font-size: 20px; }
+    .empty b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+    .nores { display: none; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .nav a:not(.on):hover, .nav button:hover { background: var(--hover); color: var(--ink); }
+      .nav a:not(.on):hover i { color: var(--muted); }
+      .btn:hover { background: var(--hover); }
+      .btn-brand:hover { background: var(--brand-600); }
+      .btn-del:hover { background: #fef3f2; }
+      .yearnav a:hover { background: var(--hover); color: var(--ink); }
+      .hrow:not(.today):hover { background: var(--hover); }
+      .chip:not(.done):hover { border-color: var(--brand-200); color: var(--brand-600); background: var(--brand-50); }
+      .tabs button:not(.on):hover { color: var(--ink2); }
+    }
+
+    /* ═════════ < 1180px: sidebar thành ngăn kéo ═════════ */
+    @media (max-width: 1179px) {
+      .side { transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); box-shadow: none; }
+      body.nav-open .side { transform: none; box-shadow: 0 20px 50px rgba(16,24,40,.25); }
+      .scrim { display: block; position: fixed; inset: 0; z-index: 49; background: rgba(16,24,40,.4); opacity: 0; pointer-events: none; transition: opacity .2s; }
+      body.nav-open .scrim { opacity: 1; pointer-events: auto; }
+      .main { margin-left: 0; }
+      .mtop { display: flex; position: sticky; top: 0; z-index: 30; align-items: center; gap: 10px; height: calc(56px + var(--sa-t)); padding: var(--sa-t) calc(12px + var(--sa-r)) 0 calc(12px + var(--sa-l));
+              background: rgba(255,255,255,.9); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid var(--line); }
+      .mtop b { font-size: 15px; font-weight: 600; color: var(--ink); }
+      .content { padding: 20px calc(16px + var(--sa-r)) 32px calc(16px + var(--sa-l)); }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    /* ═════════ < 960px: 1 cột ═════════ */
+    @media (max-width: 959px) {
+      .grid { grid-template-columns: 1fr; }
+      .formcard { position: static; }
+    }
+    /* ═════════ Điện thoại ═════════ */
+    @media (max-width: 599px) {
+      .ph h1 { font-size: 22px; }
+      .ph { align-items: stretch; }
+      .yearnav { width: 100%; } .yearnav b { flex: 1; }
+      .stats { gap: 8px; }
+      .stat { padding: 12px; gap: 10px; }
+      .stat .si { width: 34px; height: 34px; font-size: 14px; }
+      .stat .sv { font-size: 19px; }
+      .tools { padding: 12px; }
+      .search { max-width: none; flex-basis: 100%; }
+      .tabs { width: 100%; } .tabs button { flex: 1; padding: 0 6px; }
+      .tools .sp { display: none; }
+      .hrow { padding: 10px 12px; gap: 12px; align-items: flex-start; }
+      .hinfo b { white-space: normal; }
+      .hact { flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  </style>
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+</head>
+
+<body th:with="yr=${currentYear != null ? currentYear : #temporals.year(#temporals.createToday())},
+               thisYr=${thisYear != null ? thisYear : #temporals.year(#temporals.createToday())},
+               td=${today != null ? today : #temporals.createToday()},
+               nTotal=${holidays != null ? #lists.size(holidays) : 0},
+               dows=${ {'Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy','Chủ Nhật'} }">
+
+<!-- MENU CHUNG (fragments/shell.html) -->
+<th:block th:replace="~{fragments/shell :: nav('holiday', 'Ngày nghỉ lễ')}"></th:block>
+
+<div class="main sh-main">
+
+  <div class="content">
+    <div class="crumbs"><a th:href="@{/}">Trang chủ</a><i class="fa-solid fa-chevron-right"></i><span>Quản trị</span><i class="fa-solid fa-chevron-right"></i><span style="color:var(--ink2)">Ngày nghỉ lễ</span></div>
+
+    <!-- ═════════ TIÊU ĐỀ ═════════ -->
+    <div class="ph">
+      <div>
+        <h1>Ngày nghỉ lễ <span class="count" th:text="${nTotal}">0</span></h1>
+        <p>Các ngày lễ được tính công đặc biệt khi chấm công và tính lương năm <b th:text="${yr}">2026</b>.</p>
+      </div>
+      <nav class="yearnav" aria-label="Chọn năm">
+        <a th:href="@{/holiday/config(year=${yr - 1})}" aria-label="Năm trước"><i class="fa-solid fa-chevron-left"></i></a>
+        <b th:text="${yr}">2026</b>
+        <a th:href="@{/holiday/config(year=${yr + 1})}" aria-label="Năm sau"><i class="fa-solid fa-chevron-right"></i></a>
+        <a class="now" th:if="${yr != thisYr}" th:href="@{/holiday/config}">Năm nay</a>
+      </nav>
+    </div>
+
+    <div th:if="${message}" class="flash ok"><i class="fa-solid fa-circle-check"></i><span th:text="${message}">Đã lưu.</span></div>
+    <div th:if="${error}" class="flash err"><i class="fa-solid fa-circle-exclamation"></i><span th:text="${error}">Lỗi.</span></div>
+
+    <!-- ═════════ THỐNG KÊ ═════════ -->
+    <div class="stats">
+      <div class="stat">
+        <span class="si i-indigo"><i class="fa-solid fa-calendar-days"></i></span>
+        <div><div class="sl">Tổng ngày lễ</div><div class="sv"><span th:text="${nTotal}">0</span> <small>ngày</small></div></div>
+      </div>
+      <div class="stat">
+        <span class="si i-green"><i class="fa-solid fa-hourglass-half"></i></span>
+        <div><div class="sl">Sắp tới</div><div class="sv" id="stUpcoming"><span th:text="${upcomingCount != null ? upcomingCount : '—'}">0</span> <small>ngày</small></div></div>
+      </div>
+      <div class="stat">
+        <span class="si i-amber"><i class="fa-solid fa-flag"></i></span>
+        <div>
+          <div class="sl">Ngày lễ tiếp theo</div>
+          <th:block th:if="${nextHoliday != null}">
+            <div class="sx" th:text="${nextHoliday.description}" th:title="${nextHoliday.description}">Quốc khánh</div>
+            <div class="sl">
+              <span th:text="${#temporals.format(nextHoliday.holidayDate, 'dd/MM')}">02/09</span> ·
+              <b style="color:var(--warn)" th:text="${daysUntilNext == 0 ? 'Hôm nay' : 'còn ' + daysUntilNext + ' ngày'}">còn 5 ngày</b>
+            </div>
+          </th:block>
+          <div class="sx" th:if="${nextHoliday == null}" style="color:var(--faint)">Không còn</div>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="si i-rose"><i class="fa-solid fa-couch"></i></span>
+        <div><div class="sl">Rơi vào cuối tuần</div><div class="sv"><span th:text="${weekendCount != null ? weekendCount : '—'}">0</span> <small>ngày</small></div></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- ═════════ FORM THÊM / SỬA ═════════ -->
+      <section class="panel formcard" id="formCard">
+        <div class="panel-h">
+          <h2><i class="fa-solid fa-calendar-plus" id="fIcon"></i><span id="fTitle">Thêm ngày nghỉ lễ</span></h2>
+        </div>
+        <form class="fbody" id="hForm" th:action="@{/holiday/save}" method="post" autocomplete="off">
+          <input type="hidden" name="id" id="fId" disabled>
+
+          <div>
+            <label class="fl" for="fDate">Ngày nghỉ</label>
+            <input class="inp" type="date" id="fDate" name="holidayDate" required>
+            <div class="fh" id="fDateHint">Chọn ngày để xem thứ trong tuần.</div>
+          </div>
+
+          <div>
+            <label class="fl" for="fDesc">Tên dịp lễ / Ghi chú</label>
+            <input class="inp" type="text" id="fDesc" name="description" maxlength="150" placeholder="VD: Tết Nguyên Đán, Nghỉ bù…" required>
+          </div>
+
+          <div>
+            <span class="fl">Hệ số lương</span>
+            <div class="seg" role="radiogroup" aria-label="Hệ số lương">
+              <input type="radio" name="wageMultiplier" id="wm2" value="2.0"><label for="wm2">× 2</label>
+              <input type="radio" name="wageMultiplier" id="wm3" value="3.0" checked><label for="wm3">× 3</label>
+              <input type="radio" name="wageMultiplier" id="wm4" value="4.0"><label for="wm4">× 4</label>
+            </div>
+            <div class="fh">Ngày lễ, Tết theo luật: tối thiểu 300% nếu đi làm.</div>
+          </div>
+
+          <div>
+            <span class="fl">Gợi ý nhanh</span>
+            <div class="presets" id="presets">
+              <button type="button" class="chip" data-md="01-01" data-name="Tết Dương lịch"><i class="fa-solid fa-plus"></i>Tết Dương lịch</button>
+              <button type="button" class="chip" data-md="04-30" data-name="Ngày Giải phóng miền Nam"><i class="fa-solid fa-plus"></i>30/4</button>
+              <button type="button" class="chip" data-md="05-01" data-name="Ngày Quốc tế Lao động"><i class="fa-solid fa-plus"></i>1/5</button>
+              <button type="button" class="chip" data-md="09-02" data-name="Quốc khánh"><i class="fa-solid fa-plus"></i>Quốc khánh 2/9</button>
+              <button type="button" class="chip" data-name="Tết Nguyên Đán"><i class="fa-solid fa-plus"></i>Tết Nguyên Đán</button>
+              <button type="button" class="chip" data-name="Giỗ Tổ Hùng Vương (10/3 ÂL)"><i class="fa-solid fa-plus"></i>Giỗ Tổ</button>
+              <button type="button" class="chip" data-name="Nghỉ bù"><i class="fa-solid fa-plus"></i>Nghỉ bù</button>
+            </div>
+            <div class="fh">Lễ theo âm lịch chỉ điền sẵn tên, bạn chọn ngày.</div>
+          </div>
+
+          <div class="factions">
+            <button type="button" class="btn" id="fCancel" hidden><i class="fa-solid fa-xmark"></i>Hủy sửa</button>
+            <button type="submit" class="btn btn-brand" id="fSubmit"><i class="fa-solid fa-floppy-disk"></i><span>Lưu ngày lễ</span></button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ═════════ DANH SÁCH ═════════ -->
+      <section class="panel">
+        <div class="panel-h">
+          <h2><i class="fa-solid fa-list-ul"></i>Danh sách năm <span th:text="${yr}">2026</span></h2>
+        </div>
+
+        <div class="tools" th:if="${nTotal > 0}">
+          <div class="tabs" role="tablist">
+            <button type="button" class="on" data-f="all">Tất cả<span th:text="${nTotal}">0</span></button>
+            <button type="button" data-f="up">Sắp tới<span id="cUp">0</span></button>
+            <button type="button" data-f="past">Đã qua<span id="cPast">0</span></button>
+          </div>
+          <span class="sp"></span>
+          <label class="search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input class="inp" type="search" id="q" placeholder="Tìm dịp lễ…" aria-label="Tìm dịp lễ">
+          </label>
+        </div>
+
+        <div id="list">
+          <th:block th:each="m : ${#numbers.sequence(1, 12)}"
+                    th:with="ml=${holidays != null ? holidays.?[holidayDate != null and holidayDate.monthValue == __${m}__] : null}">
+            <div class="month" th:if="${ml != null and !#lists.isEmpty(ml)}">
+              <div class="mh">Tháng <th:block th:text="${m}">1</th:block> <span th:text="'· ' + ${#lists.size(ml)} + ' ngày'">· 1 ngày</span></div>
+
+              <div class="hrow" th:each="h : ${ml}"
+                   th:with="past=${h.holidayDate.isBefore(td)}, isToday=${h.holidayDate.isEqual(td)},
+                                          dw=${h.holidayDate.dayOfWeek.value}, wm=${h.wageMultiplier != null ? h.wageMultiplier : 3.0}"
+                   th:classappend="${(past ? ' past' : '') + (isToday ? ' today' : '') + (dw >= 6 ? ' wkend' : '')}"
+                   th:id="'h-' + ${h.id}"
+                   th:data-id="${h.id}" th:data-date="${h.holidayDate}" th:data-desc="${h.description}"
+                   th:data-wm="${wm}" th:data-state="${past ? 'past' : 'up'}">
+                <div class="dbox" aria-hidden="true">
+                  <div class="dm" th:text="'TH ' + ${h.holidayDate.monthValue}">TH 1</div>
+                  <div class="dd" th:text="${#temporals.format(h.holidayDate, 'dd')}">01</div>
+                </div>
+                <div class="hinfo">
+                  <b th:text="${h.description}" th:title="${h.description}">Tết Dương lịch</b>
+                  <div class="hmeta">
+                    <span th:text="${dows[dw - 1]} + ', ' + ${#temporals.format(h.holidayDate, 'dd/MM/yyyy')}">Thứ Năm, 01/01/2026</span>
+                    <span class="tag mul" th:text="${wm % 1 == 0 ? '× ' + wm.intValue() : '× ' + wm}">× 3</span>
+                    <span class="tag we" th:if="${dw >= 6}"><i class="fa-solid fa-couch"></i>Cuối tuần</span>
+                    <span class="tag now" th:if="${isToday}">Hôm nay</span>
+                    <span class="tag up" th:if="${!past and !isToday}">Sắp tới</span>
+                    <span class="tag past" th:if="${past}">Đã qua</span>
+                  </div>
+                </div>
+                <div class="hact">
+                  <button type="button" class="btn btn-sm btn-icon btn-ghost js-edit" title="Sửa" aria-label="Sửa"><i class="fa-solid fa-pen"></i></button>
+                  <a class="btn btn-sm btn-icon btn-ghost btn-del" title="Xóa" aria-label="Xóa"
+                     th:href="@{/holiday/delete/{id}(id=${h.id}, year=${yr})}"
+                     th:data-name="${h.description}"
+                     onclick="return confirm('Xóa ngày lễ «' + this.dataset.name + '»?')"><i class="fa-solid fa-trash-can"></i></a>
+                </div>
+              </div>
+            </div>
+          </th:block>
+        </div>
+
+        <div class="empty nores" id="noRes">
+          <div class="ei"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <b>Không có ngày lễ phù hợp</b>
+          Thử đổi từ khóa hoặc bộ lọc.
+        </div>
+
+        <div class="empty" th:if="${nTotal == 0}">
+          <div class="ei"><i class="fa-regular fa-calendar-xmark"></i></div>
+          <b>Chưa có ngày lễ nào năm <th:block th:text="${yr}">2026</th:block></b>
+          Thêm nhanh bằng các gợi ý ở khung bên cạnh.
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+(function () {
+  var YEAR = /*[[${yr}]]*/ 2026;
+  var DOW = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  var rows = $$('.hrow');
+  var byDate = {};
+  rows.forEach(function (r) { byDate[r.dataset.date] = r; });
+
+  // ── Bộ đếm tab
+  var nUp = rows.filter(function (r) { return r.dataset.state === 'up'; }).length;
+  if ($('#cUp')) $('#cUp').textContent = nUp;
+  if ($('#cPast')) $('#cPast').textContent = rows.length - nUp;
+
+  // ── Lọc: tab + tìm kiếm
+  var filter = 'all';
+  function norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase(); }
+  function apply() {
+    var q = norm(($('#q') || {}).value);
+    var shown = 0;
+    rows.forEach(function (r) {
+      var ok = (filter === 'all' || r.dataset.state === filter) && (!q || norm(r.dataset.desc).indexOf(q) > -1);
+      r.hidden = !ok; if (ok) shown++;
+    });
+    $$('.month').forEach(function (m) { m.hidden = !$$('.hrow', m).some(function (r) { return !r.hidden; }); });
+    $('#noRes').style.display = rows.length && !shown ? 'block' : 'none';
+  }
+  $$('.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('.tabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      filter = b.dataset.f; apply();
+    });
+  });
+  if ($('#q')) $('#q').addEventListener('input', apply);
+
+  // ── Form: gợi ý thứ + cảnh báo trùng ngày
+  var form = $('#hForm'), fDate = $('#fDate'), fDesc = $('#fDesc'), fId = $('#fId'), hint = $('#fDateHint');
+  var submitBtn = $('#fSubmit'), card = $('#formCard');
+
+  function checkDate() {
+    var v = fDate.value, dup = v && byDate[v] && byDate[v].dataset.id !== fId.value;
+    fDate.classList.toggle('bad', !!dup);
+    submitBtn.disabled = !!dup;
+    hint.classList.toggle('warn', !!dup);
+    if (!v) { hint.textContent = 'Chọn ngày để xem thứ trong tuần.'; return; }
+    var p = v.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2]), wd = d.getDay();
+    if (dup) { hint.textContent = 'Ngày này đã có: «' + byDate[v].dataset.desc + '». Bấm biểu tượng bút để sửa.'; return; }
+    hint.textContent = DOW[wd] + (wd === 0 || wd === 6 ? ' — rơi vào cuối tuần, cân nhắc thêm ngày nghỉ bù.' : '');
+  }
+  fDate.addEventListener('input', checkDate);
+  fDate.addEventListener('change', checkDate);
+
+  // ── Gợi ý nhanh
+  $$('#presets .chip').forEach(function (c) {
+    var md = c.dataset.md;
+    if (md && byDate[YEAR + '-' + md]) {
+      c.classList.add('done'); c.disabled = true; c.title = 'Đã có trong năm ' + YEAR;
+      c.firstElementChild.className = 'fa-solid fa-check';
+    }
+    c.addEventListener('click', function () {
+      if (c.disabled) return;
+      fDesc.value = c.dataset.name;
+      if (md) fDate.value = YEAR + '-' + md; else fDate.focus();
+      checkDate();
+      if (md) fDesc.focus();
+    });
+  });
+
+  // ── Sửa ngày lễ
+  function setEdit(row) {
+    var editing = !!row;
+    card.classList.toggle('editing', editing);
+    fId.disabled = !editing;
+    fId.value = editing ? row.dataset.id : '';
+    $('#fTitle').textContent = editing ? 'Sửa ngày nghỉ lễ' : 'Thêm ngày nghỉ lễ';
+    $('#fIcon').className = editing ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-calendar-plus';
+    $('#fSubmit span').textContent = editing ? 'Cập nhật' : 'Lưu ngày lễ';
+    $('#fCancel').hidden = !editing;
+    if (editing) {
+      fDate.value = row.dataset.date;
+      fDesc.value = row.dataset.desc;
+      var wm = String(parseFloat(row.dataset.wm));
+      var r = $('.seg input[value="' + wm + '.0"]') || $('.seg input[value="' + wm + '"]');
+      if (r) r.checked = true;
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(function () { fDesc.focus(); }, 250);
+    } else {
+      form.reset();
+    }
+    checkDate();
+  }
+  $$('.js-edit').forEach(function (b) { b.addEventListener('click', function () { setEdit(b.closest('.hrow')); }); });
+  $('#fCancel').addEventListener('click', function () { setEdit(null); });
+
+  form.addEventListener('submit', function (e) {
+    fDesc.value = fDesc.value.trim();
+    if (!fDesc.value) { e.preventDefault(); fDesc.focus(); return; }
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Đang lưu…</span>';
+  });
+
+  // ── Menu ngăn kéo (máy tính bảng / điện thoại)
+  var navBtn = $('#navBtn'), scrim = $('#scrim');
+  function nav(open) { document.body.classList.toggle('nav-open', open); }
+  if (navBtn) navBtn.addEventListener('click', function () { nav(true); });
+  if (scrim) scrim.addEventListener('click', function () { nav(false); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { nav(false); if (!fId.disabled) setEdit(null); }
+  });
+
+  apply();
+  checkDate();
+})();
+</script>
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

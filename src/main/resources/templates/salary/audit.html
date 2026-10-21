@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{salary/fragments :: head('Nhật ký lương')}"></head>
+<body>
+<nav th:replace="~{salary/fragments :: nav('audit')}"></nav>
+
+<div class="container-fluid pb-5">
+  <div th:replace="~{salary/fragments :: flash}"></div>
+
+  <h4>Nhật ký thao tác module lương</h4>
+
+  <form th:action="@{/salary-audit}" method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-auto">
+      <label class="form-label small mb-0">Từ ngày</label>
+      <input type="date" name="from" class="form-control form-control-sm" th:value="${from}">
+    </div>
+    <div class="col-auto">
+      <label class="form-label small mb-0">Đến ngày</label>
+      <input type="date" name="to" class="form-control form-control-sm" th:value="${to}">
+    </div>
+    <div class="col-auto">
+      <label class="form-label small mb-0">Thao tác</label>
+      <select name="action" class="form-select form-select-sm">
+        <option value="">Tất cả</option>
+        <option th:each="a : ${actions}" th:value="${a}" th:text="${a}" th:selected="${a == action}"></option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label small mb-0">Tìm (người, đối tượng, nội dung)</label>
+      <input name="q" class="form-control form-control-sm" style="width:240px" th:value="${q}">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-sm btn-primary">Lọc</button>
+    </div>
+  </form>
+
+  <div th:if="${limited}" class="small text-warning mb-1">Chỉ hiện 500 dòng mới nhất trong khoảng ngày đã chọn - thu hẹp khoảng ngày để xem hết.</div>
+
+  <div class="card">
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-sm table-striped mb-0 align-top">
+        <thead class="table-light">
+        <tr>
+          <th style="width:140px">Thời gian</th>
+          <th style="width:120px">Người thực hiện</th>
+          <th style="width:170px">Thao tác</th>
+          <th style="width:260px">Đối tượng</th>
+          <th>Chi tiết</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="l : ${logs}">
+          <td class="text-nowrap small" th:text="${#temporals.format(l.time, 'dd/MM/yyyy HH:mm:ss')}"></td>
+          <td th:text="${l.username}"></td>
+          <td><span class="badge" th:text="${l.action}"
+                    th:classappend="${#strings.contains(l.action, 'LOCK') or #strings.contains(l.action, 'DELETE') or #strings.contains(l.action, 'OVERWRITE')} ? 'text-bg-danger' : 'text-bg-secondary'"></span></td>
+          <td class="small" th:text="${l.target}"></td>
+          <td class="small"><div class="detail" th:text="${l.detail}"></div></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(logs)}">
+          <td colspan="5" class="text-muted">Không có thao tác nào.</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<th:block th:replace="~{salary/fragments :: scripts}"></th:block>
+<style>
+    .detail { white-space: pre-wrap; max-height: 9.5em; overflow: auto; font-family: ui-monospace, Consolas, monospace; font-size: .78rem; }
+</style>
+</body>
+</html>

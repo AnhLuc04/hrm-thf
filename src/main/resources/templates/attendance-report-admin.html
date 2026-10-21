@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Bảng Công Nhân Viên</title>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!--
+    Không dùng Tailwind CDN cho trang này: bản CDN biên dịch CSS ngay trong trình duyệt
+    và phải quét hàng nghìn ô của bảng → rất chậm. CSS dưới đây viết tay, hiển thị tức thì.
+  -->
+  <style>
+    :root {
+      --bg: #f5f6fa; --card: #fff; --ink: #0f172a; --ink2: #334155; --muted: #64748b; --faint: #94a3b8;
+      --line: #e5e8ef; --line2: #f0f2f6; --brand: #4f46e5; --brand-50: #eef2ff; --brand-100: #e0e7ff;
+      --sun: #fff4f4; --today: #eef1ff; --hl: rgba(79, 70, 229, .08);
+      --r: 14px; --shadow: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+      --row-h: 46px; --k-fs: 10.5px; --k-pad: 1px 5px;
+    }
+    body.compact { --row-h: 34px; --k-fs: 9.5px; --k-pad: 0 3px; }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink2); font: 14px/1.45 "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    button, input, select { font: inherit; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    .page { max-width: 1880px; margin: 0 auto; padding: 20px 20px 28px; display: flex; flex-direction: column; gap: 14px; }
+    @media (max-width: 640px) { .page { padding: 12px 12px 20px; gap: 12px; } }
+
+    /* ── Header ── */
+    .hdr { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+    .ttl { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .logo { width: 46px; height: 46px; border-radius: 14px; flex: none; display: grid; place-items: center; color: #fff; font-size: 18px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 8px 18px -6px rgba(99,102,241,.55); }
+    .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #6366f1; }
+    h1 { margin: 2px 0 0; font-size: 24px; line-height: 1.15; font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+    .btn { height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: #fff; display: inline-flex; align-items: center; gap: 8px;
+           font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s, transform .05s; white-space: nowrap; box-shadow: var(--shadow); }
+    .btn:hover { background: #f8fafc; }
+    .btn:active { transform: translateY(1px); }
+    .btn i { color: var(--faint); }
+    .btn-green { background: #059669; border-color: #059669; color: #fff; }
+    .btn-green:hover { background: #047857; }
+    .btn-green i { color: #d1fae5; }
+    .btn-icon { width: 38px; padding: 0; justify-content: center; }
+
+    .month { display: inline-flex; align-items: center; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: var(--shadow); overflow: hidden; }
+    .month a { width: 34px; height: 100%; display: grid; place-items: center; color: var(--muted); }
+    .month a:hover { background: #f8fafc; color: var(--brand); }
+    .month input { height: 100%; border: 0; border-inline: 1px solid var(--line); padding: 0 10px; font-weight: 700; color: var(--ink); background: transparent; outline: none; }
+
+    /* ── KPI ── */
+    .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 640px)  { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpi:last-child { grid-column: span 2; } }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 13px 15px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow); min-width: 0; }
+    .kpi .ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex: none; font-size: 15px; }
+    .kpi .tx { min-width: 0; }
+    .kpi .lb { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kpi .vl { font-size: 21px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Toolbar ── */
+    .bar { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .search { position: relative; flex: 1 1 260px; min-width: 200px; }
+    .search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--faint); font-size: 12px; }
+    .search kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 600 11px/1 ui-monospace, monospace; color: var(--faint); border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px; background: #fafbfc; }
+    .inp { height: 38px; width: 100%; border: 1px solid var(--line); border-radius: 10px; background: #fafbfc; padding: 0 12px; outline: none; transition: border-color .15s, box-shadow .15s, background .15s; }
+    .inp:focus { background: #fff; border-color: #a5b4fc; box-shadow: 0 0 0 3px var(--brand-100); }
+    .search .inp { padding-left: 34px; padding-right: 36px; }
+    select.inp { width: auto; min-width: 190px; font-weight: 600; cursor: pointer; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fafbfc; }
+    .seg button { height: 36px; padding: 0 12px; border: 0; background: transparent; cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+    .seg button + button { border-left: 1px solid var(--line); }
+    .seg button:hover { color: var(--ink); }
+    .seg button.on { background: var(--brand); color: #fff; }
+    .sp { flex: 1 1 auto; }
+
+    /* ── Bảng ── */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; min-width: 0; }
+    .wrap { overflow: auto; max-height: calc(100vh - 300px); min-height: 380px; overscroll-behavior: contain; }
+    @media (max-width: 640px) { .wrap { max-height: calc(100vh - 140px); } }
+    .wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+    .wrap::-webkit-scrollbar-thumb { background: #cfd5e0; border-radius: 10px; border: 2px solid #fff; }
+    .wrap::-webkit-scrollbar-track { background: #fff; }
+
+    table.t { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-variant-numeric: tabular-nums; }
+    .t col.cc { width: 86px; } .t col.cn { width: 200px; } .t col.dc { width: 50px; } .t col.sc { width: 64px; } .t col.sw { width: 82px; } .t col.sf { width: 112px; }
+    /* Màu cột Chủ nhật / hôm nay vẽ bằng <col>: server không phải tính cho từng ô */
+    .t col.sun { background: var(--sun); }
+    .t col.today { background: var(--today); }
+    .t col.hl { background: var(--hl); }
+    .t col.sun.hl { background: linear-gradient(var(--hl), var(--hl)), var(--sun); }
+    .t col.today.hl { background: linear-gradient(var(--hl), var(--hl)), var(--today); }
+
+    .t th, .t td { border-bottom: 1px solid var(--line2); border-right: 1px solid var(--line2); text-align: center; vertical-align: middle; padding: 0 4px; }
+    .t thead th { position: sticky; top: 0; z-index: 3; background: #fff; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+    .t thead tr.r1 th { height: 32px; }
+    .t thead tr.r2 th { top: 32px; height: 28px; font-size: 10.5px; font-weight: 700; letter-spacing: .02em; text-transform: none; }
+    .t thead th.dh { text-transform: none; letter-spacing: 0; padding: 4px 0; }
+    .t .dn { display: block; font-size: 14px; font-weight: 800; color: var(--ink); line-height: 1.1; }
+    .t .dw { display: block; font-size: 10px; font-weight: 700; color: var(--faint); }
+    .t th.dh.sun { background: var(--sun); } .t th.dh.sun .dn, .t th.dh.sun .dw { color: #e11d48; }
+    .t th.dh.today { background: var(--today); box-shadow: inset 0 -3px 0 var(--brand); } .t th.dh.today .dn { color: var(--brand); }
+
+    /* Cột cố định */
+    .t .fx1, .t .fx2 { position: sticky; z-index: 2; background: #fff; text-align: left; }
+    .t .fx1 { left: 0; padding-left: 14px; }
+    .t .fx2 { left: 86px; padding-left: 10px; box-shadow: 8px 0 10px -8px rgba(15,23,42,.18); }
+    .t thead .fx1, .t thead .fx2 { z-index: 5; }
+
+    /* Nhóm tổng hợp */
+    .t .gs { border-left: 2px solid var(--line); }
+    .t th.g-c  { background: #f4f6f9; color: #475569; }
+    .t th.g-ot { background: #ecfeff; color: #0e7490; }
+    .t th.g-le { background: #faf5ff; color: #7e22ce; }
+    .t th.g-tc { background: var(--brand-50); color: #4338ca; }
+    .t th.g-pn { background: #f0fdfa; color: #0f766e; }
+    .t th.g-vp { background: #fff1f2; color: #be123c; }
+    .t th.srt { cursor: pointer; user-select: none; }
+    .t th.srt:hover { filter: brightness(.96); }
+    .t th.srt::after { content: "\f0dc"; font: 900 9px "Font Awesome 6 Free"; margin-left: 4px; opacity: .35; }
+    .t th.srt.asc::after { content: "\f0de"; opacity: 1; }
+    .t th.srt.desc::after { content: "\f0dd"; opacity: 1; }
+
+    /* Dòng nhân viên */
+    .t tbody tr.er td { height: var(--row-h); }
+    .t tbody tr.er:hover td { background-color: rgba(79,70,229,.045); }
+    .t tbody tr.er:hover .fx1, .t tbody tr.er:hover .fx2 { background: #f5f6ff; }
+    .t .code { font: 700 11.5px ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--muted); }
+    .t .nm { display: block; max-width: 184px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Ô ngày: 2 ký hiệu (sáng / chiều) */
+    .t td.d { padding: 0 2px; line-height: 1; }
+    .k { display: block; margin: 2px auto; width: fit-content; min-width: 24px; padding: var(--k-pad); border-radius: 5px; font-size: var(--k-fs); font-weight: 800; font-style: normal; line-height: 1.4; color: var(--ink2); }
+    .k.n { color: #d3d8e0; font-weight: 400; }
+    .k-x   { background: #e0f2fe; color: #0369a1; }
+    .k-xn  { background: #dcfce7; color: #15803d; }
+    .k-pn  { background: #ffedd5; color: #c2410c; }
+    .k-cp  { background: #eef1f5; color: #475569; }
+    .k-le  { background: #f3e8ff; color: #7e22ce; }
+    .k-cdl { background: #ffe4e6; color: #be123c; }
+    body.compact .t td.d .k { margin: 1px auto; }
+
+    /* Ô tổng hợp */
+    .t td.s { font-weight: 700; color: var(--ink2); font-size: 13px; }
+    .t td.s.nil, .t .nil { color: #cbd2dc; font-weight: 400; }
+    .t td.c-xn { color: #059669; } .t td.c-ot { color: #0e7490; } .t td.c-le { color: #9333ea; } .t td.c-pn { color: #0f766e; } .t td.c-used { color: #ea580c; }
+    .t td.tc { background: #f7f8ff; }
+    .t td.tc b { font-size: 15px; font-weight: 800; color: #4338ca; }
+    .pill { display: inline-block; min-width: 30px; padding: 1px 7px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .pill.red { background: #ffe4e6; color: #be123c; }
+    .pill.teal { background: #ccfbf1; color: #0f766e; }
+    .t td.fine { text-align: right; padding-right: 12px; font-weight: 800; color: #dc2626; }
+    .t td.fine.zero { color: #cbd2dc; font-weight: 400; }
+
+    /* Dòng phòng ban */
+    .t tr.dp td { height: 34px; background: #f7f8fb; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: left; padding: 0; }
+    .t tr.dp .dpl { position: sticky; left: 0; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #475569; }
+    .t tr.dp .dpl i { color: #818cf8; }
+    .t tr.dp .cnt { font-size: 10.5px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+
+    /* Kiểu xem "Chỉ tổng hợp": ẩn các cột ngày */
+    body.no-days .t .d, body.no-days .t .dh { display: none; }
+    body.no-days .t col { background: none !important; width: auto; }
+
+    .empty { display: none; padding: 56px 16px; text-align: center; color: var(--muted); }
+    .empty .ei { width: 54px; height: 54px; margin: 0 auto 10px; border-radius: 50%; background: #f1f5f9; display: grid; place-items: center; font-size: 20px; color: var(--faint); }
+    .empty b { display: block; color: var(--ink2); }
+
+    /* Chú thích */
+    .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; font-size: 12px; color: var(--muted); box-shadow: var(--shadow); }
+    .legend > span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend .k { display: inline-block; margin: 0; }
+    .legend .sw { width: 12px; height: 12px; border-radius: 4px; border: 1px solid var(--line); display: inline-block; }
+    .legend .hint { margin-left: auto; }
+
+    /* Tooltip ô ngày */
+    #tip { position: fixed; left: 0; top: 0; z-index: 50; pointer-events: none; background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 8px 11px; font-size: 12px; line-height: 1.55;
+           box-shadow: 0 10px 24px -8px rgba(15,23,42,.45); opacity: 0; transition: opacity .1s; max-width: 260px; }
+    #tip.on { opacity: 1; }
+    #tip b { color: #fff; }
+    #tip .m { color: #94a3b8; }
+
+    @media print {
+      body { background: #fff; }
+      .actions, .bar, .kpis, .legend, #tip { display: none !important; }
+      .page { padding: 0; max-width: none; }
+      .card { border: 0; box-shadow: none; }
+      .wrap { max-height: none; overflow: visible; }
+      .t thead th, .t .fx1, .t .fx2 { position: static; box-shadow: none; }
+    }
+  </style>
+  <th:block th:replace="~{fragments/shell :: styles}"></th:block>
+</head>
+
+<body th:with="ym=${T(java.time.YearMonth).parse(month)},
+               firstDow=${ym.atDay(1).getDayOfWeek().getValue()},
+               isCurMonth=${ym.equals(T(java.time.YearMonth).now())},
+               todayDay=${T(java.time.LocalDate).now().getDayOfMonth()},
+               prevM=${ym.minusMonths(1).toString()},
+               nextM=${ym.plusMonths(1).toString()}">
+<th:block th:replace="~{fragments/shell :: nav('report', 'Bảng công tổng')}"></th:block>
+<div class="sh-main">
+
+
+  <div class="page">
+
+    <!-- ═════════ HEADER ═════════ -->
+    <header class="hdr">
+      <div class="ttl">
+        <div class="logo"><i class="fa-solid fa-table-cells"></i></div>
+        <div>
+          <div class="eyebrow">Chấm công Hikvision</div>
+          <h1>Bảng công tháng <span th:text="${#strings.substring(month, 5, 7) + '/' + #strings.substring(month, 0, 4)}">09/2026</span></h1>
+          <!-- NGÀY DỪNG do HCNS cấu hình ở Lịch làm việc & giờ chấm -->
+          <div th:if="${cutoffReport != null}" style="font-size:12.5px;color:#667085;margin-top:2px">
+            <i class="fa-solid fa-lock" style="color:#98a2b3"></i>
+            Dừng gửi giải trình tháng trước: <b th:text="${cutoffConfirm == 0} ? 'ngày cuối tháng' : 'hết ngày ' + ${cutoffConfirm} + ' tháng sau'">hết ngày 1</b>
+            · Dừng duyệt &amp; chốt bảng công: <b th:text="${cutoffReport == 0} ? 'ngày cuối tháng' : 'hết ngày ' + ${cutoffReport} + ' tháng sau'">hết ngày 1</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="btn" href="javascript:history.back()"><i class="fa-solid fa-arrow-left"></i>Quay lại</a>
+        <form class="month" method="get" th:action="@{/attendance/report}">
+          <a th:href="@{/attendance/report(month=${prevM})}" title="Tháng trước"><i class="fa-solid fa-chevron-left"></i></a>
+          <input type="month" name="month" th:value="${month}" onchange="this.form.submit()" aria-label="Chọn tháng">
+          <a th:href="@{/attendance/report(month=${nextM})}" title="Tháng sau"><i class="fa-solid fa-chevron-right"></i></a>
+        </form>
+        <button class="btn btn-icon" type="button" onclick="window.print()" title="In bảng công"><i class="fa-solid fa-print"></i></button>
+        <a class="btn btn-green" th:href="@{/attendance/export(month=${month})}"><i class="fa-solid fa-file-excel"></i>Xuất Excel</a>
+      </div>
+    </header>
+
+    <!-- ═════════ KPI (tính theo các dòng đang hiển thị) ═════════ -->
+    <section class="kpis">
+      <div class="kpi"><div class="ic" style="background:#f1f5f9;color:#64748b"><i class="fa-solid fa-users"></i></div>
+        <div class="tx"><div class="lb">Nhân viên</div><div class="vl" id="kEmp">0</div></div></div>
+      <div class="kpi"><div class="ic" style="background:#eef2ff;color:#4f46e5"><i class="fa-solid fa-sack-dollar"></i></div>
+        <div class="tx"><div class="lb">TB công hưởng lương</div><div class="vl" id="kAvg" style="color:#4338ca">0</div></div></div>
+      <div class="kpi"><div class="ic" style="background:#f0fdfa;color:#0d9488"><i class="fa-solid fa-umbrella-beach"></i></div>
+        <div class="tx"><div class="lb">Phép đã dùng</div><div class="vl" id="kLeave" style="color:#0f766e">0</div></div></div>
+      <div class="kpi"><div class="ic" style="background:#fff1f2;color:#e11d48"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="tx"><div class="lb">Tổng buổi lỗi</div><div class="vl" id="kViol" style="color:#be123c">0</div></div></div>
+      <div class="kpi"><div class="ic" style="background:#fef2f2;color:#dc2626"><i class="fa-solid fa-money-bill-wave"></i></div>
+        <div class="tx"><div class="lb">Tổng tiền phạt</div><div class="vl" id="kFine" style="color:#dc2626">0 đ</div></div></div>
+    </section>
+
+    <!-- ═════════ TOOLBAR ═════════ -->
+    <section class="bar">
+      <label class="search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input class="inp" id="q" type="search" placeholder="Tìm mã NV hoặc họ tên (gõ không dấu cũng được)" autocomplete="off">
+        <kbd>/</kbd>
+      </label>
+      <select class="inp" id="dept" aria-label="Phòng ban"><option value="">Tất cả phòng ban</option></select>
+      <div class="seg" id="quick">
+        <button type="button" data-v="ALL" class="on">Tất cả</button>
+        <button type="button" data-v="VIOL"><i class="fa-solid fa-triangle-exclamation"></i>Có lỗi</button>
+        <button type="button" data-v="FINE"><i class="fa-solid fa-money-bill-wave"></i>Bị phạt</button>
+      </div>
+      <div class="sp"></div>
+      <div class="seg" id="view" title="Kiểu xem">
+        <button type="button" data-v="days" class="on"><i class="fa-regular fa-calendar"></i>Theo ngày</button>
+        <button type="button" data-v="sum"><i class="fa-solid fa-chart-simple"></i>Chỉ tổng hợp</button>
+      </div>
+      <div class="seg" id="dens" title="Mật độ dòng">
+        <button type="button" data-v="cozy" class="on" title="Thoáng"><i class="fa-solid fa-grip-lines"></i></button>
+        <button type="button" data-v="compact" title="Gọn"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </section>
+
+    <!-- ═════════ BẢNG CÔNG ═════════ -->
+    <section class="card">
+      <div class="wrap" id="wrap">
+        <table class="t" id="tbl">
+          <colgroup>
+            <col class="cc"><col class="cn">
+            <col th:each="i : ${#numbers.sequence(1, days)}"
+                 th:with="dow=${(firstDow + i - 2) % 7 + 1}"
+                 th:class="${isCurMonth and i == todayDay} ? 'dc today' : (${dow == 7} ? 'dc sun' : 'dc')">
+            <col class="sc"><col class="sc">
+            <col class="sc"><col class="sc"><col class="sc">
+            <col class="sc"><col class="sw">
+            <col class="sc"><col class="sc"><col class="sc"><col class="sc">
+            <col class="sc"><col class="sf">
+          </colgroup>
+
+          <thead>
+          <tr class="r1">
+            <th rowspan="2" class="fx1 srt" data-sort="code">Mã NV</th>
+            <th rowspan="2" class="fx2 srt" data-sort="name">Họ tên</th>
+            <th th:each="i : ${#numbers.sequence(1, days)}" rowspan="2"
+                th:with="dow=${(firstDow + i - 2) % 7 + 1}"
+                th:class="${isCurMonth and i == todayDay} ? 'dh today' : (${dow == 7} ? 'dh sun' : 'dh')"
+                th:data-dw="${dow == 7 ? 'Chủ nhật' : 'Thứ ' + (dow + 1)}">
+              <span class="dn" th:text="${i}">1</span>
+              <span class="dw" th:text="${dow == 7 ? 'CN' : 'T' + (dow + 1)}">T2</span>
+            </th>
+            <th colspan="2" class="gs g-c">Công</th>
+            <th colspan="3" class="gs g-ot">Tăng ca</th>
+            <th rowspan="2" class="gs g-le srt" data-sort="hol" title="Công ngày Lễ/Tết">Lễ/Tết</th>
+            <th rowspan="2" class="gs g-tc srt" data-sort="work" title="Tổng công hưởng lương">Tổng<br>công</th>
+            <th colspan="4" class="gs g-pn">Phép năm</th>
+            <th rowspan="2" class="gs g-vp srt" data-sort="viol" title="Số buổi vi phạm">Lỗi</th>
+            <th rowspan="2" class="g-vp srt" data-sort="fine" title="Tiền phạt (VND)">Tiền phạt</th>
+          </tr>
+          <tr class="r2">
+            <th class="gs g-c" title="Công đi làm bình thường">BT</th>
+            <th class="g-c" title="Công xác nhận qua giải trình">XN</th>
+            <th class="gs g-ot" title="Tăng ca ngoài giờ ngày thường">Q.giờ</th>
+            <th class="g-ot" title="Tăng ca Chủ nhật">CN</th>
+            <th class="g-ot" title="Tăng ca ngày Lễ">Lễ</th>
+            <th class="gs g-pn" title="Phép cộng trong tháng">Tháng</th>
+            <th class="g-pn" title="Tổng phép tích lũy">Tích lũy</th>
+            <th class="g-pn srt" data-sort="leave" title="Phép đã sử dụng">Dùng</th>
+            <th class="g-pn srt" data-sort="rem" title="Phép còn lại">Còn</th>
+          </tr>
+          </thead>
+
+          <tbody id="tb">
+          <th:block th:each="row, it : ${report}"
+                    th:with="dept=${row.department != null and !#strings.isEmpty(row.department) ? row.department : 'Chưa phân phòng ban'}">
+
+            <!-- Dòng phòng ban (controller đã sort theo phòng ban) -->
+            <tr class="dp" th:if="${it.index == 0 or row.department != report[it.index - 1].department}" th:data-dept="${dept}">
+              <td th:colspan="${days + 15}"><span class="dpl"><i class="fa-regular fa-building"></i><span th:text="${dept}">Phòng ban</span><span class="cnt">0</span></span></td>
+            </tr>
+
+            <tr class="er"
+                th:data-dept="${dept}"
+                th:data-work="${row.totalWorkDays}"
+                th:data-hol="${row.totalHolidayDays}"
+                th:data-leave="${row.totalLeaveDays}"
+                th:data-rem="${row.leaveRemaining}"
+                th:data-viol="${row.violationCount}"
+                th:data-fine="${row.fineAmount}">
+              <td class="fx1 code" th:text="${row.employeeNo}">NV001</td>
+              <td class="fx2"><span class="nm" th:text="${row.fullName}" th:title="${row.fullName}">Nguyễn Văn A</span></td>
+
+              <!-- 1 ô / ngày: chỉ tra dữ liệu; màu Chủ nhật/hôm nay do <col> đảm nhận -->
+              <td class="d" th:each="i : ${#numbers.sequence(1, days)}"
+                  th:with="cd=${row.dailyData != null ? row.dailyData.get(i.toString()) : null},
+                         mt=${cd != null ? (cd.get('confirmMorning') ?: cd.get('morning')) : null},
+                         at=${cd != null ? (cd.get('confirmAfternoon') ?: cd.get('afternoon')) : null},
+                         mv=${mt != null ? #strings.trim(mt) : ''},
+                         av=${at != null ? #strings.trim(at) : ''}"><i
+                      th:class="${mv == '' or mv == '-' ? 'k n' : 'k k-' + #strings.toLowerCase(mv)}"
+                      th:text="${mv == '' or mv == '-' ? '·' : mv}">X</i><i
+                      th:class="${av == '' or av == '-' ? 'k n' : 'k k-' + #strings.toLowerCase(av)}"
+                      th:text="${av == '' or av == '-' ? '·' : av}">X</i></td>
+
+              <td class="s gs" th:text="${row.totalActualWorkDays}">0.0</td>
+              <td class="s c-xn" th:text="${row.totalConfirmWorkDays}">0.0</td>
+
+              <td class="s gs" th:classappend="${row.overtimeNormalHours != null} ? 'c-ot' : 'nil'" th:text="${row.overtimeNormalHours != null ? row.overtimeNormalHours : '–'}">–</td>
+              <td class="s"    th:classappend="${row.overtimeSunday != null} ? 'c-ot' : 'nil'"      th:text="${row.overtimeSunday != null ? row.overtimeSunday : '–'}">–</td>
+              <td class="s"    th:classappend="${row.overtimeHoliday != null} ? 'c-ot' : 'nil'"     th:text="${row.overtimeHoliday != null ? row.overtimeHoliday : '–'}">–</td>
+
+              <td class="s gs c-le" th:text="${row.totalHolidayDays}">0.0</td>
+              <td class="s gs tc"><b th:text="${row.totalWorkDays}">0.0</b></td>
+
+              <td class="s gs c-pn" th:classappend="${row.leaveAccruedThisMonth == null} ? 'nil'" th:text="${row.leaveAccruedThisMonth != null ? row.leaveAccruedThisMonth : '–'}">–</td>
+              <td class="s c-pn"    th:classappend="${row.leaveAccruedTotal == null} ? 'nil'"     th:text="${row.leaveAccruedTotal != null ? row.leaveAccruedTotal : '–'}">–</td>
+              <td class="s c-used" th:text="${row.totalLeaveDays}">0.0</td>
+              <td class="s">
+                <span th:if="${row.leaveRemaining != null}" class="pill" th:classappend="${row.leaveRemaining < 0} ? 'red' : 'teal'" th:text="${row.leaveRemaining}">5.0</span>
+                <span th:unless="${row.leaveRemaining != null}" class="nil">–</span>
+              </td>
+
+              <td class="s gs">
+                <span th:if="${row.violationCount != null and row.violationCount > 0}" class="pill red" th:text="${row.violationCount}">2</span>
+                <span th:unless="${row.violationCount != null and row.violationCount > 0}" class="nil">0</span>
+              </td>
+              <td class="fine" th:classappend="${row.fineAmount == null or row.fineAmount <= 0} ? 'zero'"
+                  th:text="${row.fineAmount != null ? #numbers.formatDecimal(row.fineAmount, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">0 đ</td>
+            </tr>
+          </th:block>
+          </tbody>
+        </table>
+
+        <div class="empty" id="empty">
+          <div class="ei"><i class="fa-solid fa-user-slash"></i></div>
+          <b>Không có nhân viên phù hợp</b>Thử đổi từ khóa hoặc bộ lọc.
+        </div>
+        <div class="empty" style="display:block" th:if="${#lists.isEmpty(report)}">
+          <div class="ei"><i class="fa-regular fa-calendar-xmark"></i></div>
+          <b>Chưa có dữ liệu công cho tháng này</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ CHÚ THÍCH ═════════ -->
+    <footer class="legend">
+      <span style="font-weight:700;color:#334155"><i class="fa-solid fa-circle-info" style="color:#818cf8"></i>Mỗi ô: trên = sáng · dưới = chiều</span>
+      <span><i class="k k-x">X</i>Đi làm</span>
+      <span><i class="k k-xn">XN</i>Đã xác nhận</span>
+      <span><i class="k k-pn">PN</i>Phép năm</span>
+      <span><i class="k k-le">LE</i>Ngày lễ</span>
+      <span><i class="k k-cdl">CDL</i>Nghỉ chế độ lương</span>
+      <span><i class="k n">·</i>Không có công</span>
+      <span><i class="sw" style="background:var(--sun)"></i>Chủ nhật</span>
+      <span><i class="sw" style="background:var(--today);border-color:#c7d2fe"></i>Hôm nay</span>
+      <span class="hint">Bấm tiêu đề cột có <i class="fa-solid fa-sort"></i> để sắp xếp · phím <b>/</b> để tìm</span>
+    </footer>
+  </div>
+
+  <div id="tip"></div>
+
+  <script th:inline="javascript">
+(() => {
+  const MM = /*[[${#strings.substring(month, 5, 7)}]]*/ '09';
+  const $ = s => document.querySelector(s);
+  const tb = $('#tb'), wrap = $('#wrap'), tbl = $('#tbl');
+  const rows = Array.from(tb.querySelectorAll('tr.er'));
+  const depts = Array.from(tb.querySelectorAll('tr.dp'));
+  const original = Array.from(tb.children);
+  const num = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+  const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').trim();
+
+  // Chuẩn bị dữ liệu tìm kiếm / sắp xếp một lần
+  rows.forEach(r => {
+    r._code = r.cells[0].textContent.trim();
+    r._name = r.cells[1].textContent.trim();
+    r._key = norm(r._code + ' ' + r._name);
+  });
+
+  const deptSel = $('#dept');
+  Array.from(new Set(rows.map(r => r.dataset.dept))).forEach(d => deptSel.add(new Option(d, d)));
+
+  // Lưu kiểu xem cho lần sau (an toàn nếu trình duyệt chặn localStorage)
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('bangcong.' + k); return v == null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('bangcong.' + k, v); } catch (e) {} }
+  };
+
+  let quick = 'ALL', sortKey = null, sortDir = 0;
+
+  // ── Lọc + KPI ──
+  const fmt1 = v => (Math.round(v * 10) / 10).toLocaleString('vi-VN');
+  function apply() {
+    const kw = norm($('#q').value), dept = deptSel.value;
+    let n = 0, work = 0, leave = 0, viol = 0, fine = 0;
+    const per = {};
+    for (const r of rows) {
+      const d = r.dataset;
+      const show = (!kw || r._key.includes(kw)) && (!dept || d.dept === dept)
+        && (quick === 'ALL' || (quick === 'VIOL' ? num(d.viol) > 0 : num(d.fine) > 0));
+      r.hidden = !show;
+      if (show) {
+        n++; work += num(d.work); leave += num(d.leave); viol += num(d.viol); fine += num(d.fine);
+        per[d.dept] = (per[d.dept] || 0) + 1;
+      }
+    }
+    for (const d of depts) {
+      const c = per[d.dataset.dept] || 0;
+      d.hidden = !c || sortDir !== 0;      // khi đang sắp xếp thì bỏ nhóm phòng ban
+      d.querySelector('.cnt').textContent = c + ' người';
+    }
+    $('#kEmp').textContent = n;
+    $('#kAvg').textContent = n ? fmt1(work / n) : '0';
+    $('#kLeave').textContent = fmt1(leave);
+    $('#kViol').textContent = viol.toLocaleString('vi-VN');
+    $('#kFine').textContent = Math.round(fine).toLocaleString('vi-VN') + ' đ';
+    $('#empty').style.display = (!n && rows.length) ? 'block' : 'none';
+  }
+
+  let timer;
+  $('#q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(apply, 90); });
+  deptSel.addEventListener('change', apply);
+  document.addEventListener('keydown', e => {
+    const tag = document.activeElement ? document.activeElement.tagName : '';
+    if (e.key === '/' && tag !== 'INPUT' && tag !== 'SELECT') { e.preventDefault(); $('#q').focus(); }
+    if (e.key === 'Escape' && document.activeElement === $('#q')) { $('#q').value = ''; apply(); $('#q').blur(); }
+  });
+
+  function seg(id, fn) {
+    const box = $(id);
+    box.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      fn(b.dataset.v);
+    });
+    return v => { const b = box.querySelector('[data-v="' + v + '"]'); if (b) b.click(); };
+  }
+  seg('#quick', v => { quick = v; apply(); });
+  const setView = seg('#view', v => { document.body.classList.toggle('no-days', v === 'sum'); store.set('view', v); });
+  const setDens = seg('#dens', v => { document.body.classList.toggle('compact', v === 'compact'); store.set('dens', v); });
+  setView(store.get('view', 'days'));
+  setDens(store.get('dens', 'cozy'));
+
+  // ── Sắp xếp: số liệu bấm lần 1 giảm dần → lần 2 tăng dần → lần 3 về mặc định (nhóm theo phòng ban)
+  //            tên / mã: A→Z → Z→A → mặc định
+  tbl.tHead.addEventListener('click', e => {
+    const th = e.target.closest('th.srt'); if (!th) return;
+    const k = th.dataset.sort, isText = (k === 'name' || k === 'code');
+    const first = isText ? 1 : -1;
+    if (sortKey !== k) { sortKey = k; sortDir = first; }
+    else if (sortDir === first) sortDir = -first;
+    else { sortKey = null; sortDir = 0; }
+
+    tbl.querySelectorAll('th.srt').forEach(x => x.classList.remove('asc', 'desc'));
+    if (sortDir) th.classList.add(sortDir > 0 ? 'asc' : 'desc');
+
+    const frag = document.createDocumentFragment();
+    if (!sortDir) {
+      original.forEach(r => frag.appendChild(r));
+    } else {
+      const val = r => k === 'name' ? r._name : k === 'code' ? r._code : num(r.dataset[k]);
+      rows.slice().sort((a, b) => {
+        const x = val(a), y = val(b);
+        return (typeof x === 'string' ? x.localeCompare(y, 'vi') : x - y) * sortDir;
+      }).forEach(r => frag.appendChild(r));
+      depts.forEach(d => frag.appendChild(d));
+    }
+    tb.appendChild(frag);
+    apply();
+  });
+
+  // ── Rê chuột lên ô ngày: tô sáng cả cột + tooltip chi tiết ──
+  const cols = tbl.querySelectorAll('col');
+  const dayTh = Array.from(tbl.querySelectorAll('thead th.dh'));
+  const MEAN = { X: 'Đi làm', XN: 'Đã xác nhận', PN: 'Phép năm', LE: 'Ngày lễ', CDL: 'Nghỉ chế độ lương' };
+  const tip = $('#tip');
+  let hlCol = null;
+  const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const say = v => v === '·' ? '<span class="m">không có</span>'
+    : '<b>' + esc(v) + '</b>' + (MEAN[v] ? ' <span class="m">' + MEAN[v] + '</span>' : '');
+
+  tb.addEventListener('mouseover', e => {
+    const td = e.target.closest('td.d');
+    if (hlCol && (!td || cols[td.cellIndex] !== hlCol)) { hlCol.classList.remove('hl'); hlCol = null; }
+    if (!td) { tip.classList.remove('on'); return; }
+    const col = cols[td.cellIndex];
+    if (col && col !== hlCol) { col.classList.add('hl'); hlCol = col; }
+    const day = td.cellIndex - 1, th = dayTh[day - 1];
+    tip.innerHTML = '<b>' + esc(td.parentElement._name) + '</b><br>'
+      + '<span class="m">' + (th ? th.dataset.dw : '') + ', ' + String(day).padStart(2, '0') + '/' + MM + '</span><br>'
+      + 'Sáng: ' + say(td.children[0].textContent) + '<br>'
+      + 'Chiều: ' + say(td.children[1].textContent);
+    tip.classList.add('on');
+  });
+  tb.addEventListener('mousemove', e => {
+    if (!tip.classList.contains('on')) return;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    const x = Math.min(e.clientX + 14, innerWidth - w - 8);
+    const y = (e.clientY + 18 + h > innerHeight) ? e.clientY - h - 10 : e.clientY + 18;
+    tip.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+  });
+  tb.addEventListener('mouseleave', () => {
+    tip.classList.remove('on');
+    if (hlCol) { hlCol.classList.remove('hl'); hlCol = null; }
+  });
+
+  apply();
+
+  // Mở trang: cuộn tới cột hôm nay
+  const today = tbl.querySelector('thead th.dh.today');
+  if (today && !document.body.classList.contains('no-days')) {
+    wrap.scrollLeft = Math.max(0, today.offsetLeft - 286 - wrap.clientWidth / 3);
+  }
+})();
+</script>
+</div><!-- /sh-main -->
+<th:block th:replace="~{fragments/shell :: script}"></th:block>
+</body>
+</html>

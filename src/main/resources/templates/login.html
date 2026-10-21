@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Đăng Nhập | Thanh Hóa Ford</title>
+  <!-- APP SunClub (PWA): trang đăng nhập là trang đầu tiên người dùng "Thêm vào màn hình chính",
+       thiếu các dòng này thì điện thoại chỉ tạo lối tắt mở trình duyệt, không ra dạng app -->
+  <link rel="manifest" th:href="@{/manifest.webmanifest}">
+  <meta name="theme-color" content="#6d0a2c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="SunClub">
+  <meta name="application-name" content="SunClub">
+  <link rel="apple-touch-icon" sizes="180x180" th:href="@{/pwa/sunclub-apple-180.png}">
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/pwa/sunclub-32.png}">
+  <link rel="icon" type="image/png" sizes="192x192" th:href="@{/pwa/sunclub-192.png}">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --bg: #0b1220;
+      --surface: #111a2e;
+      --surface-2: #16213a;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e7eaf2;
+      --text-muted: #8b93a7;
+      --accent: #4f7cff;
+      --accent-dark: #2f56d1;
+      --danger: #ef5a6f;
+      --danger-bg: rgba(239, 90, 111, 0.1);
+      --success: #33c48a;
+      --success-bg: rgba(51, 196, 138, 0.1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      padding-top: calc(24px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      position: relative;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(79, 124, 255, 0.12), transparent 55%);
+      pointer-events: none;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      justify-content: center;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 0.2px;
+      color: var(--text);
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 36px 32px;
+      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .login-header {
+      margin-bottom: 26px;
+    }
+
+    .login-header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 6px;
+      color: var(--text);
+    }
+
+    .login-header p {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      border-radius: 8px;
+      padding: 11px 13px;
+      margin-bottom: 20px;
+      line-height: 1.45;
+    }
+
+    .alert i { margin-top: 1px; }
+
+    .alert-danger {
+      background: var(--danger-bg);
+      color: #ff9aa8;
+      border: 1px solid rgba(239, 90, 111, 0.25);
+    }
+
+    .alert-success {
+      background: var(--success-bg);
+      color: #8ee6bc;
+      border: 1px solid rgba(51, 196, 138, 0.25);
+    }
+
+    .field { margin-bottom: 18px; }
+
+    .field label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 7px;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    .form-control {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      padding: 11px 14px 11px 40px;
+      border-radius: 8px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .form-control::placeholder { color: #5b6478; }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #182342;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 14.5px;
+      font-weight: 600;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .btn-submit:hover { background: var(--accent-dark); }
+    .btn-submit:active { transform: translateY(1px); }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 12px;
+      color: #5b6478;
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 16px; }
+      .login-card { padding: 28px 20px; border-radius: 10px; }
+      .login-header h1 { font-size: 18px; }
+      .brand { margin-bottom: 22px; }
+      .form-control { font-size: 16px; padding: 12px 14px 12px 40px; }
+      .btn-submit { padding: 13px; font-size: 15px; }
+    }
+
+    @media (max-height: 560px) {
+      body { align-items: flex-start; padding-top: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="brand">
+    <div class="brand-mark">TF</div>
+    <span class="brand-name">Thanh Hóa Ford</span>
+  </div>
+
+  <div class="login-card">
+    <div class="login-header">
+      <h1>Đăng nhập</h1>
+      <p>Hệ thống quản lý nhân sự — dùng mã nhân viên để truy cập.</p>
+    </div>
+
+    <div th:if="${param.error}" class="alert alert-danger">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>Sai tài khoản hoặc mật khẩu, vui lòng thử lại.</span>
+    </div>
+
+    <div th:if="${param.logout}" class="alert alert-success">
+      <i class="fa-solid fa-circle-check"></i>
+      <span>Bạn đã đăng xuất thành công.</span>
+    </div>
+
+    <form th:action="@{/login}" method="post" autocomplete="off">
+      <div class="field">
+        <label for="username">Tài khoản (Mã CC)</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-user"></i>
+          <input type="text" id="username" name="username" class="form-control" placeholder="Nhập mã nhân viên..." required autofocus>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu..." required>
+        </div>
+      </div>
+
+      <label class="remember" for="remember-me">
+        <input type="checkbox" id="remember-me" name="remember-me" checked>
+        <span>Lưu đăng nhập 30 ngày <small>(không tích nếu dùng máy chung)</small></span>
+      </label>
+
+      <button type="submit" class="btn-submit">
+        <i class="fa-solid fa-right-to-bracket" style="margin-right: 8px;"></i>Đăng nhập
+      </button>
+    </form>
+  </div>
+
+  <div class="footer-note">&copy; 2026 Thanh Hóa Ford. All rights reserved.</div>
+</div>
+
+<style>
+  .remember { display: flex; align-items: flex-start; gap: 9px; margin: -4px 0 18px; font-size: 14px; color: #344054; cursor: pointer; user-select: none; }
+  .remember input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: #6d0a2c; flex-shrink: 0; }
+  .remember small { display: block; color: #98a2b3; font-size: 12px; }
+</style>
+<style>
+  html { -webkit-text-size-adjust: 100%; } body { touch-action: manipulation; }
+  @media (max-width: 1179px) and (pointer: coarse) {
+    input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
+    html, body { overflow-x: clip; }
+  }
+</style>
+<script>
+  // điện thoại: không phóng to như web
+  if ((window.matchMedia && window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 1180) || window.navigator.standalone) {
+    var vp = document.querySelector('meta[name=viewport]');
+    if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
+  }
+  // đăng ký service worker ngay từ trang đăng nhập (để điện thoại nhận là app)
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
+      .then(function (r) { r.update(); }).catch(function () {});   // luôn hỏi máy chủ bản mới, thay ngay bản cũ
+  }
+</script>
+<th:block th:replace="~{fragments/shell :: iosInstall}"></th:block>
+</body>
+</html>
